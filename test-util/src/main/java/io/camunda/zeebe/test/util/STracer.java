@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,19 +18,21 @@ import java.util.regex.Pattern;
 public final class STracer implements AutoCloseable {
   private final Process process;
   private final Path outputFile;
+  private final Path stdout;
+  private final Path stderr;
 
-  private STracer(final Process process, final Path outputFile) {
+  private STracer(
+      final Process process, final Path outputFile, final Path stdout, final Path stderr) {
     this.process = process;
     this.outputFile = outputFile;
+    this.stdout = stdout;
+    this.stderr = stderr;
   }
 
   public static STracer tracerFor(final Syscall syscall, final Path outputFile) throws IOException {
-    return tracerFor(syscall, outputFile, false);
-  }
-
-  public static STracer tracerFor(final Syscall syscall, final Path outputFile, final boolean debug)
-      throws IOException {
     final var pid = ProcessHandle.current().pid();
+    final var stdout = Files.createTempFile("stracer", ".out");
+    final var stderr = Files.createTempFile("stracer", ".err");
     final var output = outputFile.toAbsolutePath().toString();
     final var builder =
         new ProcessBuilder()
@@ -42,14 +45,10 @@ public final class STracer implements AutoCloseable {
                 "-o",
                 output,
                 "-p",
-                String.valueOf(pid));
-
-    // NOTE: CI will not show logs to stderr, so you won't see anything from this
-    if (debug) {
-      builder
-          .redirectOutput(Files.createFile(Path.of("/tmp/stracer.out")).toFile())
-          .redirectError(Files.createFile(Path.of("/tmp/stracer.err")).toFile());
-    }
+                String.valueOf(pid))
+            .redirectOutput(stdout.toFile())
+            .redirectError(stderr.toFile())
+            .start();
 
     if (!Files.exists(outputFile)) {
       try {
@@ -59,22 +58,45 @@ public final class STracer implements AutoCloseable {
       }
     }
 
-    return new STracer(builder.start(), outputFile);
+    return new STracer(builder, outputFile, stdout, stderr);
   }
 
   @Override
   public void close() throws Exception {
     System.out.println(process.info());
+
     process.destroy();
-    System.out.println("strace exited with " + process.waitFor());
-    System.out.println("Recorded output: " + Files.readString(outputFile));
-    System.out.println("Recorded stdout: " + Files.readString(Path.of("/tmp/stracer.out")));
-    System.out.println("Recorded stderr: " + Files.readString(Path.of("/tmp/stracer.err")));
+    final var exitCode = process.waitFor();
+
+    System.out.println("strace exited with " + exitCode);
+    System.out.println("Recorded output: " + output());
+    System.out.println("Recorded stdout: " + stdout());
+    System.out.println("Recorded stderr: " + stderr());
+  }
+
+  public String output() {
+    return readFile(outputFile);
+  }
+
+  public String stdout() {
+    return readFile(stdout);
+  }
+
+  public String stderr() {
+    return readFile(stderr);
   }
 
   public List<FSyncTrace> fSyncTraces() throws IOException {
     try (final var reader = Files.newBufferedReader(outputFile)) {
       return reader.lines().filter(s -> s.contains("fsync")).map(FSyncTrace::of).toList();
+    }
+  }
+
+  private String readFile(final Path file) {
+    try {
+      return Files.readString(file);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
