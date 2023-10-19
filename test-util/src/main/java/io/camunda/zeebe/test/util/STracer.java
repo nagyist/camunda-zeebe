@@ -62,12 +62,8 @@ public final class STracer implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    System.out.println("Output file exists:" + Files.exists(outputFile));
-    System.out.println("strace info: " + process.info());
-    process.errorReader().lines().forEach(System.out::println);
-    process.destroyForcibly();
-    System.out.println("strace exited with " + process.exitValue());
-    System.out.println("Output file exists:" + Files.exists(outputFile));
+    process.destroy();
+    process.waitFor();
   }
 
   public List<FSyncTrace> fSyncTraces() throws IOException {
