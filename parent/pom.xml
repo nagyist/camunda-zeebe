@@ -1356,7 +1356,7 @@
             <groups>!performance</groups>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <redirectTestOutputToFile>false</redirectTestOutputToFile>
             <properties>
               <property>
                 <name>listener</name>

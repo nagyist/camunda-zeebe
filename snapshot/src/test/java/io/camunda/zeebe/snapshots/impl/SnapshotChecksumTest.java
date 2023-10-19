@@ -136,7 +136,7 @@ public final class SnapshotChecksumTest {
     final var traceFile = temporaryFolder.resolve("traceFile");
     final var expectedChecksum = SnapshotChecksum.calculate(multipleFileSnapshot);
     final var checksumPath = multipleFileSnapshot.resolveSibling("checksum");
-    final var tracer = STracer.tracerFor(Syscall.FSYNC, traceFile);
+    final var tracer = STracer.tracerFor(Syscall.FSYNC, traceFile, true);
 
     // when
     try (tracer) {
