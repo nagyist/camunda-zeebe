@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -22,11 +23,11 @@ public final class STracer implements AutoCloseable {
     this.outputFile = outputFile;
   }
 
-  public static STracer traceFor(final Syscall syscall, final Path outputFile) throws IOException {
-    return traceFor(syscall, outputFile, false);
+  public static STracer tracerFor(final Syscall syscall, final Path outputFile) throws IOException {
+    return tracerFor(syscall, outputFile, false);
   }
 
-  public static STracer traceFor(final Syscall syscall, final Path outputFile, final boolean debug)
+  public static STracer tracerFor(final Syscall syscall, final Path outputFile, final boolean debug)
       throws IOException {
     final var pid = ProcessHandle.current().pid();
     final var output = outputFile.toAbsolutePath().toString();
@@ -43,8 +44,17 @@ public final class STracer implements AutoCloseable {
                 "-p",
                 String.valueOf(pid));
 
+    // NOTE: CI will not show logs to stderr, so you won't see anything from this
     if (debug) {
       builder.inheritIO();
+    }
+
+    if (!Files.exists(outputFile)) {
+      try {
+        Files.createFile(outputFile);
+      } catch (final FileAlreadyExistsException ignored) {
+        // ignored
+      }
     }
 
     return new STracer(builder.start(), outputFile);
@@ -52,8 +62,13 @@ public final class STracer implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
+    System.out.println("Output file exists:" + Files.exists(outputFile));
+    System.out.println("strace info: " + process.info());
+    process.errorReader().lines().forEach(System.out::println);
     process.destroy();
     process.waitFor();
+    System.out.println("strace exited with " + process.exitValue());
+    System.out.println("Output file exists:" + Files.exists(outputFile));
   }
 
   public List<FSyncTrace> fSyncTraces() throws IOException {
