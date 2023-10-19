@@ -65,8 +65,7 @@ public final class STracer implements AutoCloseable {
     System.out.println("Output file exists:" + Files.exists(outputFile));
     System.out.println("strace info: " + process.info());
     process.errorReader().lines().forEach(System.out::println);
-    process.destroy();
-    process.waitFor();
+    process.destroyForcibly();
     System.out.println("strace exited with " + process.exitValue());
     System.out.println("Output file exists:" + Files.exists(outputFile));
   }
