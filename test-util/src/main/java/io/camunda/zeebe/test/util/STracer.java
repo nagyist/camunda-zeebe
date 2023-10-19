@@ -46,7 +46,9 @@ public final class STracer implements AutoCloseable {
 
     // NOTE: CI will not show logs to stderr, so you won't see anything from this
     if (debug) {
-      builder.inheritIO();
+      builder
+          .redirectOutput(Files.createFile(Path.of("/tmp/stracer.out")).toFile())
+          .redirectError(Files.createFile(Path.of("/tmp/stracer.err")).toFile());
     }
 
     if (!Files.exists(outputFile)) {
@@ -62,8 +64,12 @@ public final class STracer implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
+    System.out.println(process.info());
     process.destroy();
-    process.waitFor();
+    System.out.println("strace exited with " + process.waitFor());
+    System.out.println("Recorded output: " + Files.readString(outputFile));
+    System.out.println("Recorded stdout: " + Files.readString(Path.of("/tmp/stracer.out")));
+    System.out.println("Recorded stderr: " + Files.readString(Path.of("/tmp/stracer.err")));
   }
 
   public List<FSyncTrace> fSyncTraces() throws IOException {
