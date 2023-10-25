@@ -10,6 +10,7 @@ package io.camunda.zeebe.el.impl;
 import static io.camunda.zeebe.el.impl.Loggers.LOGGER;
 
 import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.EvaluationWarning;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ResultType;
 import java.math.BigDecimal;
@@ -78,6 +79,11 @@ public final class StaticExpression implements Expression, EvaluationResult {
   @Override
   public boolean isFailure() {
     return false;
+  }
+
+  @Override
+  public List<EvaluationWarning> getWarnings() {
+    return null;
   }
 
   @Override

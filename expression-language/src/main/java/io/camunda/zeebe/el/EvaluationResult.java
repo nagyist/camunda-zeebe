@@ -34,6 +34,8 @@ public interface EvaluationResult {
    */
   String getFailureMessage();
 
+  List<EvaluationWarning> getWarnings();
+
   /**
    * @return the type of the evaluation result, or {@code null} if the evaluation failed
    */
