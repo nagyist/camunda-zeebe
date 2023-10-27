@@ -313,7 +313,7 @@ public final class ExpressionProcessor {
                 createFailureMessage(
                     result,
                     String.format(
-                        "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
+                        "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was '%s'.",
                         expression.getExpression(), result.getType()),
                     scopeKey));
   }
@@ -368,7 +368,7 @@ public final class ExpressionProcessor {
                 createFailureMessage(
                     result,
                     String.format(
-                        "Expected result of expression '%s' to be one of '%s', but was '%s'.",
+                        "Expected result of the expression '%s' to be one of '%s', but was '%s'.",
                         result.getExpression(), expectedResultTypes, result.getType()),
                     scopeKey)));
   }
