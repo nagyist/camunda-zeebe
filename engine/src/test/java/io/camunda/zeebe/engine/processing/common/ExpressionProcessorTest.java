@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -87,6 +88,39 @@ class ExpressionProcessorTest {
           Arguments.of(
               "= [null]",
               "Expected result of the expression ' [null]' to be 'ARRAY' containing 'STRING' items, but was 'ARRAY' containing at least one non-'STRING' item."));
+    }
+  }
+
+  @Nested
+  @TestInstance(Lifecycle.PER_CLASS)
+  class EvaluationWarningsTest {
+
+    @Test
+    void testStringExpression() {
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      assertThat(processor.evaluateStringExpression(parsedExpression, -1L))
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'STRING', but was 'NULL'. \
+              The evaluation reported the following warnings: \
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
+    }
+
+    @Test
+    void testLongExpression() {
+      final var processor = new ExpressionProcessor(EXPRESSION_LANGUAGE, DEFAULT_CONTEXT_LOOKUP);
+      final var parsedExpression = EXPRESSION_LANGUAGE.parseExpression("=x");
+      assertThat(processor.evaluateLongExpression(parsedExpression, -1L))
+          .isLeft()
+          .extracting(r -> r.getLeft().getMessage())
+          .isEqualTo(
+              """
+              Expected result of the expression 'x' to be 'NUMBER', but was 'NULL'. \
+              The evaluation reported the following warnings: \
+              [NO_VARIABLE_FOUND] No variable found with name 'x'""");
     }
   }
 }
