@@ -18,7 +18,9 @@ package io.camunda.zeebe.client.impl.response;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class TopologyImpl implements Topology {
@@ -29,13 +31,29 @@ public final class TopologyImpl implements Topology {
   private final int replicationFactor;
   private final String gatewayVersion;
 
-  public TopologyImpl(final TopologyResponse response) {
+  public TopologyImpl(final TopologyResponse grpcResponse) {
     brokers =
-        response.getBrokersList().stream().map(BrokerInfoImpl::new).collect(Collectors.toList());
-    clusterSize = response.getClusterSize();
-    partitionsCount = response.getPartitionsCount();
-    replicationFactor = response.getReplicationFactor();
-    gatewayVersion = response.getGatewayVersion();
+        grpcResponse.getBrokersList().stream()
+            .map(BrokerInfoImpl::new)
+            .collect(Collectors.toList());
+    clusterSize = grpcResponse.getClusterSize();
+    partitionsCount = grpcResponse.getPartitionsCount();
+    replicationFactor = grpcResponse.getReplicationFactor();
+    gatewayVersion = grpcResponse.getGatewayVersion();
+  }
+
+  public TopologyImpl(final io.camunda.client.protocol.rest.TopologyResponse httpResponse) {
+    brokers =
+        Optional.ofNullable(httpResponse.getBrokers()).orElse(Collections.emptyList()).stream()
+            .map(BrokerInfoImpl::new)
+            .collect(Collectors.toList());
+    clusterSize = httpResponse.getClusterSize() == null ? 0 : httpResponse.getClusterSize();
+    partitionsCount =
+        httpResponse.getPartitionsCount() == null ? 0 : httpResponse.getPartitionsCount();
+    replicationFactor =
+        httpResponse.getReplicationFactor() == null ? 0 : httpResponse.getReplicationFactor();
+    gatewayVersion =
+        httpResponse.getGatewayVersion() == null ? "" : httpResponse.getGatewayVersion();
   }
 
   @Override

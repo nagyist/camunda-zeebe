@@ -19,7 +19,13 @@ import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import java.time.Duration;
 import java.util.List;
 
-public interface ActivateJobsCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.ActivateJobsCommandStep1}
+ */
+@Deprecated
+public interface ActivateJobsCommandStep1
+    extends CommandWithCommunicationApiStep<ActivateJobsCommandStep1> {
 
   /**
    * Set the type of jobs to work on.
@@ -29,6 +35,11 @@ public interface ActivateJobsCommandStep1 {
    */
   ActivateJobsCommandStep2 jobType(String jobType);
 
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2}
+   */
+  @Deprecated
   interface ActivateJobsCommandStep2 {
 
     /**
@@ -41,6 +52,11 @@ public interface ActivateJobsCommandStep1 {
     ActivateJobsCommandStep3 maxJobsToActivate(int maxJobsToActivate);
   }
 
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3}
+   */
+  @Deprecated
   interface ActivateJobsCommandStep3
       extends CommandWithOneOrMoreTenantsStep<ActivateJobsCommandStep3>,
           FinalCommandStep<ActivateJobsResponse> {

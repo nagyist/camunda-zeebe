@@ -6,18 +6,17 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.4.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-qa</artifactId>
+  <artifactId>camunda-qa</artifactId>
   <packaging>pom</packaging>
 
-  <name>Zeebe QA</name>
+  <name>Camunda QA</name>
 
   <modules>
     <module>integration-tests</module>
-    <module>update-tests</module>
     <module>util</module>
   </modules>
 

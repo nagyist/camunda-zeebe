@@ -15,14 +15,19 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import java.time.Duration;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.FinalCommandStep}
+ */
 public interface FinalCommandStep<T> {
 
   /**
    * Sets the request timeout for the command. The default request timeout can be configured using
-   * {@link io.camunda.zeebe.client.ZeebeClientBuilder#defaultRequestTimeout(Duration)}.
+   * {@link ZeebeClientBuilder#defaultRequestTimeout(Duration)}.
    *
    * @param requestTimeout the request timeout
    * @return the configured command

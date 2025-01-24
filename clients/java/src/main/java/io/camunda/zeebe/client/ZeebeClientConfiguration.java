@@ -15,17 +15,39 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.CamundaClientConfiguration}
+ */
+@Deprecated
 public interface ZeebeClientConfiguration {
+
   /**
-   * @see ZeebeClientBuilder#gatewayAddress(String)
+   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
+   *     ZeebeClientConfiguration#getGrpcAddress()}
+   * @see ZeebeClientBuilder#grpcAddress(URI)
    */
+  @Deprecated
   String getGatewayAddress();
+
+  /**
+   * @see ZeebeClientBuilder#restAddress(URI)
+   */
+  URI getRestAddress();
+
+  /**
+   * @see ZeebeClientBuilder#grpcAddress(URI)
+   */
+  URI getGrpcAddress();
 
   /**
    * @see ZeebeClientBuilder#defaultTenantId(String)
@@ -92,10 +114,18 @@ public interface ZeebeClientConfiguration {
    */
   Duration getKeepAlive();
 
+  /**
+   * @see ZeebeClientBuilder#withInterceptors(ClientInterceptor...)
+   */
   List<ClientInterceptor> getInterceptors();
 
   /**
-   * @see ZeebeClientBuilder#withJsonMapper(io.camunda.zeebe.client.api.JsonMapper)
+   * @see ZeebeClientBuilder#withChainHandlers(AsyncExecChainHandler...)
+   */
+  List<AsyncExecChainHandler> getChainHandlers();
+
+  /**
+   * @see ZeebeClientBuilder#withJsonMapper(JsonMapper)
    */
   JsonMapper getJsonMapper();
 
@@ -108,6 +138,11 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#maxMessageSize(int)
    */
   int getMaxMessageSize();
+
+  /**
+   * @see ZeebeClientBuilder#maxMetadataSize(int)
+   */
+  int getMaxMetadataSize();
 
   /**
    * @see ZeebeClientBuilder#jobWorkerExecutor(ScheduledExecutorService)
@@ -128,4 +163,10 @@ public interface ZeebeClientConfiguration {
    * @see ZeebeClientBuilder#useDefaultRetryPolicy(boolean)
    */
   boolean useDefaultRetryPolicy();
+
+  /**
+   * @see ZeebeClientBuilder#preferRestOverGrpc(boolean)
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
+  boolean preferRestOverGrpc();
 }

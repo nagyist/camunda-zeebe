@@ -19,6 +19,7 @@ import static io.camunda.zeebe.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
@@ -308,6 +309,28 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
+  // Regression: https://github.com/camunda/camunda/issues/17513
+  @Test
+  public void shouldNotAccumulateTenantsOnSuccessiveOpen() {
+    // given
+    final ActivateJobsCommandStep3 command =
+        client
+            .newActivateJobsCommand()
+            .jobType("foo")
+            .maxJobsToActivate(3)
+            .tenantId("tenant1")
+            .tenantId("tenant2")
+            .tenantId("tenant2");
+
+    // when
+    command.send().join();
+    command.send().join();
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+
+    // then
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
+  }
+
   @Test
   public void shouldGetSingleVariable() {
     final String variablesJob1 = "{\"key\" : \"val\", \"foo\" : \"bar\", \"joe\" : \"doe\"}";
@@ -385,7 +408,7 @@ public final class ActivateJobsTest extends ClientTest {
 
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
-    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME);
+    assertThat(request.getWorker()).isEqualTo(ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR);
   }
 
   @Test

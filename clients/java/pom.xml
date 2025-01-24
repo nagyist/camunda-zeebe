@@ -6,14 +6,14 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.4.0-SNAPSHOT</version>
+    <version>8.8.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-client-java</artifactId>
+  <artifactId>camunda-client-java</artifactId>
   <packaging>jar</packaging>
 
-  <name>Zeebe Client Java</name>
+  <name>Camunda Client Java</name>
 
   <licenses>
     <license>
@@ -25,6 +25,7 @@
   <properties>
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
   </properties>
 
   <dependencies>
@@ -49,6 +50,16 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.core5</groupId>
+      <artifactId>httpcore5</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-protocol-impl</artifactId>
     </dependency>
@@ -56,6 +67,17 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -144,6 +166,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
@@ -185,7 +213,7 @@
 
     <dependency>
       <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -194,6 +222,7 @@
       <artifactId>guava</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest</artifactId>
@@ -204,6 +233,7 @@
       <groupId>com.fasterxml.jackson.dataformat</groupId>
       <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
+
     <dependency>
       <groupId>net.jcip</groupId>
       <artifactId>jcip-annotations</artifactId>
@@ -230,6 +260,7 @@
           </ignoredNonTestScopedDependencies>
           <ignoredDependencies>
             <ignoredDependency>io.netty:netty-tcnative-boringssl-static</ignoredDependency>
+            <ignoredDependency>javax.annotation:javax.annotation-api</ignoredDependency>
           </ignoredDependencies>
         </configuration>
       </plugin>
@@ -238,6 +269,46 @@
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
+
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <configuration>
+          <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
+          <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
+          <generatorName>java</generatorName>
+          <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+          <modelPackage>io.camunda.client.protocol.rest</modelPackage>
+          <typeMappings>OffsetDateTime=String</typeMappings>
+          <generateApis>false</generateApis>
+          <generateApiTests>false</generateApiTests>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <generateModels>true</generateModels>
+          <generateModelDocumentation>false</generateModelDocumentation>
+          <generateModelTests>false</generateModelTests>
+          <!-- validate the spec on every generation -->
+          <skipValidateSpec>false</skipValidateSpec>
+          <configOptions>
+            <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+            <documentationProvider>none</documentationProvider>
+            <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
+            <library>apache-httpclient</library>
+            <java8>true</java8>
+            <openApiNullable>false</openApiNullable>
+            <serializationLibrary>jackson</serializationLibrary>
+            <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>rest</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
     </plugins>
   </build>
 

@@ -18,8 +18,14 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 
-@ExperimentalApi("https://github.com/camunda/zeebe/issues/14907")
-public interface MigrateProcessInstanceCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.MigrateProcessInstanceCommandStep1}
+ */
+@Deprecated
+@ExperimentalApi("https://github.com/camunda/camunda/issues/14907")
+public interface MigrateProcessInstanceCommandStep1
+    extends CommandWithCommunicationApiStep<MigrateProcessInstanceCommandStep1> {
 
   /**
    * Create a MigrationPlan {@link
@@ -65,8 +71,15 @@ public interface MigrateProcessInstanceCommandStep1 {
         final String sourceElementId, final String targetElementId);
   }
 
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandStep2}
+   */
+  @Deprecated
   interface MigrateProcessInstanceCommandFinalStep
-      extends MigrateProcessInstanceCommandStep2, FinalCommandStep<MigrateProcessInstanceResponse> {
+      extends MigrateProcessInstanceCommandStep2,
+          CommandWithOperationReferenceStep<MigrateProcessInstanceCommandFinalStep>,
+          FinalCommandStep<MigrateProcessInstanceResponse> {
 
     /**
      * Add a {@link

@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.response.ProcessInstanceEvent}
+ */
+@Deprecated
 public interface ProcessInstanceEvent {
 
   /** Key of the process which this instance was created for */
@@ -32,6 +37,6 @@ public interface ProcessInstanceEvent {
   long getProcessInstanceKey();
 
   /** Tenant identifier that owns this process instance */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13321")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/13321")
   String getTenantId();
 }

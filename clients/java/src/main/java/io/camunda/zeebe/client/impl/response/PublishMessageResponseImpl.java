@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.MessagePublicationResponse;
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
@@ -25,6 +26,11 @@ public final class PublishMessageResponseImpl implements PublishMessageResponse 
 
   public PublishMessageResponseImpl(final GatewayOuterClass.PublishMessageResponse response) {
     key = response.getKey();
+    tenantId = response.getTenantId();
+  }
+
+  public PublishMessageResponseImpl(final MessagePublicationResponse response) {
+    key = response.getMessageKey();
     tenantId = response.getTenantId();
   }
 

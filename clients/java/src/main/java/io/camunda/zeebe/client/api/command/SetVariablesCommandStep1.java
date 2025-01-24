@@ -19,7 +19,13 @@ import io.camunda.zeebe.client.api.response.SetVariablesResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface SetVariablesCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.SetVariablesCommandStep1}
+ */
+@Deprecated
+public interface SetVariablesCommandStep1
+    extends CommandWithCommunicationApiStep<SetVariablesCommandStep1> {
   /**
    * Sets the variables document from a JSON stream.
    *
@@ -56,7 +62,14 @@ public interface SetVariablesCommandStep1 {
    */
   SetVariablesCommandStep2 variables(Object variables);
 
-  interface SetVariablesCommandStep2 extends FinalCommandStep<SetVariablesResponse> {
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2}
+   */
+  @Deprecated
+  interface SetVariablesCommandStep2
+      extends CommandWithOperationReferenceStep<SetVariablesCommandStep2>,
+          FinalCommandStep<SetVariablesResponse> {
     // the place for new optional parameters
 
     /**

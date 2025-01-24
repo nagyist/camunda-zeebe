@@ -23,10 +23,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
-import io.grpc.Metadata;
-import io.grpc.Metadata.Key;
-import io.grpc.Status;
-import io.grpc.Status.Code;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,8 +49,7 @@ import org.slf4j.LoggerFactory;
  */
 @ThreadSafe
 public final class OAuthCredentialsProvider implements CredentialsProvider {
-  public static final Key<String> HEADER_AUTH_KEY =
-      Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
+  private static final String HEADER_AUTH_KEY = "Authorization";
 
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -63,14 +58,14 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
   private final URL authorizationServerUrl;
   private final String payload;
-  private final String endpoint;
+  private final String clientId;
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
   private final Duration readTimeout;
 
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
-    endpoint = builder.getAudience();
+    clientId = builder.getClientId();
     payload = createParams(builder);
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
@@ -79,9 +74,9 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
   /** Adds an access token to the Authorization header of a gRPC call. */
   @Override
-  public void applyCredentials(final Metadata headers) throws IOException {
+  public void applyCredentials(final CredentialsApplier applier) throws IOException {
     final ZeebeClientCredentials zeebeClientCredentials =
-        credentialsCache.computeIfMissingOrInvalid(endpoint, this::fetchCredentials);
+        credentialsCache.computeIfMissingOrInvalid(clientId, this::fetchCredentials);
 
     String type = zeebeClientCredentials.getTokenType();
     if (type == null || type.isEmpty()) {
@@ -90,27 +85,27 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     }
 
     type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
-    headers.put(
+    applier.put(
         HEADER_AUTH_KEY, String.format("%s %s", type, zeebeClientCredentials.getAccessToken()));
   }
 
   /**
-   * Returns true if the Throwable was caused by an UNAUTHENTICATED response and a new access token
-   * could be fetched; otherwise returns false.
+   * Returns true if the request failed because it was unauthenticated or unauthorized, and a new
+   * access token could be fetched; otherwise returns false.
    */
   @Override
-  public boolean shouldRetryRequest(final Throwable throwable) {
+  public boolean shouldRetryRequest(final StatusCode statusCode) {
     try {
-      return Status.fromThrowable(throwable).getCode() == Code.UNAUTHENTICATED
+      return statusCode.isUnauthorized()
           && credentialsCache
               .withCache(
-                  endpoint,
+                  clientId,
                   value -> {
                     final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
-                    credentialsCache.put(endpoint, fetchedCredentials).writeCache();
+                    credentialsCache.put(clientId, fetchedCredentials).writeCache();
                     return !fetchedCredentials.equals(value) || !value.isValid();
                   })
-              .orElse(true);
+              .orElse(false);
     } catch (final IOException e) {
       LOG.error("Failed while fetching credentials: ", e);
       return false;

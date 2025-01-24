@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.worker;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
@@ -30,7 +31,11 @@ import java.time.Duration;
  * <li>complete a job
  * <li>mark a job as failed
  * <li>update the retries of a job
+ *
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.worker.JobClient}
  */
+@Deprecated
 public interface JobClient {
 
   /**
@@ -213,8 +218,8 @@ public interface JobClient {
    *
    * <p>Additionally, only jobs which are created, retried, or timed out <em>after</em> the command
    * has been registered will be streamed out. For older jobs, you must still use the {@link
-   * #newActivateJobsCommand()}. It's generally recommended that you use the {@link
-   * io.camunda.zeebe.client.api.worker.JobWorker} API to avoid having to coordinate both calls.
+   * #newActivateJobsCommand()}. It's generally recommended that you use the {@link JobWorker} API
+   * to avoid having to coordinate both calls.
    *
    * <h2>Activation</h2>
    *
@@ -228,7 +233,7 @@ public interface JobClient {
    * <ul>
    *   <li>Closing the Zeebe client
    *   <li>Cancelling the result of {@link StreamJobsCommandStep3#send()} via {@link
-   *       io.camunda.zeebe.client.api.ZeebeFuture#cancel(boolean)} (the argument is irrelevant)
+   *       ZeebeFuture#cancel(boolean)} (the argument is irrelevant)
    *   <li>Setting a {@link StreamJobsCommandStep3#requestTimeout(Duration)}; the stream will be
    *       closed once this time out is reached. By default, there is no request time out at all.
    *       <strong>It's recommended to assign a long-ish time out and recreate your streams from
@@ -241,6 +246,6 @@ public interface JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/11231")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
   StreamJobsCommandStep1 newStreamJobsCommand();
 }

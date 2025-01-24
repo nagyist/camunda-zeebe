@@ -16,8 +16,14 @@
 package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
+import io.camunda.zeebe.client.api.command.ClientException;
 import java.util.Map;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.response.ActivatedJob}
+ */
+@Deprecated
 public interface ActivatedJob {
 
   /**
@@ -99,8 +105,7 @@ public interface ActivatedJob {
 
   /**
    * @return de-serialized variable value or null if the provided variable name is present among the
-   *     available variables, otherwise throw a {@link
-   *     io.camunda.zeebe.client.api.command.ClientException}
+   *     available variables, otherwise throw a {@link ClientException}
    */
   Object getVariable(String name);
 
@@ -112,6 +117,6 @@ public interface ActivatedJob {
   /**
    * @return the identifier of the tenant that owns the job
    */
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/13560")
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/13560")
   String getTenantId();
 }

@@ -4,10 +4,10 @@
 # see https://docs.docker.com/build/buildkit/#getting-started
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
-ARG BASE_IMAGE="ubuntu:jammy"
-ARG BASE_DIGEST="sha256:8eab65df33a6de2844c9aefd19efe8ddb87b7df5e9185a4ab73af936225685bb"
-ARG JDK_IMAGE="eclipse-temurin:21-jdk-jammy"
-ARG JDK_DIGEST="sha256:e25cdbfbe43b457423df3747895851c06f4c45ea7ffdcb535a4af7d02c4ea431"
+ARG BASE_IMAGE="ubuntu:noble"
+ARG BASE_DIGEST="sha256:80dd3c3b9c6cecb9f1667e9290b3bc61b78c2678c02cbdae5f0fea92cc6734ab"
+ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
+ARG JDK_DIGEST="sha256:971bf64388e4fcf4a32cf87b5b19ed8e8a105e8f694b8718da9f3a128833dd7c"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -15,7 +15,7 @@ ARG DIST="distball"
 ### Base image ###
 # All package installation, updates, etc., anything with APT should be done here in a single step
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
 
 # Upgrade all outdated packages and install missing ones (e.g. locales, tini)
@@ -33,7 +33,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 ### Build custom JRE using the base JDK image
 # hadolint ignore=DL3006
-FROM ${JDK_IMAGE}@${JDK_DIGEST} as jre-build
+FROM ${JDK_IMAGE}@${JDK_DIGEST} AS jre-build
 
 # Build a custom JRE which will strip down and compress modules to end up with a smaller Java \
 # distribution than the official JRE. This will also include useful debugging tools like
@@ -76,7 +76,7 @@ COPY --from=jre-build /jre ${JAVA_HOME}
 RUN java -Xshare:dump;
 
 ### Build zeebe from scratch ###
-FROM java as build
+FROM java AS build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -86,24 +86,22 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 
 ### Extract zeebe from distball ###
 # hadolint ignore=DL3006
-FROM base as distball
+FROM base AS distball
 WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
 
-# Remove zbctl from the distribution to reduce CVE related maintenance effort w.r.t to containers
 RUN mkdir camunda-zeebe && \
-    tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe && \
-    find . -type f -name 'zbctl*' -delete
+    tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
 
 ### Image containing the zeebe distribution ###
 # hadolint ignore=DL3006
-FROM ${DIST} as dist
+FROM ${DIST} AS dist
 
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-FROM java as app
+FROM java AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -118,14 +116,14 @@ LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"
 LABEL org.opencontainers.image.url="https://zeebe.io"
 LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/zeebe-deployment/"
-LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
+LABEL org.opencontainers.image.source="https://github.com/camunda/camunda"
 LABEL org.opencontainers.image.version="${VERSION}"
 # According to https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 # and given we set the base.name and base.digest, we reference the manifest of the base image here
 LABEL org.opencontainers.image.ref.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
-LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)"
+LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Camunda-License-1.0)"
 LABEL org.opencontainers.image.title="Zeebe"
 LABEL org.opencontainers.image.description="Workflow engine for microservice orchestration"
 
@@ -137,7 +135,6 @@ LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 
 ENV ZB_HOME=/usr/local/zeebe \
-    ZEEBE_BROKER_GATEWAY_NETWORK_HOST=0.0.0.0 \
     ZEEBE_STANDALONE_GATEWAY=false \
     ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
@@ -146,13 +143,13 @@ ENV PATH "${ZB_HOME}/bin:${PATH}"
 ENV ROCKSDB_MUSL_LIBC=false
 
 WORKDIR ${ZB_HOME}
-EXPOSE 26500 26501 26502
+EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
 
 RUN groupadd --gid 1001 camunda && \
-    adduser --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
+    useradd --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
     chmod g=u /etc/passwd && \
     # These directories are to be mounted by users, eagerly creating them and setting ownership
     # helps to avoid potential permission issues due to default volume ownership.
@@ -161,7 +158,7 @@ RUN groupadd --gid 1001 camunda && \
     chown -R 1001:0 ${ZB_HOME} && \
     chmod -R 0775 ${ZB_HOME}
 
-COPY --link --chown=1001:0 docker/utils/startup.sh /usr/local/bin/startup.sh
+COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
 USER 1001:1001

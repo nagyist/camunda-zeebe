@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.management;
 
@@ -24,8 +24,9 @@ final class ControlledActorClockEndpointTest {
   private final InstanceOfAssertFactory<Response, ObjectAssert<Response>> responseType =
       new InstanceOfAssertFactory<>(Response.class, Assertions::assertThat);
 
+  private final ControlledActorClock actorClock = new ControlledActorClock();
   private final ActorClockEndpoint endpoint =
-      new ActorClockEndpoint(new ControlledActorClockService(new ControlledActorClock()));
+      new ActorClockEndpoint(new ControlledActorClockService(actorClock));
 
   @BeforeEach
   public void resetClock() {
@@ -90,6 +91,7 @@ final class ControlledActorClockEndpointTest {
 
     // when
     Thread.sleep(100);
+    actorClock.update();
     final var secondResponse = endpoint.getCurrentClock();
     assertThat(secondResponse.getBody()).isNotNull();
     final var secondMillis = secondResponse.getBody().epochMilli();

@@ -21,7 +21,13 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
-public interface CreateProcessInstanceCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.CreateProcessInstanceCommandStep1}
+ */
+@Deprecated
+public interface CreateProcessInstanceCommandStep1
+    extends CommandWithCommunicationApiStep<CreateProcessInstanceCommandStep1> {
   /** Use the latest version of the process (without guarantee). */
   int LATEST_VERSION = -1;
 
@@ -136,6 +142,7 @@ public interface CreateProcessInstanceCommandStep1 {
 
   interface CreateProcessInstanceWithResultCommandStep1
       extends CommandWithTenantStep<CreateProcessInstanceWithResultCommandStep1>,
+          CommandWithCommunicationApiStep<CreateProcessInstanceWithResultCommandStep1>,
           FinalCommandStep<ProcessInstanceResult> {
 
     /**
