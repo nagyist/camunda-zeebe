@@ -17,6 +17,11 @@ package io.camunda.zeebe.client.api.response;
 
 import java.util.List;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.response.EvaluateDecisionResponse}
+ */
+@Deprecated
 public interface EvaluateDecisionResponse {
 
   /**
@@ -75,4 +80,9 @@ public interface EvaluateDecisionResponse {
    * @return the tenant identifier that owns this decision evaluation result
    */
   String getTenantId();
+
+  /**
+   * @return the unique key identifying this decision evaluation
+   */
+  long getDecisionInstanceKey();
 }

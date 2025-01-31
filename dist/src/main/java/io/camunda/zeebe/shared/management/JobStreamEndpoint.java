@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.management;
 
@@ -126,7 +126,8 @@ public final class JobStreamEndpoint {
     return new Metadata(
         BufferUtil.bufferAsString(properties.worker()),
         Duration.ofMillis(properties.timeout()),
-        properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList());
+        properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList(),
+        properties.tenantIds());
   }
 
   /** View model for the combined list of all remote and client job streams. */
@@ -147,7 +148,11 @@ public final class JobStreamEndpoint {
       implements JobStream {}
 
   /** View model for the {@link JobActivationProperties} of a job stream. */
-  public record Metadata(String worker, Duration timeout, Collection<String> fetchVariables) {}
+  public record Metadata(
+      String worker,
+      Duration timeout,
+      Collection<String> fetchVariables,
+      Collection<String> tenantIds) {}
 
   /** View model for a remote job stream ID */
   public record RemoteStreamId(UUID id, String receiver) {}

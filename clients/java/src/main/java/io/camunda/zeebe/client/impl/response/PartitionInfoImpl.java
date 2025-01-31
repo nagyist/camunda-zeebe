@@ -15,12 +15,14 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.Partition.HealthEnum;
+import io.camunda.client.protocol.rest.Partition.RoleEnum;
 import io.camunda.zeebe.client.api.response.PartitionBrokerHealth;
 import io.camunda.zeebe.client.api.response.PartitionBrokerRole;
 import io.camunda.zeebe.client.api.response.PartitionInfo;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.client.impl.util.EnumUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Partition;
-import java.util.Arrays;
+import java.util.Objects;
 
 public class PartitionInfoImpl implements PartitionInfo {
 
@@ -28,7 +30,7 @@ public class PartitionInfoImpl implements PartitionInfo {
   private final PartitionBrokerRole role;
   private final PartitionBrokerHealth partitionBrokerHealth;
 
-  public PartitionInfoImpl(final GatewayOuterClass.Partition partition) {
+  public PartitionInfoImpl(final Partition partition) {
     partitionId = partition.getPartitionId();
 
     if (partition.getRole() == Partition.PartitionBrokerRole.LEADER) {
@@ -38,10 +40,9 @@ public class PartitionInfoImpl implements PartitionInfo {
     } else if (partition.getRole() == Partition.PartitionBrokerRole.INACTIVE) {
       role = PartitionBrokerRole.INACTIVE;
     } else {
-      throw new RuntimeException(
-          String.format(
-              "Unexpected partition broker role %s, should be one of %s",
-              partition.getRole(), Arrays.toString(PartitionBrokerRole.values())));
+      EnumUtil.logUnknownEnumValue(
+          partition.getRole(), "partition broker role", PartitionBrokerRole.values());
+      role = PartitionBrokerRole.UNKNOWN_ENUM_VALUE;
     }
 
     if (partition.getHealth() == Partition.PartitionBrokerHealth.HEALTHY) {
@@ -51,10 +52,41 @@ public class PartitionInfoImpl implements PartitionInfo {
     } else if (partition.getHealth() == Partition.PartitionBrokerHealth.DEAD) {
       partitionBrokerHealth = PartitionBrokerHealth.DEAD;
     } else {
-      throw new RuntimeException(
-          String.format(
-              "Unexpected partition broker health %s, should be one of %s",
-              partition.getHealth(), Arrays.toString(PartitionBrokerHealth.values())));
+      EnumUtil.logUnknownEnumValue(
+          partition.getHealth(), "partition broker health", PartitionBrokerHealth.values());
+      partitionBrokerHealth = PartitionBrokerHealth.UNKNOWN_ENUM_VALUE;
+    }
+  }
+
+  public PartitionInfoImpl(final io.camunda.client.protocol.rest.Partition httpPartition) {
+
+    if (httpPartition.getPartitionId() == null) {
+      throw new RuntimeException("Unexpected missing partition ID. A partition ID is required.");
+    }
+    partitionId = httpPartition.getPartitionId();
+
+    if (httpPartition.getRole() == RoleEnum.LEADER) {
+      role = PartitionBrokerRole.LEADER;
+    } else if (httpPartition.getRole() == RoleEnum.FOLLOWER) {
+      role = PartitionBrokerRole.FOLLOWER;
+    } else if (httpPartition.getRole() == RoleEnum.INACTIVE) {
+      role = PartitionBrokerRole.INACTIVE;
+    } else {
+      EnumUtil.logUnknownEnumValue(
+          httpPartition.getRole(), "partition broker role", PartitionBrokerRole.values());
+      role = PartitionBrokerRole.UNKNOWN_ENUM_VALUE;
+    }
+
+    if (httpPartition.getHealth() == HealthEnum.HEALTHY) {
+      partitionBrokerHealth = PartitionBrokerHealth.HEALTHY;
+    } else if (httpPartition.getHealth() == HealthEnum.UNHEALTHY) {
+      partitionBrokerHealth = PartitionBrokerHealth.UNHEALTHY;
+    } else if (httpPartition.getHealth() == HealthEnum.DEAD) {
+      partitionBrokerHealth = PartitionBrokerHealth.DEAD;
+    } else {
+      EnumUtil.logUnknownEnumValue(
+          httpPartition.getHealth(), "partition broker health", PartitionBrokerHealth.values());
+      partitionBrokerHealth = PartitionBrokerHealth.UNKNOWN_ENUM_VALUE;
     }
   }
 
@@ -76,6 +108,27 @@ public class PartitionInfoImpl implements PartitionInfo {
   @Override
   public PartitionBrokerHealth getHealth() {
     return partitionBrokerHealth;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(partitionId, role, partitionBrokerHealth);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final PartitionInfoImpl that = (PartitionInfoImpl) o;
+    return partitionId == that.partitionId
+        && role == that.role
+        && partitionBrokerHealth == that.partitionBrokerHealth;
   }
 
   @Override

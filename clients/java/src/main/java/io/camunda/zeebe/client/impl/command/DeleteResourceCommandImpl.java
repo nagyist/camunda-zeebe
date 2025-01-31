@@ -15,11 +15,16 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DeleteResourceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -28,33 +33,68 @@ import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
 
   private final DeleteResourceRequest.Builder requestBuilder = DeleteResourceRequest.newBuilder();
   private final GatewayStub asyncStub;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
   private Duration requestTimeout;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
+  private final io.camunda.client.protocol.rest.DeleteResourceRequest httpRequestObject;
+  private boolean useRest;
+  private final long resourceKey;
+  private final JsonMapper jsonMapper;
 
   public DeleteResourceCommandImpl(
       final long resourceKey,
       final GatewayStub asyncStub,
-      final Predicate<Throwable> retryPredicate,
-      final Duration requestTimeout) {
+      final Predicate<StatusCode> retryPredicate,
+      final HttpClient httpClient,
+      final ZeebeClientConfiguration config,
+      final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
     requestBuilder.setResourceKey(resourceKey);
-    this.requestTimeout = requestTimeout;
+    requestTimeout = config.getDefaultRequestTimeout();
+    this.httpClient = httpClient;
+    httpRequestConfig = httpClient.newRequestConfig();
+    httpRequestObject = new io.camunda.client.protocol.rest.DeleteResourceRequest();
+    useRest = config.preferRestOverGrpc();
+    this.resourceKey = resourceKey;
+    this.jsonMapper = jsonMapper;
+    requestTimeout(requestTimeout);
   }
 
   @Override
   public FinalCommandStep<DeleteResourceResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
   public ZeebeFuture<DeleteResourceResponse> send() {
+    if (useRest) {
+      return sendRestRequest();
+    } else {
+      return sendGrpcRequest();
+    }
+  }
+
+  private ZeebeFuture<DeleteResourceResponse> sendRestRequest() {
+    final HttpZeebeFuture<DeleteResourceResponse> result = new HttpZeebeFuture<>();
+    httpClient.post(
+        "/resources/" + resourceKey + "/deletion",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        result);
+    return result;
+  }
+
+  private ZeebeFuture<DeleteResourceResponse> sendGrpcRequest() {
     final DeleteResourceRequest request = requestBuilder.build();
 
     final RetriableClientFutureImpl<
@@ -63,17 +103,36 @@ public class DeleteResourceCommandImpl implements DeleteResourceCommandStep1 {
             new RetriableClientFutureImpl<>(
                 DeleteResourceResponseImpl::new,
                 retryPredicate,
-                streamObserver -> send(request, streamObserver));
+                streamObserver -> sendGrpcRequest(request, streamObserver));
 
-    send(request, future);
+    sendGrpcRequest(request, future);
     return future;
   }
 
-  private void send(
+  private void sendGrpcRequest(
       final DeleteResourceRequest request,
       final StreamObserver<GatewayOuterClass.DeleteResourceResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .deleteResource(request, streamObserver);
+  }
+
+  @Override
+  public DeleteResourceCommandStep1 operationReference(final long operationReference) {
+    requestBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
+    return this;
+  }
+
+  @Override
+  public DeleteResourceCommandStep1 useRest() {
+    useRest = true;
+    return this;
+  }
+
+  @Override
+  public DeleteResourceCommandStep1 useGrpc() {
+    useRest = false;
+    return this;
   }
 }

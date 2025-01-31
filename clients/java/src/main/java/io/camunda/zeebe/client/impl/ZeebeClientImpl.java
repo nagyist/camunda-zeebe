@@ -13,21 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.ClockPinCommandStep1;
+import io.camunda.zeebe.client.api.command.ClockResetCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
@@ -41,18 +47,35 @@ import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
+import io.camunda.zeebe.client.api.search.query.DecisionRequirementsQuery;
+import io.camunda.zeebe.client.api.search.query.FlownodeInstanceQuery;
+import io.camunda.zeebe.client.api.search.query.IncidentQuery;
+import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
+import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.ClockPinCommandImpl;
+import io.camunda.zeebe.client.impl.command.ClockResetCommandImpl;
+import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.EvaluateDecisionCommandImpl;
+import io.camunda.zeebe.client.impl.command.JobUpdateCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
@@ -62,6 +85,10 @@ import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
+import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
+import io.camunda.zeebe.client.impl.http.HttpClientFactory;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -78,7 +105,6 @@ import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -89,6 +115,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public final class ZeebeClientImpl implements ZeebeClient {
+
+  private static final String UNSUPPORTED_OPERATION_MSG =
+      String.format(
+          "Not supported with %s. Please use %s.",
+          ZeebeClient.class.getName(), CamundaClient.class.getName());
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -97,6 +128,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   private final List<Closeable> closeables = new CopyOnWriteArrayList<>();
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
+  private final HttpClient httpClient;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
@@ -105,6 +137,18 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public ZeebeClientImpl(
       final ZeebeClientConfiguration configuration, final ManagedChannel channel) {
     this(configuration, channel, buildGatewayStub(channel, configuration));
+  }
+
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration,
+      final ManagedChannel channel,
+      final HttpClient httpClient) {
+    this(
+        configuration,
+        channel,
+        buildGatewayStub(channel, configuration),
+        buildExecutorService(configuration),
+        httpClient);
   }
 
   public ZeebeClientImpl(
@@ -119,11 +163,21 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final ManagedChannel channel,
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource) {
+    this(config, channel, gatewayStub, executorResource, buildHttpClient(config));
+  }
+
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration config,
+      final ManagedChannel channel,
+      final GatewayStub gatewayStub,
+      final ExecutorResource executorResource,
+      final HttpClient httpClient) {
     this.config = config;
     jsonMapper = config.getJsonMapper();
     this.channel = channel;
     asyncStub = gatewayStub;
     this.executorResource = executorResource;
+    this.httpClient = httpClient;
 
     if (config.getCredentialsProvider() != null) {
       credentialsProvider = config.getCredentialsProvider();
@@ -131,16 +185,16 @@ public final class ZeebeClientImpl implements ZeebeClient {
       credentialsProvider = new NoopCredentialsProvider();
     }
     jobClient = newJobClient();
+    this.httpClient.start();
+  }
+
+  private static HttpClient buildHttpClient(final ZeebeClientConfiguration config) {
+    return new HttpClientFactory(config).createClient();
   }
 
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
     final URI address;
-
-    try {
-      address = new URI("zb://" + config.getGatewayAddress());
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException("Failed to parse broker contact point", e);
-    }
+    address = config.getGrpcAddress();
 
     final NettyChannelBuilder channelBuilder =
         NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
@@ -149,6 +203,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
+    channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();
@@ -246,7 +301,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
     return new TopologyRequestImpl(
-        asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        httpClient,
+        config.getDefaultRequestTimeout(),
+        credentialsProvider::shouldRetryRequest,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -277,6 +336,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
       throw new ClientException(
           "Unexpectedly interrupted awaiting termination of in-flight request channel", e);
     }
+
+    try {
+      httpClient.close();
+    } catch (final Exception e) {
+      throw new ClientException("Failed closing http client.", e);
+    }
   }
 
   @Override
@@ -288,13 +353,23 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public DeployResourceCommandStep1 newDeployResourceCommand() {
     return new DeployResourceCommandImpl(
-        asyncStub, config, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        config,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override
   public CreateProcessInstanceCommandStep1 newCreateInstanceCommand() {
     return new CreateProcessInstanceCommandImpl(
-        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        jsonMapper,
+        config,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -304,8 +379,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
         processInstanceKey,
         jsonMapper,
         asyncStub,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config);
   }
 
   @Override
@@ -314,8 +390,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new MigrateProcessInstanceCommandImpl(
         processInstanceKey,
         asyncStub,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override
@@ -323,8 +401,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new CancelProcessInstanceCommandImpl(
         asyncStub,
         processInstanceKey,
-        config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config,
+        jsonMapper);
   }
 
   @Override
@@ -334,25 +414,37 @@ public final class ZeebeClientImpl implements ZeebeClient {
         jsonMapper,
         elementInstanceKey,
         config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
   public EvaluateDecisionCommandStep1 newEvaluateDecisionCommand() {
     return new EvaluateDecisionCommandImpl(
-        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest);
+        asyncStub, jsonMapper, config, credentialsProvider::shouldRetryRequest, httpClient);
   }
 
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
     return new PublishMessageCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub,
+        config,
+        jsonMapper,
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
+  }
+
+  @Override
+  public CorrelateMessageCommandStep1 newCorrelateMessageCommand() {
+    return new CorrelateMessageCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
   public BroadcastSignalCommandStep1 newBroadcastSignalCommand() {
     return new BroadcastSignalCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest, httpClient);
   }
 
   @Override
@@ -361,7 +453,9 @@ public final class ZeebeClientImpl implements ZeebeClient {
         asyncStub,
         incidentKey,
         config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -370,7 +464,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
         asyncStub,
         jobKey,
         config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override
@@ -384,7 +481,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
         asyncStub,
         jobKey,
         config.getDefaultRequestTimeout(),
-        credentialsProvider::shouldRetryRequest);
+        credentialsProvider::shouldRetryRequest,
+        httpClient,
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override
@@ -403,12 +503,95 @@ public final class ZeebeClientImpl implements ZeebeClient {
         resourceKey,
         asyncStub,
         credentialsProvider::shouldRetryRequest,
-        config.getDefaultRequestTimeout());
+        httpClient,
+        config,
+        jsonMapper);
+  }
+
+  @Override
+  public CompleteUserTaskCommandStep1 newUserTaskCompleteCommand(final long userTaskKey) {
+    return new CompleteUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
+  }
+
+  @Override
+  public AssignUserTaskCommandStep1 newUserTaskAssignCommand(final long userTaskKey) {
+    return new AssignUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
+  }
+
+  @Override
+  public UpdateUserTaskCommandStep1 newUserTaskUpdateCommand(final long userTaskKey) {
+    return new UpdateUserTaskCommandImpl(httpClient, jsonMapper, userTaskKey);
+  }
+
+  @Override
+  public UnassignUserTaskCommandStep1 newUserTaskUnassignCommand(final long userTaskKey) {
+    return new UnassignUserTaskCommandImpl(httpClient, userTaskKey);
+  }
+
+  @Override
+  public UpdateJobCommandStep1 newUpdateJobCommand(final long jobKey) {
+    return new JobUpdateCommandImpl(jobKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public UpdateJobCommandStep1 newUpdateJobCommand(final ActivatedJob job) {
+    return newUpdateJobCommand(job.getKey());
+  }
+
+  @Override
+  public ClockPinCommandStep1 newClockPinCommand() {
+    return new ClockPinCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public ClockResetCommandStep1 newClockResetCommand() {
+    return new ClockResetCommandImpl(httpClient);
+  }
+
+  @Override
+  public ProcessInstanceQuery newProcessInstanceQuery() {
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
+  }
+
+  @Override
+  public FlownodeInstanceQuery newFlownodeInstanceQuery() {
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
+  }
+
+  @Override
+  public UserTaskQuery newUserTaskQuery() {
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
+  }
+
+  @Override
+  public DecisionRequirementsQuery newDecisionRequirementsQuery() {
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
+  }
+
+  @Override
+  public DecisionDefinitionQuery newDecisionDefinitionQuery() {
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
+  }
+
+  @Override
+  public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
+      final long decisionKey) {
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
+  }
+
+  @Override
+  public IncidentQuery newIncidentQuery() {
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
+  }
+
+  @Override
+  public CreateUserCommandStep1 newUserCreateCommand() {
+    return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {
     return new JobClientImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 
   @Override

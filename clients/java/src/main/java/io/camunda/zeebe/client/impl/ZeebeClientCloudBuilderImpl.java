@@ -15,10 +15,13 @@
  */
 package io.camunda.zeebe.client.impl;
 
-import static io.camunda.zeebe.client.impl.BuilderUtils.appendProperty;
+import static io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_ID;
+import static io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET;
+import static io.camunda.zeebe.client.ClientProperties.CLOUD_CLUSTER_ID;
+import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
-import io.camunda.zeebe.client.ClientProperties;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -30,12 +33,15 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public class ZeebeClientCloudBuilderImpl
     implements ZeebeClientCloudBuilderStep1,
@@ -80,23 +86,20 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 withProperties(final Properties properties) {
-    if (properties.containsKey(ClientProperties.CLOUD_CLUSTER_ID)) {
-      withClusterId(properties.getProperty(ClientProperties.CLOUD_CLUSTER_ID));
-    }
-    if (properties.containsKey(ClientProperties.CLOUD_CLIENT_ID)) {
-      withClientId(properties.getProperty(ClientProperties.CLOUD_CLIENT_ID));
-    }
-    if (properties.containsKey(ClientProperties.CLOUD_CLIENT_SECRET)) {
-      withClientSecret(properties.getProperty(ClientProperties.CLOUD_CLIENT_SECRET));
-    }
-    if (properties.containsKey(ClientProperties.CLOUD_REGION)) {
-      withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
-    }
-    if (properties.containsKey(ClientProperties.STREAM_ENABLED)) {
-      defaultJobWorkerStreamEnabled(
-          Boolean.parseBoolean(properties.getProperty(ClientProperties.STREAM_ENABLED)));
-    }
+  public ZeebeClientBuilder withProperties(final Properties properties) {
+    BuilderUtils.applyIfNotNull(properties, CLOUD_CLUSTER_ID, this::withClusterId);
+
+    BuilderUtils.applyIfNotNull(properties, CLOUD_CLIENT_ID, this::withClientId);
+
+    BuilderUtils.applyIfNotNull(properties, CLOUD_CLIENT_SECRET, this::withClientId);
+
+    BuilderUtils.applyIfNotNull(properties, CLOUD_REGION, this::withRegion);
+
+    BuilderUtils.applyIfNotNull(
+        properties,
+        STREAM_ENABLED,
+        value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
+
     innerBuilder.withProperties(properties);
 
     // todo(#14106): allow default tenant id setting for cloud client
@@ -114,109 +117,127 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 gatewayAddress(final String gatewayAddress) {
+  public ZeebeClientBuilder gatewayAddress(final String gatewayAddress) {
     innerBuilder.gatewayAddress(gatewayAddress);
     return this;
   }
 
   @Override
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
-  public ZeebeClientCloudBuilderStep4 defaultTenantId(final String tenantId) {
-    Loggers.LOGGER.debug(
-        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/zeebe/issues/14106.");
+  public ZeebeClientBuilder restAddress(final URI restAddress) {
+    innerBuilder.restAddress(restAddress);
     return this;
   }
 
   @Override
-  @ExperimentalApi("https://github.com/camunda/zeebe/issues/14106")
+  public ZeebeClientBuilder grpcAddress(final URI grpcAddress) {
+    innerBuilder.grpcAddress(grpcAddress);
+    return this;
+  }
+
+  @Override
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
+  public ZeebeClientBuilder defaultTenantId(final String tenantId) {
+    Loggers.LOGGER.debug(
+        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
+    return this;
+  }
+
+  @Override
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/14106")
   public ZeebeClientBuilder defaultJobWorkerTenantIds(final List<String> tenantIds) {
     Loggers.LOGGER.debug(
-        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/zeebe/issues/14106.");
+        "Multi-tenancy in Camunda 8 SaaS will be supported with https://github.com/camunda/camunda/issues/14106.");
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
+  public ZeebeClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
     innerBuilder.defaultJobWorkerMaxJobsActive(maxJobsActive);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 numJobWorkerExecutionThreads(final int numThreads) {
+  public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numThreads) {
     innerBuilder.numJobWorkerExecutionThreads(numThreads);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 jobWorkerExecutor(
+  public ZeebeClientBuilder jobWorkerExecutor(
       final ScheduledExecutorService executor, final boolean takeOwnership) {
     innerBuilder.jobWorkerExecutor(executor, takeOwnership);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 defaultJobWorkerName(final String workerName) {
+  public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
     innerBuilder.defaultJobWorkerName(workerName);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 defaultJobTimeout(final Duration timeout) {
+  public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
     innerBuilder.defaultJobTimeout(timeout);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 defaultJobPollInterval(final Duration pollInterval) {
+  public ZeebeClientBuilder defaultJobPollInterval(final Duration pollInterval) {
     innerBuilder.defaultJobPollInterval(pollInterval);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 defaultMessageTimeToLive(final Duration timeToLive) {
+  public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
     innerBuilder.defaultMessageTimeToLive(timeToLive);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 defaultRequestTimeout(final Duration requestTimeout) {
+  public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
     innerBuilder.defaultRequestTimeout(requestTimeout);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 usePlaintext() {
+  public ZeebeClientBuilder usePlaintext() {
     innerBuilder.usePlaintext();
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 caCertificatePath(final String certificatePath) {
+  public ZeebeClientBuilder caCertificatePath(final String certificatePath) {
     innerBuilder.caCertificatePath(certificatePath);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 credentialsProvider(
-      final CredentialsProvider credentialsProvider) {
+  public ZeebeClientBuilder credentialsProvider(final CredentialsProvider credentialsProvider) {
     innerBuilder.credentialsProvider(credentialsProvider);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 keepAlive(final Duration keepAlive) {
+  public ZeebeClientBuilder keepAlive(final Duration keepAlive) {
     innerBuilder.keepAlive(keepAlive);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 withInterceptors(final ClientInterceptor... interceptor) {
+  public ZeebeClientBuilder withInterceptors(final ClientInterceptor... interceptor) {
     innerBuilder.withInterceptors(interceptor);
     return this;
   }
 
   @Override
-  public ZeebeClientCloudBuilderStep4 withJsonMapper(final JsonMapper jsonMapper) {
+  public ZeebeClientCloudBuilderStep4 withChainHandlers(
+      final AsyncExecChainHandler... chainHandler) {
+    innerBuilder.withChainHandlers(chainHandler);
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder withJsonMapper(final JsonMapper jsonMapper) {
     innerBuilder.withJsonMapper(jsonMapper);
     return this;
   }
@@ -234,6 +255,11 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder maxMetadataSize(final int maxMetadataSize) {
+    return innerBuilder.maxMetadataSize(maxMetadataSize);
+  }
+
+  @Override
   public ZeebeClientBuilder defaultJobWorkerStreamEnabled(final boolean streamEnabled) {
     innerBuilder.defaultJobWorkerStreamEnabled(streamEnabled);
     return this;
@@ -246,22 +272,54 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
+    innerBuilder.preferRestOverGrpc(preferRestOverGrpc);
+    return this;
+  }
+
+  @Override
   public ZeebeClient build() {
-    innerBuilder.gatewayAddress(determineGatewayAddress());
+    innerBuilder.grpcAddress(determineGrpcAddress());
+    innerBuilder.restAddress(determineRestAddress());
     innerBuilder.credentialsProvider(determineCredentialsProvider());
     return innerBuilder.build();
   }
 
-  private String determineGatewayAddress() {
-    if (isNeedToSetCloudGatewayAddress()) {
+  private URI determineRestAddress() {
+    if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
-      return String.format("%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
+      final String cloudRestAddress =
+          String.format("https://%s.zeebe.%s:443/%s", region, BASE_ADDRESS, clusterId);
+      return getURIFromString(cloudRestAddress);
     } else {
+      Loggers.LOGGER.debug(
+          "Expected to use 'cluster id' to set REST API address in the client cloud builder, "
+              + "but overwriting with explicitly defined REST API address: {}.",
+          innerBuilder.getRestAddress());
+      return innerBuilder.getRestAddress();
+    }
+  }
+
+  private URI determineGrpcAddress() {
+    if (isNeedToSetCloudGrpcAddress() && isNeedToSetCloudGatewayAddress()) {
+      ensureNotNull("cluster id", clusterId);
+      final String cloudGrpcAddress =
+          String.format("https://%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
+      return getURIFromString(cloudGrpcAddress);
+    } else {
+      if (!isNeedToSetCloudGrpcAddress()) {
+        Loggers.LOGGER.debug(
+            "Expected to use 'cluster id' to set gateway address in the client cloud builder, "
+                + "but overwriting with explicitly defined gateway address: {}.",
+            innerBuilder.getGrpcAddress());
+        return innerBuilder.getGrpcAddress();
+      }
+
       Loggers.LOGGER.debug(
           "Expected to use 'cluster id' to set gateway address in the client cloud builder, "
               + "but overwriting with explicitly defined gateway address: {}.",
           innerBuilder.getGatewayAddress());
-      return innerBuilder.getGatewayAddress();
+      return getURIFromString("https://" + innerBuilder.getGatewayAddress());
     }
   }
 
@@ -290,18 +348,38 @@ public class ZeebeClientCloudBuilderImpl
     }
   }
 
+  private boolean isNeedToSetCloudGrpcAddress() {
+    return innerBuilder.getGrpcAddress() == null
+        || Objects.equals(
+            innerBuilder.getGrpcAddress(), ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS);
+  }
+
   private boolean isNeedToSetCloudGatewayAddress() {
     return innerBuilder.getGatewayAddress() == null
         || Objects.equals(
             innerBuilder.getGatewayAddress(), ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS);
   }
 
+  private boolean isNeedToSetCloudRestAddress() {
+    return innerBuilder.getRestAddress() == null
+        || Objects.equals(
+            innerBuilder.getRestAddress(), ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS);
+  }
+
+  private URI getURIFromString(final String uri) {
+    try {
+      return new URI(uri);
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException("Failed to parse URI string", e);
+    }
+  }
+
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder(innerBuilder.toString());
-    appendProperty(sb, "clusterId", clusterId);
-    appendProperty(sb, "clientId", clientId);
-    appendProperty(sb, "region", region);
+    BuilderUtils.appendProperty(sb, "clusterId", clusterId);
+    BuilderUtils.appendProperty(sb, "clientId", clientId);
+    BuilderUtils.appendProperty(sb, "region", region);
     return sb.toString();
   }
 }

@@ -17,7 +17,13 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.UpdateRetriesJobResponse;
 
-public interface UpdateRetriesJobCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.UpdateRetriesJobCommandStep1}
+ */
+@Deprecated
+public interface UpdateRetriesJobCommandStep1
+    extends CommandWithCommunicationApiStep<UpdateRetriesJobCommandStep1> {
   /**
    * Set the retries of this job.
    *
@@ -30,7 +36,14 @@ public interface UpdateRetriesJobCommandStep1 {
    */
   UpdateRetriesJobCommandStep2 retries(int retries);
 
-  interface UpdateRetriesJobCommandStep2 extends FinalCommandStep<UpdateRetriesJobResponse> {
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2}
+   */
+  @Deprecated
+  interface UpdateRetriesJobCommandStep2
+      extends CommandWithOperationReferenceStep<UpdateRetriesJobCommandStep2>,
+          FinalCommandStep<UpdateRetriesJobResponse> {
     // the place for new optional parameters
   }
 }

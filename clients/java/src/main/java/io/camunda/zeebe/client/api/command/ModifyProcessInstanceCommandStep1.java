@@ -19,7 +19,13 @@ import io.camunda.zeebe.client.api.response.ModifyProcessInstanceResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface ModifyProcessInstanceCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1}
+ */
+@Deprecated
+public interface ModifyProcessInstanceCommandStep1
+    extends CommandWithCommunicationApiStep<ModifyProcessInstanceCommandStep1> {
 
   /**
    * Create an {@link
@@ -56,8 +62,14 @@ public interface ModifyProcessInstanceCommandStep1 {
    */
   ModifyProcessInstanceCommandStep2 terminateElement(final long elementInstanceKey);
 
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2}
+   */
+  @Deprecated
   interface ModifyProcessInstanceCommandStep2
-      extends FinalCommandStep<ModifyProcessInstanceResponse> {
+      extends CommandWithOperationReferenceStep<ModifyProcessInstanceCommandStep2>,
+          FinalCommandStep<ModifyProcessInstanceResponse> {
     /**
      * Acts as a boundary between the different activate and terminate instructions. Use this if you
      * want to activate or terminate another element. Otherwise, {@link #send()} the command.
@@ -67,6 +79,11 @@ public interface ModifyProcessInstanceCommandStep1 {
     ModifyProcessInstanceCommandStep1 and();
   }
 
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3}
+   */
+  @Deprecated
   interface ModifyProcessInstanceCommandStep3 extends ModifyProcessInstanceCommandStep2 {
 
     /**

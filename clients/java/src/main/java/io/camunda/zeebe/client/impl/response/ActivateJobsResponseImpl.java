@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -36,6 +37,15 @@ public final class ActivateJobsResponseImpl implements ActivateJobsResponse {
     activateJobsResponse.getJobsList().stream()
         .map(r -> new ActivatedJobImpl(jsonMapper, r))
         .forEach(jobs::add);
+  }
+
+  public ActivateJobsResponseImpl addResponse(final JobActivationResponse activateJobsResponse) {
+    final List<io.camunda.client.protocol.rest.ActivatedJob> activatedJobs =
+        activateJobsResponse.getJobs();
+    if (activatedJobs != null) {
+      activatedJobs.stream().map(r -> new ActivatedJobImpl(jsonMapper, r)).forEach(jobs::add);
+    }
+    return this;
   }
 
   @Override

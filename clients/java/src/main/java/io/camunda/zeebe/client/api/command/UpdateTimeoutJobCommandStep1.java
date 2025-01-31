@@ -18,7 +18,13 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.UpdateTimeoutJobResponse;
 import java.time.Duration;
 
-public interface UpdateTimeoutJobCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.UpdateTimeoutJobCommandStep1}
+ */
+@Deprecated
+public interface UpdateTimeoutJobCommandStep1
+    extends CommandWithCommunicationApiStep<UpdateTimeoutJobCommandStep1> {
 
   /**
    * Set the timeout of this job.
@@ -44,7 +50,14 @@ public interface UpdateTimeoutJobCommandStep1 {
    */
   UpdateTimeoutJobCommandStep2 timeout(Duration timeout);
 
-  interface UpdateTimeoutJobCommandStep2 extends FinalCommandStep<UpdateTimeoutJobResponse> {
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.UpdateTimeoutJobCommandStep1.UpdateTimeoutJobCommandStep2}
+   */
+  @Deprecated
+  interface UpdateTimeoutJobCommandStep2
+      extends CommandWithOperationReferenceStep<UpdateTimeoutJobCommandStep2>,
+          FinalCommandStep<UpdateTimeoutJobResponse> {
     // the place for new optional parameters
   }
 }

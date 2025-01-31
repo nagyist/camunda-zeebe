@@ -17,8 +17,15 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.CancelProcessInstanceResponse;
 
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.CancelProcessInstanceCommandStep1}
+ */
+@Deprecated
 public interface CancelProcessInstanceCommandStep1
-    extends FinalCommandStep<CancelProcessInstanceResponse> {
+    extends CommandWithOperationReferenceStep<CancelProcessInstanceCommandStep1>,
+        CommandWithCommunicationApiStep<CancelProcessInstanceCommandStep1>,
+        FinalCommandStep<CancelProcessInstanceResponse> {
   // the place for new optional parameters
 
 }

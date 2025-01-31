@@ -15,14 +15,24 @@
  */
 package io.camunda.zeebe.client;
 
+import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
+import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
+import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
+/**
+ * @deprecated since 8.7 for removal with 8.8, replaced by {@link
+ *     io.camunda.client.CamundaClientBuilder}
+ */
+@Deprecated
 public interface ZeebeClientBuilder {
 
   /**
@@ -44,23 +54,38 @@ public interface ZeebeClientBuilder {
       final boolean applyEnvironmentVariableOverrides);
 
   /**
+   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
+   *     ZeebeClientBuilder#grpcAddress(URI)}
    * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
    *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
    *     </code> .
    */
+  @Deprecated
   ZeebeClientBuilder gatewayAddress(String gatewayAddress);
+
+  /**
+   * @param restAddress the REST API address of a gateway that the client can connect to. The
+   *     default value is {@code 0.0.0.0:8080}.
+   */
+  ZeebeClientBuilder restAddress(URI restAddress);
+
+  /**
+   * @param grpcAddress the gRPC address of a gateway that the client can connect to. The default
+   *     value is {@code 0.0.0.0:26500}.
+   */
+  ZeebeClientBuilder grpcAddress(URI grpcAddress);
 
   /**
    * @param tenantId the tenant identifier which is used for tenant-aware commands when no tenant
    *     identifier is set. The default value is {@link
-   *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
+   *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   ZeebeClientBuilder defaultTenantId(String tenantId);
 
   /**
    * @param tenantIds the tenant identifiers which are used for job-activation commands when no
    *     tenant identifiers are set. The default value contains only {@link
-   *     io.camunda.zeebe.client.api.command.CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
+   *     CommandWithTenantStep#DEFAULT_TENANT_IDENTIFIER}.
    */
   ZeebeClientBuilder defaultJobWorkerTenantIds(List<String> tenantIds);
 
@@ -92,8 +117,7 @@ public interface ZeebeClientBuilder {
    * Allows passing a custom executor service that will be shared by all job workers created via
    * this client.
    *
-   * <p>Polling and handling jobs (e.g. via {@link io.camunda.zeebe.client.api.worker.JobHandler}
-   * will all be invoked on this executor.
+   * <p>Polling and handling jobs (e.g. via {@link JobHandler} will all be invoked on this executor.
    *
    * <p>When non-null, this setting override {@link #numJobWorkerExecutionThreads(int)}.
    *
@@ -142,7 +166,18 @@ public interface ZeebeClientBuilder {
   /** Time interval between keep alive messages sent to the gateway. The default is 45 seconds. */
   ZeebeClientBuilder keepAlive(Duration keepAlive);
 
+  /**
+   * Custom implementations of the gRPC {@code ClientInterceptor} middleware API. The interceptors
+   * will be applied to every gRPC call that the client makes. More details can be found at {@link
+   * https://grpc.io/docs/guides/interceptors/}.
+   */
   ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
+
+  /**
+   * Custom implementations of the Apache HttpClient {@code AsyncExecChainHandler} middleware API.
+   * The middleware implementations will be called on every REST API call that the client makes.
+   */
+  ZeebeClientBuilder withChainHandlers(AsyncExecChainHandler... chainHandler);
 
   ZeebeClientBuilder withJsonMapper(JsonMapper jsonMapper);
 
@@ -170,6 +205,13 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder maxMessageSize(int maxSize);
 
   /**
+   * A custom maxMetadataSize allows the client to receive larger or smaller response headers from
+   * Zeebe. Technically, it specifies the maxInboundMetadataSize of the gRPC channel. The default is
+   * 16384 = 16KB .
+   */
+  ZeebeClientBuilder maxMetadataSize(int maxSize);
+
+  /**
    * A custom streamEnabled allows the client to use job stream instead of job poll. The default
    * value is set as enabled.
    */
@@ -182,6 +224,21 @@ public interface ZeebeClientBuilder {
    * {@code io.camunda:zeebe-gateway-protocol-impl} JAR.
    */
   ZeebeClientBuilder useDefaultRetryPolicy(final boolean useDefaultRetryPolicy);
+
+  /**
+   * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
+   * This is an experimental API which is present while we migrate the bulk of the API from gRPC to
+   * REST. Once done, this will also be removed.
+   *
+   * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+   *
+   * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
+   * @deprecated since 8.5, will be removed in 8.8
+   * @return this builder for chaining
+   */
+  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
+  @Deprecated
+  ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 
   /**
    * @return a new {@link ZeebeClient} with the provided configuration options.

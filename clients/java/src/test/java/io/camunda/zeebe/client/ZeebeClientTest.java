@@ -17,19 +17,31 @@ package io.camunda.zeebe.client;
 
 import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
+import static io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE;
+import static io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE;
+import static io.camunda.zeebe.client.ClientProperties.PREFER_REST_OVER_GRPC;
+import static io.camunda.zeebe.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_TENANT_ID_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.OVERRIDE_AUTHORITY_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.USE_DEFAULT_RETRY_POLICY_VAR;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_REST_ADDRESS;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.GRPC_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PREFER_REST_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
+import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -48,6 +60,8 @@ import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
 import io.camunda.zeebe.client.util.ClientTest;
 import java.io.FileNotFoundException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -78,7 +92,9 @@ public final class ZeebeClientTest extends ClientTest {
       final ZeebeClientConfiguration configuration = client.getConfiguration();
 
       // then
-      assertThat(configuration.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
+      assertThat(configuration.getGatewayAddress()).isEqualTo(DEFAULT_GATEWAY_ADDRESS);
+      assertThat(configuration.getGrpcAddress()).isEqualTo(DEFAULT_GRPC_ADDRESS);
+      assertThat(configuration.getRestAddress()).isEqualTo(DEFAULT_REST_ADDRESS);
       assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
       assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
       assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
@@ -87,12 +103,14 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
       assertThat(configuration.getMaxMessageSize()).isEqualTo(4 * 1024 * 1024);
+      assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * 1024);
       assertThat(configuration.getOverrideAuthority()).isNull();
       assertThat(configuration.getDefaultTenantId())
           .isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
       assertThat(configuration.getDefaultJobWorkerStreamEnabled()).isFalse();
       assertThat(configuration.getDefaultJobWorkerTenantIds())
           .containsExactly(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(configuration.preferRestOverGrpc()).isFalse();
     }
   }
 
@@ -289,6 +307,19 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetMaxMetadataSize() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.maxMetadataSize(10 * 1024);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * 1024);
+  }
+
+  @Test
   public void shouldSetMaxMessageSizeWithProperty() {
     // given
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
@@ -304,18 +335,18 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
-  public void shouldOverrideMaxMessageSizeWithEnvVar() {
+  public void shouldSetMaxMetadataSizeWithProperty() {
     // given
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
-    builder.applyEnvironmentVariableOverrides(Boolean.TRUE);
-    builder.maxMessageSize(4 * ONE_MB);
-    Environment.system().put(MAX_MESSAGE_SIZE, "10MB");
 
+    final Properties properties = new Properties();
+    properties.setProperty(MAX_METADATA_SIZE, "10KB");
+    builder.withProperties(properties);
     // when
     builder.build();
 
     // then
-    assertThat(builder.getMaxMessageSize()).isEqualTo(10 * ONE_MB);
+    assertThat(builder.getMaxMetadataSize()).isEqualTo(10 * ONE_KB);
   }
 
   @Test
@@ -359,8 +390,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("%s.%s.zeebe.camunda.io:443", clusterId, region));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.%s.zeebe.camunda.io", clusterId, region))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -379,8 +412,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("%s.bru-2.zeebe.camunda.io:443", clusterId));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("%s.bru-2.zeebe.camunda.io", clusterId))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -421,8 +456,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", region));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", region))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -441,8 +478,10 @@ public final class ZeebeClientTest extends ClientTest {
       // then
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
-      assertThat(clientConfiguration.getGatewayAddress())
-          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", defaultRegion));
+      assertThat(clientConfiguration.getGrpcAddress())
+          .hasHost(String.format("clusterId.%s.zeebe.camunda.io", defaultRegion))
+          .hasPort(443)
+          .hasScheme("https");
     }
   }
 
@@ -494,6 +533,155 @@ public final class ZeebeClientTest extends ClientTest {
       verify(executor)
           .schedule(any(Runnable.class), eq(pollInterval.toMillis()), eq(TimeUnit.MILLISECONDS));
     }
+  }
+
+  @Test
+  public void shouldSetRestAddressFromSetterWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("localhost:9090");
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.restAddress(restAddress);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
+  }
+
+  @Test
+  public void shouldSetRestAddressPortFromPropertyWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(REST_ADDRESS, restAddress.toString());
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
+  }
+
+  @Test
+  public void shouldSetRestAddressPortFromEnvVarWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI restAddress = new URI("localhost:9090");
+    Environment.system().put(REST_ADDRESS_VAR, restAddress.toString());
+
+    // when
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getRestAddress()).isEqualTo(restAddress);
+  }
+
+  @Test
+  public void shouldSetGrpcAddressFromSetterWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("https://localhost:9090");
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.grpcAddress(grpcAddress);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @Test
+  public void shouldSetGrpcAddressFromPropertyWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("https://localhost:9090");
+    final Properties properties = new Properties();
+    properties.setProperty(GRPC_ADDRESS, grpcAddress.toString());
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @Test
+  public void shouldSetGrpcAddressFromEnvVarWithClientBuilder() throws URISyntaxException {
+    // given
+    final URI grpcAddress = new URI("https://localhost:9090");
+    Environment.system().put(GRPC_ADDRESS_VAR, grpcAddress.toString());
+
+    // when
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress()).isEqualTo(grpcAddress);
+  }
+
+  @Test
+  public void shouldSetPreferRestFromSetterWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    // when
+    builder.preferRestOverGrpc(false);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetPreferRestFromPropertyWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    final Properties properties = new Properties();
+    properties.setProperty(PREFER_REST_OVER_GRPC, "false");
+
+    // when
+    builder.withProperties(properties);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetPreferRestFromEnvVarWithClientBuilder() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    Environment.system().put(PREFER_REST_VAR, "false");
+
+    // when
+    builder.preferRestOverGrpc(true);
+
+    // then
+    try (final ZeebeClient client = builder.build()) {
+      assertThat(client.getConfiguration().preferRestOverGrpc()).isFalse();
+    }
+  }
+
+  @Test
+  public void shouldSetGrpcAddressFromGatewayAddressIfUnderfined() throws URISyntaxException {
+    // given
+    final String gatewayAddress = "localhost:26500";
+    final Properties properties = new Properties();
+    properties.setProperty(ClientProperties.GATEWAY_ADDRESS, gatewayAddress);
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getGrpcAddress().toString()).contains(gatewayAddress);
   }
 
   @Test
@@ -769,5 +957,20 @@ public final class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.useDefaultRetryPolicy()).isFalse();
+  }
+
+  @Test
+  public void shouldSetTimeoutInMillis() {
+    // given
+    final Properties properties = new Properties();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    properties.setProperty(DEFAULT_REQUEST_TIMEOUT, "1000");
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(1));
   }
 }

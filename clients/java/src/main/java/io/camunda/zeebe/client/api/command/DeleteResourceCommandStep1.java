@@ -17,4 +17,12 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.DeleteResourceResponse;
 
-public interface DeleteResourceCommandStep1 extends FinalCommandStep<DeleteResourceResponse> {}
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.DeleteResourceCommandStep1}
+ */
+@Deprecated
+public interface DeleteResourceCommandStep1
+    extends CommandWithOperationReferenceStep<DeleteResourceCommandStep1>,
+        CommandWithCommunicationApiStep<DeleteResourceCommandStep1>,
+        FinalCommandStep<DeleteResourceResponse> {}

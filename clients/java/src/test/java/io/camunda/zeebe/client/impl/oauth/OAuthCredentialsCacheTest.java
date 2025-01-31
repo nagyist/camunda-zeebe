@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.oauth;
 
-import static io.camunda.zeebe.client.OAuthCredentialsProviderTest.EXPIRY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertTrue;
@@ -25,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -38,9 +39,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public final class OAuthCredentialsCacheTest {
+  private static final ZonedDateTime EXPIRY =
+      ZonedDateTime.of(3020, 1, 1, 0, 0, 0, 0, ZoneId.of("Z"));
 
-  private static final String WOMBAT_ENDPOINT = "wombat.cloud.camunda.io";
-  private static final String AARDVARK_ENDPOINT = "aardvark.cloud.camunda.io";
+  private static final String WOMBAT_CLIENT_ID = "wombat-client";
+  private static final String AARDVARK_CLIENT_ID = "aardvark-client";
   private static final String GOLDEN_FILE = "/oauth/credentialsCache.yml";
   private static final ZeebeClientCredentials WOMBAT =
       new ZeebeClientCredentials("wombat", EXPIRY, "Bearer");
@@ -205,8 +208,8 @@ public final class OAuthCredentialsCacheTest {
     cache.readCache();
 
     // then
-    assertThat(cache.get(WOMBAT_ENDPOINT)).contains(WOMBAT);
-    assertThat(cache.get(AARDVARK_ENDPOINT)).contains(AARDVARK);
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).contains(WOMBAT);
+    assertThat(cache.get(AARDVARK_CLIENT_ID)).contains(AARDVARK);
     assertThat(cache.size()).isEqualTo(2);
   }
 
@@ -216,12 +219,12 @@ public final class OAuthCredentialsCacheTest {
     final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
 
     // when
-    cache.put(WOMBAT_ENDPOINT, WOMBAT).put(AARDVARK_ENDPOINT, AARDVARK).writeCache();
+    cache.put(WOMBAT_CLIENT_ID, WOMBAT).put(AARDVARK_CLIENT_ID, AARDVARK).writeCache();
 
     // then
     final OAuthCredentialsCache copy = new OAuthCredentialsCache(cacheFile).readCache();
-    assertThat(copy.get(WOMBAT_ENDPOINT)).contains(WOMBAT);
-    assertThat(copy.get(AARDVARK_ENDPOINT)).contains(AARDVARK);
+    assertThat(copy.get(WOMBAT_CLIENT_ID)).contains(WOMBAT);
+    assertThat(copy.get(AARDVARK_CLIENT_ID)).contains(AARDVARK);
     assertThat(copy.size()).isEqualTo(2);
   }
 
@@ -237,17 +240,17 @@ public final class OAuthCredentialsCacheTest {
       cacheOperations.add(
           () ->
               cache.computeIfMissingOrInvalid(
-                  WOMBAT_ENDPOINT,
+                  WOMBAT_CLIENT_ID,
                   () -> {
-                    cache.put(WOMBAT_ENDPOINT, WOMBAT).writeCache();
+                    cache.put(WOMBAT_CLIENT_ID, WOMBAT).writeCache();
                     return WOMBAT;
                   }));
       cacheOperations.add(
           () ->
               cache.withCache(
-                  WOMBAT_ENDPOINT,
+                  WOMBAT_CLIENT_ID,
                   value -> {
-                    cache.put(WOMBAT_ENDPOINT, WOMBAT).writeCache();
+                    cache.put(WOMBAT_CLIENT_ID, WOMBAT).writeCache();
                     return WOMBAT;
                   }));
     }
@@ -270,6 +273,6 @@ public final class OAuthCredentialsCacheTest {
     }
 
     // then
-    assertThat(cache.get(WOMBAT_ENDPOINT)).isNotEmpty().contains(WOMBAT);
+    assertThat(cache.get(WOMBAT_CLIENT_ID)).isNotEmpty().contains(WOMBAT);
   }
 }

@@ -18,7 +18,13 @@ package io.camunda.zeebe.client.api.command;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface ThrowErrorCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.ThrowErrorCommandStep1}
+ */
+@Deprecated
+public interface ThrowErrorCommandStep1
+    extends CommandWithCommunicationApiStep<ThrowErrorCommandStep1> {
   /**
    * Set the errorCode for the error.
    *
@@ -31,6 +37,11 @@ public interface ThrowErrorCommandStep1 {
    */
   ThrowErrorCommandStep2 errorCode(String errorCode);
 
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2}
+   */
+  @Deprecated
   interface ThrowErrorCommandStep2 extends FinalCommandStep<Void> {
     /**
      * Provide an error message describing the reason for the non-technical error. If the error is

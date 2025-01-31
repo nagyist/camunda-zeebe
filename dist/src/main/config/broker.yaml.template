@@ -30,6 +30,10 @@
 # Relative paths are resolved relative to the installation directory of the broker.
 # ----------------------------------------------------
 
+# Enable the Camunda REST API to start on broker startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
+# camunda.rest.enabled: true
+
 # zeebe:
   # broker:
     # gateway:
@@ -49,10 +53,16 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HOST.
       # host: 0.0.0.0
 
-      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-      # broker stands behind a proxy.
-      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_ADVERTISEDHOST.
-      # advertisedHost: 0.0.0.0
+      # Controls the advertised host. This is particularly useful if your broker stands behind a
+      # proxy. If not set, its default is computed as:
+      #   - If zeebe.broker.gateway.network.host was explicitly, use this.
+      #   - If not, try to resolve the machine's hostname to an IP address and use that.
+      #   - If the hostname is not resolvable, use the first non-loopback IP address.
+      #   - If there is none, use the loopback address.
+      #
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_NETWORK_ADVERTISEDHOST.
+      #
+      # advertisedHost:
 
       # If a port offset is set it will be added to all ports specified in the config
       # or the default values. This is a shortcut to not always specifying every port.
@@ -68,8 +78,28 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE.
       # maxMessageSize: 4MB
 
+      # Sets the size of the socket receive buffer (SO_RCVBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SOCKETRECEIVEBUFFER.
+      # socketReceiveBuffer: 1MB
+
+      # Sets the size of the socket send buffer (SO_SNDBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SOCKETSENDBUFFER.
+      # socketSendBuffer: 1MB
+
+      # Connections that did not receive any message within the specified timeout will be closed.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HEARTBEATTIMEOUT.
+      # heartbeatTimeout: 15s
+
+      # Sends a heartbeat when no other data is sent over an open connection within the specified timeout.
+      # This is to ensure that the connection is kept open.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_HEARTBEATINTERVAL.
+      # heartbeatInterval: 5s
+
       # security:
         # Enables TLS authentication between this gateway and other nodes in the cluster
+        # If this setting is enabled then the certificate and private key must either be provided separately
+        # or in a key store file containing both, these options are mutually exclusive and setting both at the same time will
+        # cause an error.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SECURITY_ENABLED.
         # enabled: false
 
@@ -81,6 +111,18 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
 
+        # keyStore:
+          # Configures the keystore file containing both the certificate chain and the private key.
+          # Currently only supports PKCS12 format.
+
+          # The path for keystore file
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_KEYSTORE_FILEPATH
+          # filePath:
+
+          # Sets the password for the keystore file, if not set it is assumed there is no password
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_KEYSTORE_PASSWORD
+          # password:
+
       # commandApi:
         # Overrides the host used for gateway-to-broker communication
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_HOST.
@@ -90,10 +132,13 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT.
         # port: 26501
 
-        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-        # broker stands behind a proxy.
+        # Controls the advertised host. This is particularly useful if your broker stands behind a proxy.
+        # If omitted, defaults to:
+        #   - If zeebe.broker.network.commandApi.host was set, use this.
+        #   - Use the resolved value of zeebe.broker.network.advertisedHost
+        #
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_COMMANDAPI_ADVERTISEDHOST.
-        # advertisedHost: 0.0.0.0
+        # advertisedHost:
 
         # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
         # broker stands behind a proxy.
@@ -109,10 +154,13 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT.
         # port: 26502
 
-        # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-        # broker stands behind a proxy.
+        # Controls the advertised host. This is particularly useful if your broker stands behind a proxy.
+        # If omitted, defaults to:
+        #   - If zeebe.broker.network.internalApi.host was set, use this.
+        #   - Use the resolved value of zeebe.broker.network.advertisedHost
+        #
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_INTERNALAPI_ADVERTISEDHOST.
-        # advertisedHost: 0.0.0.0
+        # advertisedHost:
 
         # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
         # broker stands behind a proxy.
@@ -151,7 +199,7 @@
 
       # How often we take snapshots of streams (time unit)
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
-      # snapshotPeriod: 15m
+      # snapshotPeriod: 5m
 
       # Configure whether to monitor disk usage to prevent out of disk space issues.
       # If set to false the broker might run out of disk space and end in a non recoverable state.
@@ -207,10 +255,11 @@
       # backup:
         # Configure backup store. NOTE:- Use the same configuration on all brokers of this cluster.
 
-        # Set the backup store type. Supported values are [NONE, S3, GCS]. Default value is NONE
+        # Set the backup store type. Supported values are [NONE, S3, GCS, AZURE]. Default value is NONE
         # When NONE, no backup store is configured and no backup will be taken.
         # Use S3 to use any S3 compatible storage (https://docs.aws.amazon.com/AmazonS3/latest/API/Type_API_Reference.html).
         # Use GCS to use Google Cloud Storage (https://cloud.google.com/storage/)
+        # Use AZURE to use Azure Storage (https://learn.microsoft.com/en-us/azure/storage/)
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_STORE
         # store: NONE
 
@@ -294,25 +343,32 @@
 
         # Configure the following if store is set to AZURE
         # azure:
-          # Name of the endpoint where the backup will be stored.
-          # Sets the blob service endpoint.
+          # Azure endpoint to connect to. Required unless a connection string is specified.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ENDPOINT
           # endpoint:
 
-          # Account name that is used to connect to the service.
+          # Account name used to authenticate with Azure.
+          # Can only be used in combination with an account key.
+          # If account credentials or connection string are not provided, authentication will use credentials from the
+          # runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTNAME
           # accountName:
 
-          # Account key that is used to connect to the service.
+          # Account key that is used to authenticate with Azure.
+          # Can only be used in combination with an account name.
+          # If account credentials or connection string are not provided, authentication will use credentials from the
+          # runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_ACCOUNTKEY
           # accountKey:
 
-          # The connection string to connect to the service.
-          # If this is defined, it will override the account name, account key, and endpoint.
+          # The connection string configures endpoint, account name and account key all at once.
+          # If neither connection string, account name, nor account key are defined, the azure client uses
+          # If connection string or account credentials are not provided, authentication will use credentials from the
+          # runtime environment: https://learn.microsoft.com/en-us/java/api/com.azure.identity.defaultazurecredential?view=azure-java-stable
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_CONNECTIONSTRING
           # connectionString:
 
-          # Used to define the container name where the blobs will be saved.
+          # Defines the container name where backup contents are saved.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_AZURE_BASEPATH
           # basePath:
 
@@ -452,6 +508,21 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL
         # syncInterval: 10s
 
+      # Configure the parameters used to propagate the dynamic cluster configuration across brokers and gateways
+      # configManager:
+        # Configure the parameters used for gossiping the configuration
+        # Note that this is not related to cluster membership gossip.
+        # gossip:
+          # Sets the interval between two synchronization requests to other members of the cluster
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_CONFIGMANAGER_GOSSIP_SYNCDELAY
+          # syncDelay: 10s
+          # Sets the timeout for the synchronization requests
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_CONFIGMANAGER_GOSSIP_SYNCREQUESTTIMEOUT
+          # syncRequestTimeout: 2s
+          # Sets the number of cluster members the configuration is gossiped to.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_CONFIGMANAGER_GOSSIP_GOSSIPFANOUT
+          # gossipFanout: 2
+
       # Configure compression algorithm for all message sent between the brokers and between the broker and
       # the gateway. Available options are NONE, GZIP and SNAPPY.
       # This feature is useful when the network latency between the brokers is very high (for example when the brokers are deployed in different data centers).
@@ -476,6 +547,29 @@
       #
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
       # ioThreadCount: 2
+
+    # flowControl:
+      # Configure flow control for user requests. This setting takes precedence over the backpressure configuration.
+      # request:
+        # enabled: true
+        # algorithm: "aimd"
+        # useWindowed: true
+        # aimd:
+          # requestTimeout: "200ms"
+          # initialLimit: 100
+          # minLimit: 1
+          # maxLimit: 1000
+          # backoffRatio: 0.9
+      # Configure a rate limit for all writes.
+      # write:
+        # enabled: false
+        # rampUp: 0 # ramp up time, for example 10s
+        # limit: 1000 # maximum number of records written per second
+        # throttling:
+          # enabled: false # If enabled, throttle the write rate based on exporting backlog
+          # acceptableBacklog: 100000 # when exporting is a bottleneck, the write rate is throttled to keep the backlog at this value
+          # minimumLimit: 100 # Even when exporting is fully blocked, always allow this many writes per second
+          # resolution: 15s # How often to adjust the throttling
 
     # backpressure:
       # Configure backpressure below.
@@ -573,6 +667,17 @@
         # This setting can also be overridden using the environment ZEEBE_BROKER_BACKPRESSURE_GRADIENT2_LONGWINDOW
         # longWindow: 600
 
+    # exporting:
+      # This section contains definitions common to all exporters.
+      #
+      # Enable the exporters to skip record position.
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTING_SKIPRECORDS"
+      # Allows to skip certain records by their position. This is useful for debugging or skipping a record that is
+      # preventing processing or exporting to continue.
+      # Record positions defined to skip in this definition will be skipped in all exporters.
+      # The value is a comma-separated list of records ids to skip. Whitespace is ignored.
+      # skipRecords:
+
     # exporters:
       # Configure exporters below
       #
@@ -640,6 +745,9 @@
         #     prefix: zeebe-record
         #     createTemplate: true
         #
+        #     # Pattern based on https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/format/DateTimeFormatter.html
+        #     indexSuffixDatePattern = "yyyy-MM-dd"
+        #
         #     numberOfShards: 3
         #     numberOfReplicas: 0
         #
@@ -662,6 +770,7 @@
         #     jobBatch: false
         #     message: true
         #     messageBatch: false
+        #     messageCorrelation: true
         #     messageStartSubscription: true
         #     messageSubscription: true
         #     process: true
@@ -706,7 +815,7 @@
         #     enabled: false
         #     minimumAge: 30d
         #     policyName: zeebe-record-retention-policy
-        #     policyDecsription: Zeebe record retention policy
+        #     policyDescription: Zeebe record retention policy
         #
         #   authentication:
         #     username: opensearch
@@ -743,6 +852,7 @@
         #     jobBatch: false
         #     message: true
         #     messageBatch: false
+        #     messageCorrelation: true
         #     messageStartSubscription: true
         #     messageSubscription: true
         #     process: true
@@ -760,6 +870,61 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+
+      # Camunda Exporter ----------
+      # An example configuration for the camunda exporter:
+      #
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_..."
+      #
+      # camundaExporter:
+        # className: io.camunda.exporter.CamundaExporter
+        #
+        # args:
+        #   connect:
+        #     type: elasticsearch
+        #     url: http://localhost:9200
+        #     clusterName: elasticsearch
+        #     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZZ
+        #     socketTimeout: 1000
+        #     connectTimeout: 1000
+        #     username: elastic
+        #     password: changeme
+        #     security:
+        #       enabled: false
+        #       certificatePath: /path/to/certificate
+        #       verifyHostname: true
+        #       selfSigned: false
+        #
+        #   bulk:
+        #     delay: 5
+        #     size: 1000
+        #
+        #   index:
+        #     prefix:
+        #     numberOfShards: 3
+        #     numberOfReplicas: 0
+        #     variableSizeThreshold: 8191
+        #
+        #   retention:
+        #     enabled: false
+        #     minimumAge: 30d
+        #     policyName: camunda-retention-policy
+        #
+        #   createSchema: true
+        #
+        #   archiver:
+        #     enabled: true
+        #     elsRolloverDateFormat: "date"
+        #     rolloverInterval: "1d"
+        #     rolloverBatchSize: 100
+        #     waitPeriodBeforeArchiving: "1h"
+        #     delayBetweenRuns: 2000
+        #
+        #   processCache:
+        #     maxCacheSize: 10000
+        #
+        #   formCache:
+        #     maxCacheSize: 10000
 
     # processing:
       # Sets the maximum number of commands that processed within one batch.
@@ -785,14 +950,33 @@
       #
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_ENABLEASYNCSCHEDULEDTASKS
       # enableAsyncScheduledTasks: true
+
+      # Allows to skip certain commands by their position. This is useful for debugging and data recovery.
+      # It is not recommended to use this in production.
+      # The value is a comma-separated list of positions to skip. Whitespace is ignored.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_SKIPPOSITIONS
+      # skipPositions: ""
+
+      # Configures the rate at which a partition leader checks for expired scheduled tasks such as the due date checker.
+      # The default value is 1 second. Use a lower interval to potentially decrease delays between requested and actual execution of scheduled tasks.
+      # Using a low interval will result in unnecessary load while idle. We recommend to benchmark any changes to this setting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_SCHEDULEDTASKCHECKINTERVAL
+      # scheduledTaskCheckInterval: 1s
+
     # experimental
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.
       # It might be that also some of them are actually dangerous so be aware when you change one of these!
 
+      # Toggles the version check restriction, used for migration. Useful for testing migration logic on
+      # snapshot or alpha versions. Default: True, means it is not allowed to migrate to incompatible version
+      # like: SNAPSHOT or alpha.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_VERSIONCHECKRESTRICTIONENABLED
+      # versionCheckRestrictionEnabled = true
+
       # Sets the maximum of appends which are send per follower.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDSPERFOLLOWER
-      # maxAppendsPerFollower = 2
+      # maxAppendsPerFollower = 6
 
       # Sets the maximum batch size, which is send per append request to a follower.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE
@@ -869,6 +1053,11 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTREQUESTTIMEOUT.
         # snapshotRequestTimeout: 2500ms
 
+        # Sets the maximum size of snapshot chunks sent by raft leaders to the followers.
+        # The default value is 1GB.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_SNAPSHOTCHUNKSIZE.
+        # snapshotChunkSize: 1GB
+
         # Sets the timeout for configuration change requests such as joining or leaving. Since changes are usually a multi-step
         # process with multiple commits, a higher timeout than the default requestTimeout is recommended.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_CONFIGURATIONCHANGEREQUESTTIMEOUT.
@@ -922,6 +1111,12 @@
         # Enables RocksDB statistics, which will be written to the RocksDB log file.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLESTATISTICS
         # enableStatistics: false
+
+        # Configures which, if any, RocksDB column family access metrics are exposed.
+        # Valid values are none (the default), and fine which exposes many metrics covering the read, write, delete and iteration
+        # latency per partition and column family.
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_ENABLEACCESSMETRICS
+        # accessMetrics: none
 
         # Configures the memory limit, which can be used by RocksDB. Be aware that this setting only applies to RocksDB, which is used by the Zeebe's state management and that
         # an RocksDB instance is used per partition.
@@ -991,7 +1186,7 @@
       # to see how to use this in practise.
       # queryApi:
         # Enables the query api in the broker.
-        # This setting can also be set using the environmentvariable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
+        # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
         # enabled: false
 
       # engine:
@@ -1020,6 +1215,45 @@
           # to increase the size of this cache. The cache prevents having to parse DRG's everytime a
           # decision is evaluated. If the cache is full, the least used DRG gets evicted.
           # drgCacheCapacity: 1000
+
+          # Allows to configure the forms cache size. By default this is set to 1000.
+          # If there are more than 1000 different forms actively used in the cluster it is recommended
+          # to increase the size of this cache. The cache prevents having to query forms persistent
+          # state everytime form data is needed. If the cache is full, the least used form gets evicted.
+          # formCacheCapacity: 1000
+
+
+          # Allows to configure the deployed processes cache size. By default this is set to 1000.
+          # If there are more than 1000 different processes actively used in the cluster it is recommended
+          # to increase the size of this cache. The cache prevents having to query processes persistent
+          # state everytime process data is needed.
+          # If the cache is full, the least used process (version) gets evicted.
+          # processCacheCapacity: 1000
+
+        # jobs:
+          # Allows to configure the Job Timeout Checker's polling interval. This is the period during
+          # which the checker is idle in between two of its executions. Note that it can mark multiple jobs
+          # as timed-out in a single execution. See `timeoutTriggerBatchLimit` to configure the size of these batches.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBS_TIMEOUTCHECKERPOLLINGINTERVAL
+          # timeoutCheckerPollingInterval: 1s
+
+          # Allows to configure the Job Timeout Checker's batch limit. This is the number of jobs
+          # that could be marked as timed-out in a single trigger run.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_JOBS_TIMEOUTCHECKERBATCHLIMIT
+          # timeoutCheckerBatchLimit: 0x7fffffff
+
+        # validators:
+          # Allows to configure the maximum output size (in bytes) for BPMN validator results.
+          # These results details are typically returned in our gRPC endpoint responses and can cause issues in proxy servers if they are too long to be contained in proxy-headers.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_VALIDATORS_RESULTSOUTPUTMAXSIZE
+          # PS: The default value is 12kb. Increasing it to a higher value introduces a risk that it will be throttled by NGINX proxy configs or the zeebe client configs.
+          # resultsOutputMaxSize: 12288
+
+        # authorization
+          # Enables authorization checks. If enabled a default user will be created with the credentials demo/demo.
+          # This default user can be used to setup the system. It is recommended to change the password of the default user afterwards.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_AUTHORIZATIONS_ENABLEAUTHORIZATION
+          # enableAuthorization: false
 
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production
@@ -1056,8 +1290,6 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLETIMERDUEDATECHECKERASYNC
         # enableTimerDueDateCheckerAsync: false
 
-        # When enabled, the broker relies on the new cluster topology management to determine partition distribution.
-        # When disabled, the broker generates partition distribution on every restart from the provided cluster configuration.
-        # This feature should be enabled to use dynamic scaling feature.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEDYNAMICCLUSTERTOPOLOGY
-        # enableDynamicClusterTopology: true
+        # Disables the experimental partition scaling feature by default until it is stable: https://github.com/camunda/camunda/issues/21439
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEPARTITIONSCALING
+        # enablePartitionScaling: false

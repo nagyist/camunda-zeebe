@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
 
@@ -37,6 +38,25 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final String failedDecisionId;
   private final String failureMessage;
   private final String tenantId;
+  private final long decisionInstanceKey;
+
+  public EvaluateDecisionResponseImpl(
+      final io.camunda.client.protocol.rest.EvaluateDecisionResponse response,
+      final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+    decisionId = response.getDecisionDefinitionId();
+    decisionKey = response.getDecisionDefinitionKey();
+    decisionVersion = response.getDecisionDefinitionVersion();
+    decisionName = response.getDecisionDefinitionName();
+    decisionRequirementsId = response.getDecisionRequirementsId();
+    decisionRequirementsKey = response.getDecisionRequirementsKey();
+    decisionOutput = response.getOutput();
+    failedDecisionId = response.getFailedDecisionDefinitionId();
+    failureMessage = response.getFailureMessage();
+    tenantId = response.getTenantId();
+    decisionInstanceKey = response.getDecisionInstanceKey();
+    buildEvaluatedDecisions(response);
+  }
 
   public EvaluateDecisionResponseImpl(
       final JsonMapper jsonMapper, final GatewayOuterClass.EvaluateDecisionResponse response) {
@@ -52,10 +72,22 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
     failedDecisionId = response.getFailedDecisionId();
     failureMessage = response.getFailureMessage();
     tenantId = response.getTenantId();
+    decisionInstanceKey = response.getDecisionInstanceKey();
 
     response.getEvaluatedDecisionsList().stream()
         .map(evaluatedDecision -> new EvaluatedDecisionImpl(jsonMapper, evaluatedDecision))
         .forEach(evaluatedDecisions::add);
+  }
+
+  private void buildEvaluatedDecisions(
+      final io.camunda.client.protocol.rest.EvaluateDecisionResponse response) {
+    if (response.getEvaluatedDecisions() == null) {
+      return;
+    }
+    evaluatedDecisions.addAll(
+        response.getEvaluatedDecisions().stream()
+            .map(decision -> new EvaluatedDecisionImpl(decision, jsonMapper))
+            .collect(Collectors.toList()));
   }
 
   @Override
@@ -111,5 +143,10 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   @Override
   public String getTenantId() {
     return tenantId;
+  }
+
+  @Override
+  public long getDecisionInstanceKey() {
+    return decisionInstanceKey;
   }
 }

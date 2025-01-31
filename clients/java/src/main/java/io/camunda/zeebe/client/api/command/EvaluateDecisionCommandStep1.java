@@ -19,7 +19,13 @@ import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface EvaluateDecisionCommandStep1 {
+/**
+ * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+ *     io.camunda.client.api.command.EvaluateDecisionCommandStep1}
+ */
+@Deprecated
+public interface EvaluateDecisionCommandStep1
+    extends CommandWithCommunicationApiStep<EvaluateDecisionCommandStep1> {
 
   /**
    * Set the id of the decision to evaluate. This is the static id of the decision in the DMN XML
@@ -39,6 +45,10 @@ public interface EvaluateDecisionCommandStep1 {
    */
   EvaluateDecisionCommandStep2 decisionKey(long decisionKey);
 
+  /**
+   * @deprecated since 8.7 for removal in 8.8, replaced by {@link
+   *     io.camunda.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2}
+   */
   interface EvaluateDecisionCommandStep2
       extends CommandWithTenantStep<EvaluateDecisionCommandStep2>,
           FinalCommandStep<EvaluateDecisionResponse> {

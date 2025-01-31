@@ -2,11 +2,18 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.Error;
+import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.StateCode;
+import io.camunda.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
@@ -14,13 +21,6 @@ import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
-import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
-import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
-import io.camunda.zeebe.management.backups.BackupInfo;
-import io.camunda.zeebe.management.backups.Error;
-import io.camunda.zeebe.management.backups.PartitionBackupInfo;
-import io.camunda.zeebe.management.backups.StateCode;
-import io.camunda.zeebe.management.backups.TakeBackupResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -40,7 +40,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
-@WebEndpoint(id = "backups")
+@WebEndpoint(id = "backupRuntime")
 public final class BackupEndpoint {
   private final BackupApi api;
 
@@ -64,7 +64,7 @@ public final class BackupEndpoint {
       }
       api.takeBackup(backupId).toCompletableFuture().join();
       return new WebEndpointResponse<>(
-          new TakeBackupResponse()
+          new TakeBackupRuntimeResponse()
               .message(
                   "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
                       .formatted(backupId, backupId)),

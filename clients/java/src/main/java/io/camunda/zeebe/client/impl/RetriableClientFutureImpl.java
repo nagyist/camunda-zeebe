@@ -15,25 +15,29 @@
  */
 package io.camunda.zeebe.client.impl;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl<R, T> {
 
-  private final Predicate<Throwable> retryPredicate;
+  private final AtomicInteger retries = new AtomicInteger(2);
+  private final Predicate<StatusCode> retryPredicate;
   private final Consumer<StreamObserver<T>> retryAction;
 
   public RetriableClientFutureImpl(
-      final Predicate<Throwable> retryPredicate, final Consumer<StreamObserver<T>> retryAction) {
+      final Predicate<StatusCode> retryPredicate, final Consumer<StreamObserver<T>> retryAction) {
     this(brokerResponse -> null, retryPredicate, retryAction);
   }
 
   public RetriableClientFutureImpl(
       final Function<T, R> responseMapper,
-      final Predicate<Throwable> retryPredicate,
+      final Predicate<StatusCode> retryPredicate,
       final Consumer<StreamObserver<T>> retryAction) {
     super(responseMapper);
 
@@ -45,7 +49,10 @@ public final class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl
 
   @Override
   public void onError(final Throwable throwable) {
-    if (retryPredicate.test(throwable)) {
+    final Status status = Status.fromThrowable(throwable);
+    final StatusCode statusCode = new GrpcStatusCode(status.getCode());
+
+    if (retries.getAndDecrement() > 0 && retryPredicate.test(statusCode)) {
       retryAction.accept(this);
     } else {
       super.onError(throwable);

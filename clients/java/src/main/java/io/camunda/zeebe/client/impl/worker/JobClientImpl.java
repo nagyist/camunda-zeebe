@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
+import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
@@ -29,22 +30,26 @@ import io.camunda.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.FailJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
+import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.util.function.Predicate;
 
 public final class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
+  private final HttpClient httpClient;
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
-  private final Predicate<Throwable> retryPredicate;
+  private final Predicate<StatusCode> retryPredicate;
 
   public JobClientImpl(
       final GatewayStub asyncStub,
+      final HttpClient httpClient,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
-      final Predicate<Throwable> retryPredicate) {
+      final Predicate<StatusCode> retryPredicate) {
     this.asyncStub = asyncStub;
+    this.httpClient = httpClient;
     this.config = config;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
@@ -53,7 +58,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return new CompleteJobCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -64,7 +75,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public FailJobCommandStep1 newFailCommand(final long jobKey) {
     return new FailJobCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -75,7 +92,13 @@ public final class JobClientImpl implements JobClient {
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final long jobKey) {
     return new ThrowErrorCommandImpl(
-        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub,
+        jsonMapper,
+        jobKey,
+        config.getDefaultRequestTimeout(),
+        retryPredicate,
+        httpClient,
+        config.preferRestOverGrpc());
   }
 
   @Override
@@ -85,7 +108,7 @@ public final class JobClientImpl implements JobClient {
 
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
-    return new ActivateJobsCommandImpl(asyncStub, config, jsonMapper, retryPredicate);
+    return new ActivateJobsCommandImpl(asyncStub, httpClient, config, jsonMapper, retryPredicate);
   }
 
   @Override
