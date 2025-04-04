@@ -58,15 +58,15 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void create(final long groupKey, final GroupRecord group) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void create(final GroupRecord group) {
+    groupId.wrapString(group.getGroupId());
     persistedGroup.wrap(group);
     groupColumnFamily.insert(groupId, persistedGroup);
   }
 
   @Override
-  public void update(final long groupKey, final GroupRecord group) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void update(final GroupRecord group) {
+    groupId.wrapString(group.getGroupId());
     final var persistedGroup = groupColumnFamily.get(groupId);
     if (persistedGroup != null) {
       persistedGroup.copyFrom(group);
@@ -75,8 +75,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void addEntity(final long groupKey, final GroupRecord group) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void addEntity(final GroupRecord group) {
+    groupId.wrapString(group.getGroupId());
     entityKey.wrapLong(group.getEntityKey());
     entityTypeValue.setEntityType(group.getEntityType());
     entityTypeByGroupColumnFamily.insert(fkGroupIdAndEntityKey, entityTypeValue);
@@ -90,8 +90,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public void delete(final long groupKey) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public void delete(final String groupId) {
+    this.groupId.wrapString(groupId);
 
     // remove entries from ENTITY_BY_GROUP cf
     entityTypeByGroupColumnFamily.whileEqualPrefix(
@@ -100,25 +100,25 @@ public class DbGroupState implements MutableGroupState {
           entityTypeByGroupColumnFamily.deleteExisting(compositeKey);
         });
 
-    groupColumnFamily.deleteExisting(groupId);
+    groupColumnFamily.deleteExisting(this.groupId);
   }
 
   @Override
-  public void addTenant(final long groupKey, final String tenantId) {
-    groupId.wrapString(String.valueOf(groupKey));
-    final PersistedGroup persistedGroup = groupColumnFamily.get(groupId);
+  public void addTenant(final String groupId, final String tenantId) {
+    this.groupId.wrapString(groupId);
+    final PersistedGroup persistedGroup = groupColumnFamily.get(this.groupId);
     persistedGroup.addTenantId(tenantId);
-    groupColumnFamily.update(groupId, persistedGroup);
+    groupColumnFamily.update(this.groupId, persistedGroup);
   }
 
   @Override
-  public void removeTenant(final long groupKey, final String tenantId) {
-    groupId.wrapString(String.valueOf(groupKey));
-    final var persistedGroup = groupColumnFamily.get(groupId);
+  public void removeTenant(final String groupId, final String tenantId) {
+    this.groupId.wrapString(groupId);
+    final var persistedGroup = groupColumnFamily.get(this.groupId);
     final List<String> tenantIdsList = persistedGroup.getTenantIdsList();
     tenantIdsList.remove(tenantId);
     persistedGroup.setTenantIdsList(tenantIdsList);
-    groupColumnFamily.update(groupId, persistedGroup);
+    groupColumnFamily.update(this.groupId, persistedGroup);
   }
 
   @Override
@@ -136,8 +136,8 @@ public class DbGroupState implements MutableGroupState {
   }
 
   @Override
-  public Optional<EntityType> getEntityType(final long groupKey, final long entityKey) {
-    groupId.wrapString(String.valueOf(groupKey));
+  public Optional<EntityType> getEntityType(final String groupId, final long entityKey) {
+    this.groupId.wrapString(groupId);
     this.entityKey.wrapLong(entityKey);
     final var entityType = entityTypeByGroupColumnFamily.get(fkGroupIdAndEntityKey);
     return Optional.ofNullable(entityType).map(EntityTypeValue::getEntityType);

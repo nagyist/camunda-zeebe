@@ -53,6 +53,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResult;
@@ -515,8 +516,22 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
     final var response =
-        new RoleCreateResult().roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()));
+        new RoleCreateResult()
+            .roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()))
+            .roleId(roleRecord.getRoleId())
+            .name(roleRecord.getName())
+            .description(roleRecord.getDescription());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toRoleUpdateResponse(final RoleRecord roleRecord) {
+    final var response =
+        new RoleUpdateResult()
+            .roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()))
+            .roleId(roleRecord.getRoleId())
+            .description(roleRecord.getDescription())
+            .name(roleRecord.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {

@@ -44,11 +44,6 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   }
 
   @Override
-  public ProcessInstanceStateFilterProperty build() {
-    return filterProperty;
-  }
-
-  @Override
   public ProcessInstanceStateProperty in(final List<ProcessInstanceState> values) {
     filterProperty.setIn(values);
     return this;
@@ -57,6 +52,11 @@ public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStatePro
   @Override
   public ProcessInstanceStateProperty in(final ProcessInstanceState... values) {
     return in(CollectionUtil.toList(values));
+  }
+
+  @Override
+  public ProcessInstanceStateFilterProperty build() {
+    return filterProperty;
   }
 
   @Override

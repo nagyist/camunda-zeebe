@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -176,7 +177,7 @@ public final class EventAppliers implements EventApplier {
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
-    register(DeploymentIntent.RECONSTRUCTED, NOOP_EVENT_APPLIER);
+    register(DeploymentIntent.RECONSTRUCTED, new DeploymentReconstructedApplier(state));
     register(
         DeploymentIntent.RECONSTRUCTED_ALL,
         new DeploymentReconstructedAllApplier(state.getDeploymentState()));
@@ -590,6 +591,14 @@ public final class EventAppliers implements EventApplier {
     register(
         BatchOperationChunkIntent.CREATED,
         new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationExecutionIntent.EXECUTING,
+        new BatchOperationExecutingApplier(state.getBatchOperationState()));
+    register(BatchOperationExecutionIntent.EXECUTED, NOOP_EVENT_APPLIER);
+
+    register(
+        BatchOperationExecutionIntent.COMPLETED,
+        new BatchOperationCompletedApplier(state.getBatchOperationState()));
   }
 
   private void registerIdentitySetupAppliers() {

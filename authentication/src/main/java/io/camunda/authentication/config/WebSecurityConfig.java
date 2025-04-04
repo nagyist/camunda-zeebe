@@ -93,7 +93,7 @@ public class WebSecurityConfig {
           // swagger-ui endpoint
           "/swagger-ui/**",
           "/v3/api-docs/**",
-          "/camunda-api-docs/**",
+          "/rest-api.yaml",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/favicon.ico");
@@ -342,6 +342,13 @@ public class WebSecurityConfig {
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
+          .authorizeHttpRequests(
+              (authorizeHttpRequests) ->
+                  authorizeHttpRequests
+                      .requestMatchers(UNPROTECTED_PATHS.toArray(String[]::new))
+                      .permitAll()
+                      .anyRequest()
+                      .authenticated())
           .headers(WebSecurityConfig::setupStrictTransportSecurity)
           .exceptionHandling(
               (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))

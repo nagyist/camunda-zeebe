@@ -9,22 +9,24 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.search.query.RoleQuery;
 import io.camunda.service.RoleServices;
+import io.camunda.service.RoleServices.AddEntityToRoleRequest;
+import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
-import io.camunda.zeebe.gateway.rest.RequestMapper.CreateRoleRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateRoleRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,31 +55,32 @@ public class RoleController {
         () ->
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createRole(createRoleRequest.name()),
+                .createRole(createRoleRequest),
         ResponseMapper::toRoleCreateResponse);
   }
 
-  @CamundaPatchMapping(path = "/{roleKey}")
+  @CamundaPutMapping(path = "/{roleId}")
   public CompletableFuture<ResponseEntity<Object>> updateRole(
-      @PathVariable final long roleKey, @RequestBody final RoleUpdateRequest roleUpdateRequest) {
-    return RequestMapper.toRoleUpdateRequest(roleUpdateRequest, roleKey)
+      @PathVariable final String roleId, @RequestBody final RoleUpdateRequest roleUpdateRequest) {
+    return RequestMapper.toRoleUpdateRequest(roleUpdateRequest, roleId)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateRole);
   }
 
   public CompletableFuture<ResponseEntity<Object>> updateRole(
       final UpdateRoleRequest updateRoleRequest) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethod(
         () ->
             roleServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateRole(updateRoleRequest.roleKey(), updateRoleRequest.name()));
+                .updateRole(updateRoleRequest),
+        ResponseMapper::toRoleUpdateResponse);
   }
 
-  @CamundaDeleteMapping(path = "/{roleKey}")
-  public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final long roleKey) {
+  @CamundaDeleteMapping(path = "/{roleId}")
+  public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final String roleId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            roleServices.withAuthentication(RequestMapper.getAuthentication()).deleteRole(roleKey));
+            roleServices.withAuthentication(RequestMapper.getAuthentication()).deleteRole(roleId));
   }
 
   @CamundaGetMapping(path = "/{roleKey}")
@@ -109,5 +112,21 @@ public class RoleController {
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }
+  }
+
+  @CamundaPutMapping(
+      path = "/{roleId}/users/{username}",
+      consumes = {})
+  public CompletableFuture<ResponseEntity<Object>> addUserToRole(
+      @PathVariable final String roleId, @PathVariable final String username) {
+    return RequestMapper.toRoleAddEntityRequest(roleId, username, EntityType.USER)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addEntityToRole);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> addEntityToRole(
+      final AddEntityToRoleRequest request) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            roleServices.withAuthentication(RequestMapper.getAuthentication()).addMember(request));
   }
 }

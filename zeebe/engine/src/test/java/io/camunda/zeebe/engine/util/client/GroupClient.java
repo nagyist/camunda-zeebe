@@ -27,20 +27,20 @@ public class GroupClient {
     return new GroupCreateClient(writer, name);
   }
 
-  public GroupUpdateClient updateGroup(final long groupKey) {
-    return new GroupUpdateClient(writer, groupKey);
+  public GroupUpdateClient updateGroup(final String groupId) {
+    return new GroupUpdateClient(writer, groupId);
   }
 
-  public GroupAddEntityClient addEntity(final long groupKey) {
-    return new GroupAddEntityClient(writer, groupKey);
+  public GroupAddEntityClient addEntity(final String groupId) {
+    return new GroupAddEntityClient(writer, groupId);
   }
 
   public GroupRemoveEntityClient removeEntity(final long groupKey) {
     return new GroupRemoveEntityClient(writer, groupKey);
   }
 
-  public GroupDeleteClient deleteGroup(final long groupKey) {
-    return new GroupDeleteClient(writer, groupKey);
+  public GroupDeleteClient deleteGroup(final String groupId) {
+    return new GroupDeleteClient(writer, groupId);
   }
 
   public static class GroupCreateClient {
@@ -67,6 +67,11 @@ public class GroupClient {
       this.writer = writer;
       groupRecord = new GroupRecord();
       groupRecord.setName(name);
+    }
+
+    public GroupCreateClient withGroupId(final String groupId) {
+      groupRecord.setGroupId(groupId);
+      return this;
     }
 
     public Record<GroupRecordValue> create() {
@@ -101,10 +106,10 @@ public class GroupClient {
     private final GroupRecord groupRecord;
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupUpdateClient(final CommandWriter writer, final long groupKey) {
+    public GroupUpdateClient(final CommandWriter writer, final String groupId) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setGroupKey(groupKey);
+      groupRecord.setGroupId(groupId);
     }
 
     public GroupUpdateClient withName(final String name) {
@@ -145,10 +150,10 @@ public class GroupClient {
 
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupAddEntityClient(final CommandWriter writer, final long groupKey) {
+    public GroupAddEntityClient(final CommandWriter writer, final String groupId) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setGroupKey(groupKey);
+      groupRecord.setGroupId(groupId);
     }
 
     public GroupAddEntityClient withEntityKey(final long entityKey) {
@@ -199,6 +204,12 @@ public class GroupClient {
       groupRecord.setGroupKey(key);
     }
 
+    // TODO: refactor this with https://github.com/camunda/camunda/issues/30029
+    public GroupRemoveEntityClient withGroupId(final String groupId) {
+      groupRecord.setGroupId(groupId);
+      return this;
+    }
+
     public GroupRemoveEntityClient withEntityKey(final long entityKey) {
       groupRecord.setEntityKey(entityKey);
       return this;
@@ -242,10 +253,15 @@ public class GroupClient {
 
     private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public GroupDeleteClient(final CommandWriter writer, final long key) {
+    public GroupDeleteClient(final CommandWriter writer, final String groupId) {
       this.writer = writer;
       groupRecord = new GroupRecord();
-      groupRecord.setGroupKey(key);
+      groupRecord.setGroupId(groupId);
+    }
+
+    public GroupDeleteClient withGroupKey(final long groupKey) {
+      groupRecord.setGroupKey(groupKey);
+      return this;
     }
 
     public Record<GroupRecordValue> delete() {

@@ -15,17 +15,20 @@
  */
 package io.camunda.client.impl.search.filter;
 
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceVariableFilterRequest;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.FlowNodeInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.RequestMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.FlowNodeInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
@@ -34,7 +37,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<
@@ -234,21 +236,9 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      final List<ProcessInstanceVariableFilterRequest> variableFilters =
-          variableValueFilters.entrySet().stream()
-              .map(
-                  entry -> {
-                    variableValueNullCheck(entry.getValue());
-                    final ProcessInstanceVariableFilterRequest request =
-                        new ProcessInstanceVariableFilterRequest();
-                    request.setName(entry.getKey());
-                    final StringProperty property = new StringPropertyImpl();
-                    property.eq(entry.getValue().toString());
-                    request.setValue(property.build());
-                    return request;
-                  })
-              .collect(Collectors.toList());
-      filter.setVariables(RequestMapper.toProtocolList(variableFilters));
+      filter.setVariables(
+          RequestMapper.toProtocolList(
+              RequestMapper.toProcessInstanceVariableFilterRequestList(variableValueFilters)));
     }
     return this;
   }
@@ -282,11 +272,60 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
+  public ProcessInstanceFilter hasRetriesLeft(final Boolean hasRetriesLeft) {
+    filter.hasRetriesLeft(hasRetriesLeft);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter flowNodeId(final String flowNodeId) {
+    flowNodeId(b -> b.eq(flowNodeId));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter flowNodeId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setFlowNodeId(RequestMapper.toProtocolObject(property.build()));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter flowNodeInstanceState(
+      final FlowNodeInstanceState flowNodeInstanceState) {
+    flowNodeInstanceState(b -> b.eq(flowNodeInstanceState));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter flowNodeInstanceState(
+      final Consumer<FlowNodeInstanceStateProperty> fn) {
+    final FlowNodeInstanceStateProperty property = new FlowNodeInstanceStatePropertyImpl();
+    fn.accept(property);
+    filter.setFlowNodeInstanceState(RequestMapper.toProtocolObject(property.build()));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter hasFlowNodeInstanceIncident(
+      final Boolean hasFlowNodeInstanceIncident) {
+    filter.hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode) {
+    filter.setIncidentErrorHashCode(incidentErrorHashCode);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessInstanceFilter getSearchRequestProperty() {
     return filter;
   }
 
-  static void variableValueNullCheck(Object value) {
+  static void variableValueNullCheck(final Object value) {
     if (value == null) {
       throw new IllegalArgumentException("Variable value cannot be null");
     }

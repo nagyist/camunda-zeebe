@@ -209,6 +209,7 @@
       <column name="PROCESS_DEFINITION_ID" type="VARCHAR(255)"/>
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT" />
       <column name="ERROR_MESSAGE" type="VARCHAR(4000)" />
+      <column name="ERROR_MESSAGE_HASH" type="INT" />
       <column name="ERROR_TYPE" type="VARCHAR(100)" />
       <column name="STATE" type="VARCHAR(20)" />
       <column name="CREATION_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
@@ -527,6 +528,24 @@
 
     <!-- Step 5: Make ID the new PK -->
     <addPrimaryKey tableName="${prefix}MAPPINGS" columnNames="MAPPING_ID" constraintName="${prefix}PK_MAPPINGS_ID"/>
+  </changeSet>
+
+  <changeSet id="create_job_table" author="tsedekey">
+  <createTable tableName="${prefix}JOB">
+    <column name="JOB_KEY" type="BIGINT">
+      <constraints primaryKey="true"/>
+    </column>
+    <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+    <column name="RETRIES" type="SMALLINT"/>
+    <column name="STATE" type="VARCHAR(20)"/>
+    <column name="PARTITION_ID" type="NUMBER"/>
+    <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
+  </createTable>
+
+    <modifySql dbms="mariadb">
+      <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
+      <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
+    </modifySql>
   </changeSet>
 
 </databaseChangeLog>

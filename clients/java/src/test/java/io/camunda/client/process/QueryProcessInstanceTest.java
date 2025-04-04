@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.enums.FlowNodeInstanceState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
@@ -88,7 +89,12 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .hasIncident(true)
                     .tenantId("tenant")
                     .variables(variablesMap)
-                    .errorMessage("Error message"))
+                    .errorMessage("Error message")
+                    .hasRetriesLeft(true)
+                    .flowNodeId("flowNodeId")
+                    .flowNodeInstanceState(FlowNodeInstanceState.ACTIVE)
+                    .hasFlowNodeInstanceIncident(true)
+                    .incidentErrorHashCode(123456789))
         .send()
         .join();
     // then
@@ -112,10 +118,16 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
     assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
+    assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
+    assertThat(filter.getFlowNodeId().get$Eq()).isEqualTo("flowNodeId");
+    assertThat(filter.getFlowNodeInstanceState().get$Eq())
+        .isEqualTo(FlowNodeInstanceStateEnum.ACTIVE);
+    assertThat(filter.getHasFlowNodeInstanceIncident()).isEqualTo(true);
+    assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
   }
 
   @Test
-  void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongInFilter() {
     // when
     client
         .newProcessInstanceSearchRequest()
@@ -131,6 +143,25 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongNinFilter() {
+    // when
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.processInstanceKey(b -> b.notIn(1L, 10L)))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQuery request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
+    final ProcessInstanceFilter filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    assertThat(processInstanceKey).isNotNull();
+    assertThat(processInstanceKey.get$NotIn()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test

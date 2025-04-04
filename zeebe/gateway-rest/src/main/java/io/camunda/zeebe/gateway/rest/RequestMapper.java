@@ -39,7 +39,6 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.CamundaPrincipal;
-import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.filter.AdHocSubprocessActivityFilter;
@@ -65,6 +64,9 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.RoleServices.AddEntityToRoleRequest;
+import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
@@ -120,6 +122,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
@@ -303,17 +306,30 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
-      final RoleUpdateRequest roleUpdateRequest, final long roleKey) {
+      final RoleUpdateRequest roleUpdateRequest, final String roleId) {
     return getResult(
         RoleRequestValidator.validateUpdateRequest(roleUpdateRequest),
-        () -> new UpdateRoleRequest(roleKey, roleUpdateRequest.getChangeset().getName()));
+        () ->
+            new UpdateRoleRequest(
+                roleId, roleUpdateRequest.getName(), roleUpdateRequest.getDescription()));
   }
 
   public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
       final RoleCreateRequest roleCreateRequest) {
     return getResult(
         RoleRequestValidator.validateCreateRequest(roleCreateRequest),
-        () -> new CreateRoleRequest(roleCreateRequest.getName()));
+        () ->
+            new CreateRoleRequest(
+                roleCreateRequest.getRoleId(),
+                roleCreateRequest.getName(),
+                roleCreateRequest.getDescription()));
+  }
+
+  public static Either<ProblemDetail, AddEntityToRoleRequest> toRoleAddEntityRequest(
+      final String roleId, final String entityId, final EntityType entityType) {
+    return getResult(
+        RoleRequestValidator.validateAddEntityRequest(roleId, entityId, entityType),
+        () -> new AddEntityToRoleRequest(roleId, entityId, entityType));
   }
 
   public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
@@ -590,21 +606,16 @@ public class RequestMapper {
     if (requestAuthentication != null) {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaPrincipal authenticatedPrincipal) {
+        final var authenticationContext = authenticatedPrincipal.getAuthenticationContext();
 
         authenticatedRoleKeys.addAll(
-            authenticatedPrincipal.getAuthenticationContext().roles().stream()
-                .map(RoleEntity::roleKey)
-                .toList());
+            authenticationContext.roles().stream().map(RoleEntity::roleKey).toList());
 
         authenticatedTenantIds.addAll(
-            authenticatedPrincipal.getAuthenticationContext().tenants().stream()
-                .map(TenantDTO::tenantId)
-                .toList());
+            authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
 
-        if (authenticatedPrincipal instanceof final CamundaUser user) {
-          authenticatedUsername = user.getUsername();
-          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
-        }
+        authenticatedUsername = authenticationContext.username();
+        claims.put(Authorization.AUTHORIZED_USERNAME, authenticationContext.username());
       }
 
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
@@ -1019,10 +1030,6 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
-
-  public record CreateRoleRequest(String name) {}
-
-  public record UpdateRoleRequest(long roleKey, String name) {}
 
   public record UpdateGroupRequest(String groupId, String name, String description) {}
 }
