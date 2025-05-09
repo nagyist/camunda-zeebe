@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
@@ -45,6 +46,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -59,6 +61,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -70,6 +73,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.util.HashSet;
 import java.util.List;
@@ -122,10 +126,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<MappingEntity> searchMappings(MappingQuery query) {
-    if (query.filter().tenantId() != null) {
-      query = expandTenantFilter(query);
-    }
+  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery mappingQuery) {
+    final var query = applyFilters(mappingQuery);
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
@@ -322,7 +324,11 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery groupQuery) {
+    var query = groupQuery;
+    if (groupQuery.filter().tenantId() != null) {
+      query = expandTenantFilter(groupQuery);
+    }
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
@@ -399,18 +405,28 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();
   }
 
-  private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
-    final List<TenantMemberEntity> tenantMembers =
-        getSearchExecutor()
-            .findAll(
-                new TenantQuery.Builder()
-                    .filter(
-                        f -> f.joinParentId(mappingQuery.filter().tenantId()).memberType(MAPPING))
-                    .build(),
-                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
-    final var mappingIds =
-        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
+  private MappingQuery applyFilters(final MappingQuery mappingQuery) {
+    if (mappingQuery.filter().tenantId() != null) {
+      return expandTenantFilter(mappingQuery);
+    }
+    if (mappingQuery.filter().groupId() != null) {
+      return expandGroupFilter(mappingQuery);
+    }
+    if (mappingQuery.filter().roleId() != null) {
+      return expandRoleFilter(mappingQuery);
+    }
+    return mappingQuery;
+  }
 
+  private MappingQuery expandGroupFilter(final MappingQuery mappingQuery) {
+    final var mappingIds = getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
+  }
+
+  private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
+    final var mappingIds = getTenantMembers(mappingQuery.filter().tenantId(), MAPPING);
     return mappingQuery.toBuilder()
         .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
@@ -421,7 +437,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       return expandTenantFilter(userQuery);
     }
     if (userQuery.filter().groupId() != null) {
-      return expandGroupFilterForUser(userQuery);
+      return expandGroupFilter(userQuery);
     }
     if (userQuery.filter().roleId() != null) {
       return expandRoleFilter(userQuery);
@@ -430,51 +446,73 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   private UserQuery expandTenantFilter(final UserQuery userQuery) {
+    final var usernames = getTenantMembers(userQuery.filter().tenantId(), USER);
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private UserQuery expandGroupFilter(final UserQuery userQuery) {
+    final var usernames = getGroupMembers(userQuery.filter().groupId(), USER);
+
+    return userQuery.toBuilder()
+        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
+        .build();
+  }
+
+  private GroupQuery expandTenantFilter(final GroupQuery groupQuery) {
+    final var groupIds = getTenantMembers(groupQuery.filter().tenantId(), GROUP);
+
+    return groupQuery.toBuilder()
+        .filter(groupQuery.filter().toBuilder().groupIds(groupIds).build())
+        .build();
+  }
+
+  private Set<String> getTenantMembers(final String tenantId, final EntityType entityType) {
     final List<TenantMemberEntity> tenantMembers =
         getSearchExecutor()
             .findAll(
                 new TenantQuery.Builder()
-                    .filter(f -> f.joinParentId(userQuery.filter().tenantId()).memberType(USER))
+                    .filter(f -> f.joinParentId(tenantId).memberType(entityType))
                     .build(),
                 io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
-    final var usernames =
-        tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
-
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
-        .build();
+    return tenantMembers.stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
   }
 
-  private UserQuery expandGroupFilterForUser(final UserQuery userQuery) {
+  private Set<String> getGroupMembers(final String groupId, final EntityType entityType) {
     final List<GroupMemberEntity> groupMembers =
         getSearchExecutor()
             .findAll(
                 new GroupQuery.Builder()
-                    .filter(f -> f.joinParentId(userQuery.filter().groupId()).memberType(USER))
+                    .filter(f -> f.joinParentId(groupId).memberType(entityType))
                     .build(),
                 io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class);
-    final var usernames =
-        groupMembers.stream().map(GroupMemberEntity::id).collect(Collectors.toSet());
+    return groupMembers.stream().map(GroupMemberEntity::id).collect(Collectors.toSet());
+  }
 
+  private UserQuery expandRoleFilter(final UserQuery userQuery) {
+    final var usernames = getRoleMemberIds(userQuery.filter().roleId(), EntityType.USER);
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().usernames(usernames).build())
         .build();
   }
 
-  private UserQuery expandRoleFilter(final UserQuery userQuery) {
+  private MappingQuery expandRoleFilter(final MappingQuery mappingQuery) {
+    final var mappingIds = getRoleMemberIds(mappingQuery.filter().roleId(), MAPPING);
+    return mappingQuery.toBuilder()
+        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
+  }
+
+  public Set<String> getRoleMemberIds(final String roleId, final EntityType memberType) {
     final List<RoleMemberEntity> roleMembers =
         getSearchExecutor()
             .findAll(
                 new RoleQuery.Builder()
-                    .filter(f -> f.joinParentId(userQuery.filter().roleId()).memberType(USER))
+                    .filter(f -> f.joinParentId(roleId).memberType(memberType))
                     .build(),
                 io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class);
-    final var usernames =
-        roleMembers.stream().map(RoleMemberEntity::id).collect(Collectors.toSet());
-
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().usernames(usernames).build())
-        .build();
+    return roleMembers.stream().map(RoleMemberEntity::id).collect(Collectors.toSet());
   }
 
   @Override
@@ -486,6 +524,17 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
-    throw new UnsupportedOperationException("Not implemented yet");
+    // TODO must be refactored to always use paged filter #31777
+    return searchBatchOperationItems(
+            SearchQueryBuilders.batchOperationItemQuery()
+                .filter(f -> f.batchOperationIds(batchOperationId))
+                .build())
+        .items();
+  }
+
+  public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
+      final BatchOperationItemQuery query) {
+    return getSearchExecutor()
+        .search(query, io.camunda.webapps.schema.entities.operation.OperationEntity.class);
   }
 }

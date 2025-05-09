@@ -26,10 +26,9 @@ import {
   COMPLETED_END_EVENT_BADGE,
   SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {OverlayPosition, SubprocessOverlay} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
@@ -58,7 +57,7 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
-import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -99,6 +98,7 @@ const TopPanel: React.FC = observer(() => {
     useTotalRunningInstancesVisibleForFlowNode(
       sourceFlowNodeIdForMoveOperation || undefined,
     );
+  const {data: processInstance} = useProcessInstance();
   const modificationsByFlowNode = useModificationsByFlowNode();
   const affectedTokenCount = totalMoveOperationRunningInstances || 1;
   const visibleAffectedTokenCount =
@@ -207,7 +207,6 @@ const TopPanel: React.FC = observer(() => {
     }, []),
   );
 
-  const {processInstance} = processInstanceDetailsStore.state;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_STATE,
   );
@@ -369,11 +368,11 @@ const TopPanel: React.FC = observer(() => {
                       state={payload.flowNodeState}
                       count={payload.count}
                       container={overlay.container}
-                      isFaded={hasPendingCancelOrMoveModification(
-                        overlay.flowNodeId,
-                        undefined,
+                      isFaded={hasPendingCancelOrMoveModification({
+                        flowNodeId: overlay.flowNodeId,
+                        flowNodeInstanceKey: undefined,
                         modificationsByFlowNode,
-                      )}
+                      })}
                       title={
                         payload.flowNodeState === 'completed'
                           ? 'Execution Count'
@@ -397,7 +396,7 @@ const TopPanel: React.FC = observer(() => {
               </Diagram>
             )}
         </DiagramShell>
-        {processInstance?.state === 'INCIDENT' && (
+        {processInstance?.hasIncident && (
           <IncidentsWrapper setIsInTransition={setIsInTransition} />
         )}
       </DiagramPanel>

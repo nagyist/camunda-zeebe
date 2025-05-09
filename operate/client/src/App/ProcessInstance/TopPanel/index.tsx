@@ -29,12 +29,12 @@ import {
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {OverlayPosition, SubprocessOverlay} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
-import {ModificationDropdown} from './ModificationDropdown/v2';
+import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useFlownodeStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeStatistics';
@@ -47,7 +47,10 @@ import {
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
 } from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {finishMovingToken} from 'modules/utils/modifications';
+import {
+  finishMovingToken,
+  hasPendingCancelOrMoveModification,
+} from 'modules/utils/modifications';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {init} from 'modules/utils/flowNodeMetadata';
@@ -55,7 +58,6 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
-import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -366,9 +368,11 @@ const TopPanel: React.FC = observer(() => {
                     state={payload.flowNodeState}
                     count={payload.count}
                     container={overlay.container}
-                    isFaded={modificationsStore.hasPendingCancelOrMoveModification(
-                      overlay.flowNodeId,
-                    )}
+                    isFaded={hasPendingCancelOrMoveModification({
+                      flowNodeId: overlay.flowNodeId,
+                      flowNodeInstanceKey: undefined,
+                      modificationsByFlowNode,
+                    })}
                     title={
                       payload.flowNodeState === 'completed'
                         ? 'Execution Count'

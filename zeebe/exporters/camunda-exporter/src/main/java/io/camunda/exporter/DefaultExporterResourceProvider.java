@@ -65,7 +65,10 @@ import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
 import io.camunda.exporter.handlers.UserTaskVariableHandler;
 import io.camunda.exporter.handlers.VariableHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationCompletedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationStartedHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
@@ -279,7 +282,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new BatchOperationCreatedHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new BatchOperationStartedHandler(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()));
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new BatchOperationCompletedHandler(
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new BatchOperationLifecycleManagementHandler(
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new BatchOperationChunkCreatedItemHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
 
     indicesWithCustomErrorHandlers =
         Map.of(
