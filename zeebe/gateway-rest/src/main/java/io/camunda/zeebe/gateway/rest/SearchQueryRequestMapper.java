@@ -35,6 +35,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -54,6 +55,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.AuthorizationSort;
+import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
@@ -74,6 +76,7 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StateEnum;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemFilter;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -267,7 +270,8 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromRoleSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::role,
             SearchQueryRequestMapper::applyRoleSortField);
-    return buildSearchQuery(sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = toRoleFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQuery(
@@ -618,6 +622,54 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
+  public static Either<ProblemDetail, BatchOperationItemQuery> toBatchOperationItemQuery(
+      final BatchOperationItemSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.batchOperationItemQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromBatchOperationItemSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::batchOperationItem,
+            SearchQueryRequestMapper::applyBatchOperationItemSortField);
+    final var filter = toBatchOperationItemFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::batchOperationItemQuery);
+  }
+
+  private static io.camunda.search.filter.BatchOperationItemFilter toBatchOperationItemFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemFilter filter) {
+    final var builder = FilterBuilders.batchOperationItem();
+
+    if (filter != null) {
+      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
+      ofNullable(filter.getState())
+          .map(BatchOperationItemFilter.StateEnum::toString)
+          .ifPresent(builder::state);
+    }
+
+    return builder.build();
+  }
+
+  private static List<String> applyBatchOperationItemSortField(
+      final BatchOperationItemSearchQuerySortRequest.FieldEnum field,
+      final BatchOperationItemSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case STATE -> builder.state();
+        case BATCH_OPERATION_ID -> builder.batchOperationId();
+        case ITEM_KEY -> builder.itemKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
   private static ProcessDefinitionFilter toProcessDefinitionFilter(
       final io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionFilter filter) {
     final var builder = FilterBuilders.processDefinition();
@@ -753,6 +805,15 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId()).ifPresent(builder::groupId);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+    }
+    return builder.build();
+  }
+
+  private static RoleFilter toRoleFilter(final RoleFilterRequest filter) {
+    final var builder = FilterBuilders.role();
+    if (filter != null) {
+      ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
     return builder.build();

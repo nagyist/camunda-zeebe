@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
@@ -20,6 +21,7 @@ import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.RoleReader;
+import io.camunda.db.rdbms.read.service.SequenceFlowReader;
 import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
@@ -49,6 +51,8 @@ public class RdbmsService {
   private final FormReader formReader;
   private final MappingReader mappingReader;
   private final BatchOperationReader batchOperationReader;
+  private final SequenceFlowReader sequenceFlowReader;
+  private final BatchOperationItemReader batchOperationItemReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -68,7 +72,9 @@ public class RdbmsService {
       final UserTaskReader userTaskReader,
       final FormReader formReader,
       final MappingReader mappingReader,
-      final BatchOperationReader batchOperationReader) {
+      final BatchOperationReader batchOperationReader,
+      final SequenceFlowReader sequenceFlowReader,
+      final BatchOperationItemReader batchOperationItemReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -87,6 +93,8 @@ public class RdbmsService {
     this.formReader = formReader;
     this.mappingReader = mappingReader;
     this.batchOperationReader = batchOperationReader;
+    this.sequenceFlowReader = sequenceFlowReader;
+    this.batchOperationItemReader = batchOperationItemReader;
   }
 
   public AuthorizationReader getAuthorizationReader() {
@@ -155,6 +163,14 @@ public class RdbmsService {
 
   public BatchOperationReader getBatchOperationReader() {
     return batchOperationReader;
+  }
+
+  public SequenceFlowReader getSequenceFlowReader() {
+    return sequenceFlowReader;
+  }
+
+  public BatchOperationItemReader getBatchOperationItemReader() {
+    return batchOperationItemReader;
   }
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?

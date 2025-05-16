@@ -13,6 +13,7 @@ import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
 import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -25,7 +26,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelBatchOperationRe
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPauseBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,19 +57,28 @@ public final class BatchOperationServices
     return batchOperationSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(Builder::read)))
+                authentication, Authorization.of(a -> a.batchOperation().read())))
         .searchBatchOperations(query);
+  }
+
+  public SearchQueryResult<BatchOperationItemEntity> searchItems(
+      final BatchOperationItemQuery query) {
+    return batchOperationSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(Builder::read)))
+        .searchBatchOperationItems(query);
   }
 
   public BatchOperationEntity getById(final String batchOperationId) {
     final var result =
-        batchOperationSearchClient.searchBatchOperations(
-            batchOperationQuery(q -> q.filter(f -> f.batchOperationIds(batchOperationId))));
+        batchOperationSearchClient
+            .withSecurityContext(
+                securityContextProvider.provideSecurityContext(
+                    authentication, Authorization.of(a -> a.batchOperation().read())))
+            .searchBatchOperations(
+                batchOperationQuery(q -> q.filter(f -> f.batchOperationIds(batchOperationId))));
     return getSingleResultOrThrow(result, batchOperationId, "BatchOperation");
-  }
-
-  public List<BatchOperationItemEntity> getItemsById(final String batchOperationId) {
-    return batchOperationSearchClient.getBatchOperationItems(batchOperationId);
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(

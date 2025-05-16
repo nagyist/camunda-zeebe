@@ -31,6 +31,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.entities.UserEntity;
@@ -77,6 +78,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCallHierarchyEntry;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
@@ -151,6 +154,25 @@ public final class SearchQueryResponseMapper {
         .canceled(result.canceled())
         .incidents(result.incidents())
         .completed(result.completed());
+  }
+
+  public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
+      final List<SequenceFlowEntity> result) {
+    return new ProcessInstanceSequenceFlowsQueryResult()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceSequenceFlowResult)
+                .toList());
+  }
+
+  private static ProcessInstanceSequenceFlowResult toProcessInstanceSequenceFlowResult(
+      final SequenceFlowEntity result) {
+    return new ProcessInstanceSequenceFlowResult()
+        .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionId(result.processDefinitionId())
+        .elementId(result.flowNodeId())
+        .tenantId(result.tenantId());
   }
 
   public static ProcessInstanceSearchQueryResult toProcessInstanceSearchQueryResponse(
@@ -284,6 +306,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
+      final SearchQueryResult<BatchOperationItemEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new BatchOperationItemSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toBatchOperationItems)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
       final SearchQueryResult<IncidentEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -369,6 +402,13 @@ public final class SearchQueryResponseMapper {
     return new BatchOperationItemSearchQueryResult()
         .items(
             batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
+  }
+
+  public static List<BatchOperationItemResponse> toBatchOperationItems(
+      final List<BatchOperationItemEntity> batchOperationItems) {
+    return batchOperationItems.stream()
+        .map(SearchQueryResponseMapper::toBatchOperationItem)
+        .toList();
   }
 
   public static BatchOperationItemResponse toBatchOperationItem(

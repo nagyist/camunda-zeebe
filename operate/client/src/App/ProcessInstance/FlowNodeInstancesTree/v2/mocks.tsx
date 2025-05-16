@@ -13,7 +13,6 @@ import {
 } from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createEventSubProcessFlowNodeInstances,
   createInstance,
@@ -59,6 +58,18 @@ const eventSubprocessProcessInstance: ProcessInstanceEntity = Object.freeze(
     bpmnProcessId: 'eventSubprocessProcess',
   }),
 );
+
+const mockEventSubprocessInstance: ProcessInstance = {
+  processInstanceKey: '2251799813686118',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'eventSubprocessProcess',
+  tenantId: '<default>',
+  processDefinitionName: 'Event subprocess Process',
+  hasIncident: true,
+};
 
 const nestedSubProcessesInstance = Object.freeze(
   createInstance({
@@ -797,7 +808,6 @@ const adHocNodeFlowNodeInstances: {
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
     return () => {
-      processInstanceDetailsDiagramStore.reset();
       flowNodeInstanceStore.reset();
       modificationsStore.reset();
       instanceHistoryModificationStore.reset();
@@ -845,5 +855,6 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockRunningNodeInstance,
   eventSubprocessProcessInstance,
+  mockEventSubprocessInstance,
   Wrapper,
 };

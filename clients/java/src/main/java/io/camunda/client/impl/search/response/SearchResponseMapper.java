@@ -18,6 +18,7 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
+import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
@@ -28,12 +29,14 @@ import io.camunda.client.api.search.response.Mapping;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.search.response.BatchOperationItemsImpl.BatchOperationItemImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.*;
 import java.util.Arrays;
@@ -72,6 +75,16 @@ public final class SearchResponseMapper {
         toSearchResponseInstances(response.getItems(), ProcessInstanceImpl::new);
 
     return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static List<ProcessInstanceSequenceFlow> toProcessInstanceSequenceFlowSearchResponse(
+      final ProcessInstanceSequenceFlowsQueryResult response) {
+    if (response.getItems() != null) {
+      return response.getItems().stream()
+          .map(ProcessInstanceSequenceFlowImpl::new)
+          .collect(Collectors.toList());
+    }
+    return Collections.emptyList();
   }
 
   public static SearchResponse<UserTask> toUserTaskSearchResponse(
@@ -164,6 +177,13 @@ public final class SearchResponseMapper {
         response.getDescription());
   }
 
+  public static SearchResponse<Role> toRolesResponse(final RoleSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Role> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toRoleResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   public static Group toGroupResponse(final GroupResult response) {
     return new GroupImpl(response.getGroupId(), response.getName(), response.getDescription());
   }
@@ -203,6 +223,22 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Mapping> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toMappingResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<BatchOperation> toBatchOperationsResponse(
+      final BatchOperationSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<BatchOperation> instances =
+        toSearchResponseInstances(response.getItems(), BatchOperationImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<BatchOperationItem> toBatchOperationItemsResponse(
+      final BatchOperationItemSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<BatchOperationItem> instances =
+        toSearchResponseInstances(response.getItems(), BatchOperationItemImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 

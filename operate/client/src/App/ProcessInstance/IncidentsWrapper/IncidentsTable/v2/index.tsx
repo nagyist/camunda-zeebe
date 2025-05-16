@@ -10,11 +10,10 @@ import {IncidentOperation} from 'modules/components/IncidentOperation';
 import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {sortIncidents} from '../service';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {FlexContainer, ErrorMessageCell} from '../styled';
-import {Incident, incidentsStore} from 'modules/stores/incidents';
+import {Incident} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';
@@ -24,23 +23,32 @@ import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {useHasPermissions} from 'modules/queries/permissions/useHasPermissions';
+import {
+  getFilteredIncidents,
+  isSingleIncidentSelected,
+} from 'modules/utils/incidents';
+import {useIncidents} from 'modules/hooks/incidents';
+import {clearSelection, selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalContent, setModalContent] = useState<string>('');
   const [modalTitle, setModalTitle] = useState<string>('');
+  const rootNode = useRootNode();
 
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: hasPermissionForRetryOperation} = useHasPermissions([
     'UPDATE_PROCESS_INSTANCE',
   ]);
+  const incidents = useIncidents();
   const location = useLocation();
   const {sortBy, sortOrder} = getSortParams(location.search) || {
     sortBy: 'creationTime',
     sortOrder: 'desc',
   };
 
-  const {filteredIncidents} = incidentsStore;
+  const filteredIncidents = getFilteredIncidents(incidents);
 
   const handleModalClose = () => {
     setIsModalVisible(false);
@@ -82,9 +90,9 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
             return;
           }
 
-          incidentsStore.isSingleIncidentSelected(incident.flowNodeInstanceId)
-            ? flowNodeSelectionStore.clearSelection()
-            : flowNodeSelectionStore.selectFlowNode({
+          isSingleIncidentSelected(incidents, incident.flowNodeInstanceId)
+            ? clearSelection(rootNode)
+            : selectFlowNode(rootNode, {
                 flowNodeId: incident.flowNodeId,
                 flowNodeInstanceId: incident.flowNodeInstanceId,
                 isMultiInstance: false,

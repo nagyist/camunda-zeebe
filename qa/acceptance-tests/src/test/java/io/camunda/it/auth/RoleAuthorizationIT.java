@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -18,6 +19,7 @@ import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.protocol.rest.MappingSearchQueryResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -75,6 +77,9 @@ class RoleAuthorizationIT {
               new Permissions(ResourceType.ROLE, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.UPDATE, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*")),
+              new Permissions(ResourceType.ROLE, PermissionType.DELETE, List.of("*")),
+              new Permissions(ResourceType.GROUP, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.MAPPING_RULE, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
@@ -99,9 +104,8 @@ class RoleAuthorizationIT {
 
   @Test
   void shouldCreateRoleAndGetRoleByIdIfAuthorized(
-      @Authenticated(ADMIN) final CamundaClient adminClient)
-      throws URISyntaxException, IOException, InterruptedException {
-    final String roleId = "roleId";
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
     final String name = "name";
     final String description = "description";
 
@@ -126,15 +130,52 @@ class RoleAuthorizationIT {
     assertThat(role.getRoleId()).isEqualTo(roleId);
     assertThat(role.getName()).isEqualTo(name);
     assertThat(role.getDescription()).isEqualTo(description);
+    // clean up
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
 
-    // TODO: introduce clean up using role delete in #31710
+  @Test
+  void shouldDeleteRoleByIdIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String name = "name";
+    final String description = "description";
+
+    adminClient
+        .newCreateRoleCommand()
+        .roleId(roleId)
+        .name(name)
+        .description(description)
+        .send()
+        .join();
+
+    assertThatNoException()
+        .isThrownBy(() -> adminClient.newDeleteRoleCommand(roleId).send().join());
+  }
+
+  @Test
+  void deleteRoleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newDeleteRoleCommand(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @Test
   void createRoleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
-            () -> camundaClient.newCreateRoleCommand().roleId("roleId").name("name").send().join())
+            () ->
+                camundaClient
+                    .newCreateRoleCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .name("name")
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -158,9 +199,59 @@ class RoleAuthorizationIT {
   @Test
   void getRoleByIdShouldReturnNotFoundForNonExistentRoleIdIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("Non-existing id").send().join())
+    assertThatThrownBy(
+            () -> camundaClient.newRoleGetRequest(Strings.newRandomValidIdentityId()).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'");
+  }
+
+  @Test
+  void shouldAssignRoleToMappingIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String mappingId = Strings.newRandomValidIdentityId();
+
+    createRole(adminClient, roleId, "roleName");
+    adminClient
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
+        .name("mappingName")
+        .claimName("testClaimName")
+        .claimValue("testClaimValue")
+        .send()
+        .join();
+
+    adminClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+
+    Awaitility.await("Mapping is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchMappingRuleByRole(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                roleId)
+                            .getItems())
+                    .hasSize(1)
+                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void assignRoleToMappingShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToMappingCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .mappingId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @Test
@@ -172,7 +263,7 @@ class RoleAuthorizationIT {
 
     assertThat(roleSearchResponse.items())
         .map(RoleResult::getName)
-        .containsAll(List.of("Admin", ROLE_NAME_1, ROLE_NAME_2));
+        .containsExactlyInAnyOrder("Admin", "RPA", "Connectors", ROLE_NAME_1, ROLE_NAME_2);
   }
 
   @Test
@@ -184,9 +275,191 @@ class RoleAuthorizationIT {
     assertThat(roleSearchResponse.items()).hasSize(0).map(RoleResult::getName).isEmpty();
   }
 
+  @Test
+  void shouldUpdateRoleByIdIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String name = "name";
+    final String description = "description";
+
+    createRole(adminClient, roleId, name, description);
+
+    final var updatedRole =
+        adminClient
+            .newUpdateRoleCommand(roleId)
+            .name("updatedName")
+            .description("updatedDescription")
+            .send()
+            .join();
+
+    assertThat(updatedRole.getRoleId()).isEqualTo(roleId);
+    // cleanup
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void updateRoleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUpdateRoleCommand(Strings.newRandomValidIdentityId())
+                    .name("name")
+                    .description("description")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void shouldAssignRoleToGroupIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String groupId = Strings.newRandomValidIdentityId();
+
+    createRole(adminClient, roleId, "roleName");
+    adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
+    adminClient.newAssignRoleToGroupCommand().roleId(roleId).groupId(groupId).send().join();
+
+    Awaitility.await("Group is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                groupId)
+                            .items())
+                    .anyMatch(r -> roleId.equals(r.getRoleId())));
+
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void shouldUnassignRoleFromMappingIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String mappingId = Strings.newRandomValidIdentityId();
+
+    adminClient
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
+        .name("mappingName")
+        .claimName("claimName")
+        .claimValue("claimValue")
+        .send()
+        .join();
+
+    adminClient
+        .newAssignRoleToMappingCommand()
+        .roleId(ROLE_ID_1)
+        .mappingId(mappingId)
+        .send()
+        .join();
+
+    adminClient
+        .newUnassignRoleFromMappingCommand()
+        .roleId(ROLE_ID_1)
+        .mappingId(mappingId)
+        .send()
+        .join();
+
+    Awaitility.await("Mapping is unassigned from the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                mappingId)
+                            .items())
+                    .isEmpty());
+  }
+
+  @Test
+  void unassignRoleFromMappingShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromMappingCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .mappingId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void assignRoleToGroupShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToGroupCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .groupId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void shouldUnassignRoleFromGroupIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String groupId = Strings.newRandomValidIdentityId();
+
+    adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
+    adminClient.newAssignRoleToGroupCommand().roleId(ROLE_ID_1).groupId(groupId).send().join();
+    adminClient.newUnassignRoleFromGroupCommand().roleId(ROLE_ID_1).groupId(groupId).send().join();
+
+    Awaitility.await("Group is unassigned from the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                groupId)
+                            .items())
+                    .isEmpty());
+  }
+
+  @Test
+  void unassignRoleFromGroupShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromGroupCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .groupId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
-    adminClient.newCreateRoleCommand().roleId(roleId).name(roleName).send().join();
+    createRole(adminClient, roleId, roleName, null);
+  }
+
+  private static void createRole(
+      final CamundaClient adminClient,
+      final String roleId,
+      final String roleName,
+      final String description) {
+    adminClient
+        .newCreateRoleCommand()
+        .roleId(roleId)
+        .name(roleName)
+        .description(description)
+        .send()
+        .join();
   }
 
   private static void waitForRolesToBeCreated(
@@ -219,6 +492,46 @@ class RoleAuthorizationIT {
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
     return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
+  }
+
+  // TODO once available, this test should use the client to make the request
+  private static RoleSearchResponse searchRolesByGroupId(
+      final String restAddress, final String username, final String groupId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder()
+            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(restAddress, "v2/groups/" + groupId + "/roles/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
+  }
+
+  // TODO once available, this test should use the client to make the request
+  private static MappingSearchQueryResult searchMappingRuleByRole(
+      final String restAddress, final String username, final String roleId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder()
+            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s".formatted(restAddress, "v2/roles/" + roleId + "/mapping-rules/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
   }
 
   private record RoleSearchResponse(List<RoleResult> items) {}

@@ -101,11 +101,11 @@ public class GroupController {
   }
 
   @CamundaPutMapping(
-      path = "/{groupId}/applications/{applicationId}",
+      path = "/{groupId}/clients/{clientId}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignApplicationToGroup(
-      @PathVariable final String groupId, @PathVariable final String applicationId) {
-    return RequestMapper.toGroupMemberRequest(groupId, applicationId, EntityType.APPLICATION)
+      @PathVariable final String groupId, @PathVariable final String clientId) {
+    return RequestMapper.toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -125,10 +125,10 @@ public class GroupController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
-  @CamundaDeleteMapping(path = "/{groupId}/applications/{applicationId}")
+  @CamundaDeleteMapping(path = "/{groupId}/clients/{clientId}")
   public CompletableFuture<ResponseEntity<Object>> unassignApplicationFromGroup(
-      @PathVariable final String groupId, @PathVariable final String applicationId) {
-    return RequestMapper.toGroupMemberRequest(groupId, applicationId, EntityType.APPLICATION)
+      @PathVariable final String groupId, @PathVariable final String clientId) {
+    return RequestMapper.toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
@@ -287,7 +287,7 @@ public class GroupController {
 
   private RoleQuery buildRoleQuery(final String groupId, final RoleQuery roleQuery) {
     return roleQuery.toBuilder()
-        .filter(roleQuery.filter().toBuilder().memberId(groupId).memberType(GROUP).build())
+        .filter(roleQuery.filter().toBuilder().memberId(groupId).childMemberType(GROUP).build())
         .build();
   }
 

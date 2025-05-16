@@ -9,13 +9,16 @@ package io.camunda.search.clients.transformers.auth;
 
 import static java.util.Map.entry;
 
+import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
@@ -27,6 +30,7 @@ public final class AuthorizationQueryTransformers {
   private static final Map<Class<? extends SearchQueryBase>, AuthorizationQueryTransformer>
       TRANSFORMERS =
           Map.ofEntries(
+              entry(BatchOperationQuery.class, new BatchOperationAuthorizationQueryTransformer()),
               entry(
                   DecisionDefinitionQuery.class,
                   new DecisionDefinitionAuthorizationQueryTransformer()),
@@ -45,7 +49,9 @@ public final class AuthorizationQueryTransformers {
               entry(TenantQuery.class, new TenantAuthorizationQueryTransformer()),
               entry(UserQuery.class, new UserAuthorizationQueryTransformer()),
               entry(UserTaskQuery.class, new UserTaskAuthorizationQueryTransformer()),
-              entry(VariableQuery.class, new VariableAuthorizationQueryTransformer()));
+              entry(VariableQuery.class, new VariableAuthorizationQueryTransformer()),
+              entry(GroupQuery.class, new GroupAuthorizationQueryTransformer()),
+              entry(RoleQuery.class, new RoleAuthorizationQueryTransformer()));
 
   private AuthorizationQueryTransformers() {}
 
