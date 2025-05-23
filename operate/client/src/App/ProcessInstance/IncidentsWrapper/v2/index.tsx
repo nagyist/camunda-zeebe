@@ -15,50 +15,58 @@ import {Transition} from '../styled';
 import {IncidentsFilter} from '../IncidentsFilter';
 import {IncidentsTable} from '../IncidentsTable';
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {init} from 'modules/utils/incidents';
+import {getFilteredIncidents, init} from 'modules/utils/incidents';
+import {useIncidents} from 'modules/hooks/incidents';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 
 type Props = {
+  processInstance: ProcessInstance;
   setIsInTransition: (isTransitionActive: boolean) => void;
 };
 
-const IncidentsWrapper: React.FC<Props> = observer(({setIsInTransition}) => {
-  useEffect(() => {
-    init();
+const IncidentsWrapper: React.FC<Props> = observer(
+  ({setIsInTransition, processInstance}) => {
+    const incidents = useIncidents();
+    const filteredIncidents = getFilteredIncidents(incidents);
 
-    return () => {
-      incidentsStore.reset();
-    };
-  }, []);
+    useEffect(() => {
+      init(processInstance);
 
-  if (incidentsStore.incidentsCount === 0) {
-    return null;
-  }
+      return () => {
+        incidentsStore.reset();
+      };
+    }, [processInstance]);
 
-  return (
-    <>
-      <Transition
-        in={incidentsStore.state.isIncidentBarOpen}
-        onEnter={() => setIsInTransition(true)}
-        onEntered={() => setIsInTransition(false)}
-        onExit={() => setIsInTransition(true)}
-        onExited={() => setIsInTransition(false)}
-        mountOnEnter
-        unmountOnExit
-        timeout={400}
-      >
-        <IncidentsOverlay>
-          <PanelHeader
-            title="Incidents View"
-            count={incidentsStore.filteredIncidents.length}
-            size="sm"
-          >
-            <IncidentsFilter />
-          </PanelHeader>
-          <IncidentsTable />
-        </IncidentsOverlay>
-      </Transition>
-    </>
-  );
-});
+    if (incidentsStore.incidentsCount === 0) {
+      return null;
+    }
+
+    return (
+      <>
+        <Transition
+          in={incidentsStore.state.isIncidentBarOpen}
+          onEnter={() => setIsInTransition(true)}
+          onEntered={() => setIsInTransition(false)}
+          onExit={() => setIsInTransition(true)}
+          onExited={() => setIsInTransition(false)}
+          mountOnEnter
+          unmountOnExit
+          timeout={400}
+        >
+          <IncidentsOverlay>
+            <PanelHeader
+              title="Incidents View"
+              count={filteredIncidents.length}
+              size="sm"
+            >
+              <IncidentsFilter />
+            </PanelHeader>
+            <IncidentsTable />
+          </IncidentsOverlay>
+        </Transition>
+      </>
+    );
+  },
+);
 
 export {IncidentsWrapper};

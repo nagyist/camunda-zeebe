@@ -22,6 +22,8 @@ import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
@@ -123,7 +125,9 @@ public class CamundaExporter implements Exporter {
                 provider,
                 metrics,
                 context.getLogger(),
-                metadata)
+                metadata,
+                clientAdapter.objectMapper(),
+                provider.getProcessCache())
             .build();
     LOG.debug("Exporter configured with {}", configuration);
   }
@@ -149,7 +153,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void close() {
-    provider.close();
 
     if (writer != null) {
       try {
@@ -410,6 +413,8 @@ processing records from previous version
             DECISION,
             DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
+            PROCESS_INSTANCE_MIGRATION,
+            PROCESS_INSTANCE_MODIFICATION,
             ROLE,
             VARIABLE,
             VARIABLE_DOCUMENT,
@@ -427,7 +432,7 @@ processing records from previous version
 
     @Override
     public boolean acceptType(final RecordType recordType) {
-      return recordType.equals(RecordType.EVENT);
+      return recordType.equals(RecordType.EVENT) || recordType.equals(RecordType.COMMAND_REJECTION);
     }
 
     @Override

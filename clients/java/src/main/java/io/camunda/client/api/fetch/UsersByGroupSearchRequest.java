@@ -15,12 +15,12 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.GroupUserFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.TypedSearchRequest;
-import io.camunda.client.api.search.response.User;
-import io.camunda.client.api.search.sort.UserSort;
+import io.camunda.client.api.search.response.GroupUser;
+import io.camunda.client.api.search.sort.GroupUserSort;
 
 public interface UsersByGroupSearchRequest
-    extends TypedSearchRequest<UserFilter, UserSort, UsersByGroupSearchRequest>,
-        FinalSearchRequestStep<User> {}
+    extends TypedSearchRequest<GroupUserFilter, GroupUserSort, UsersByGroupSearchRequest>,
+        FinalSearchRequestStep<GroupUser> {}

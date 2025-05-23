@@ -129,15 +129,11 @@ public class AuthorizationChecker {
     if (authentication.authenticatedUsername() != null) {
       ownerIds.add(authentication.authenticatedUsername());
     }
-    if (authentication.authenticationApplicationId() != null) {
-      ownerIds.add(authentication.authenticationApplicationId());
+    if (authentication.authenticatedClientId() != null) {
+      ownerIds.add(authentication.authenticatedClientId());
     }
     ownerIds.addAll(authentication.authenticatedMappingIds());
-    ownerIds.addAll(
-        // TODO remove this mapping when refactoring Groups to IDs
-        authentication.authenticatedGroupKeys().stream()
-            .map(Object::toString)
-            .collect(Collectors.toSet()));
+    ownerIds.addAll(authentication.authenticatedGroupIds());
     ownerIds.addAll(authentication.authenticatedRoleIds());
     return ownerIds;
   }

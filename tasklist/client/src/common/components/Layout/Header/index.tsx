@@ -93,7 +93,7 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
 }
 
 const Header: React.FC = observer(() => {
-  const IS_SAAS = getClientConfig().organizationId === 'string';
+  const IS_SAAS = getClientConfig().organizationId !== null;
   const location = useLocation();
   const isProcessesPage =
     matchPath(pages.processes(), location.pathname) !== null;
@@ -128,6 +128,7 @@ const Header: React.FC = observer(() => {
           });
         },
         appTeaserRouteProps: IS_SAAS ? {} : undefined,
+        elements: IS_SAAS ? undefined : [],
       }}
       app={{
         ariaLabel: 'Camunda Tasklist',

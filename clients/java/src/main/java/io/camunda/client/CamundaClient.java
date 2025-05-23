@@ -20,6 +20,11 @@ import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandSte
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
+import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
+import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
+import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
+import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
+import io.camunda.client.api.command.AssignRoleToUserCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
@@ -44,6 +49,7 @@ import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
+import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
@@ -57,17 +63,22 @@ import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
+import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
-import io.camunda.client.api.fetch.BatchOperationItemsGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
@@ -85,6 +96,8 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
+import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
+import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -92,15 +105,22 @@ import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
+import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
+import io.camunda.client.api.search.request.BatchOperationSearchRequest;
+import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
@@ -811,7 +831,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the process definition statistics
+   * @return a builder for the process definition statistics request
    */
   ProcessDefinitionElementStatisticsRequest newProcessDefinitionElementStatisticsRequest(
       final long processDefinitionKey);
@@ -827,9 +847,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @return a builder for the process instance statistics
+   * @return a builder for the process instance statistics request
    */
   ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
+      final long processInstanceKey);
+
+  /**
+   * Executes a search request to query process instance sequence flows.
+   *
+   * <pre>
+   * long processInstanceKey = ...;
+   *
+   * camundaClient
+   *  .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the process instance sequence flows request
+   */
+  ProcessInstanceSequenceFlowsRequest newProcessInstanceSequenceFlowsRequest(
       final long processInstanceKey);
 
   /**
@@ -1124,7 +1160,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newRoleCreateCommand()
+   *  .roleId("roleId")
    *  .name(name)
+   *  .description("description")
    *  .send();
    * </pre>
    *
@@ -1140,7 +1178,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *
    * camundaClient
-   *  .newRoleGetRequest(roleId)
+   *  .newRoleGetRequest("roleId")
    *  .send();
    * </pre>
    *
@@ -1150,6 +1188,284 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   RoleGetRequest newRoleGetRequest(String roleId);
 
   /**
+   * Executes a search request to query roles.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newRolesSearchRequest()
+   *  .filter((f) -> f.name("roleName"))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the roles search request
+   */
+  RolesSearchRequest newRolesSearchRequest();
+
+  /**
+   * Command to update a role.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUpdateRoleCommand("roleId")
+   *  .name("name")
+   *  .description("description")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UpdateRoleCommandStep1 newUpdateRoleCommand(String roleId);
+
+  /**
+   * Command to assign a role to a mapping.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignRoleToMappingCommand()
+   *  .roleId("roleId")
+   *  .mappingId("mappingId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign role to mapping command
+   */
+  AssignRoleToMappingCommandStep1 newAssignRoleToMappingCommand();
+
+  /**
+   * Command to delete a role by role ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newDeleteRoleCommand("roleId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  DeleteRoleCommandStep1 newDeleteRoleCommand(String roleId);
+
+  /**
+   * Command to assign a role to a group.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignRoleToGroupCommand()
+   *  .roleId("roleId")
+   *  .groupId("groupId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign role to group command
+   */
+  AssignRoleToGroupCommandStep1 newAssignRoleToGroupCommand();
+
+  /**
+   * Command to assign a role to a client.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignRoleToClientCommand()
+   *  .roleId("roleId")
+   *  .clientId("clientId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign role to client command
+   */
+  AssignRoleToClientCommandStep1 newAssignRoleToClientCommand();
+
+  /**
+   * Executes a search request to query clients by role.
+   *
+   * <pre>
+   * camundaClient
+   *   .newClientsByRoleSearchRequest("roleId")
+   *   .sort((s) -> s.clientId().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the clients by role search request
+   */
+  ClientsByRoleSearchRequest newClientsByRoleSearchRequest(String roleId);
+
+  /**
+   * Command to assign a role to a tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newAssignRoleToTenantCommand("tenantId")
+   *  .roleId("roleId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP.
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the assign role to tenant command
+   */
+  AssignRoleToTenantCommandStep1 newAssignRoleToTenantCommand(String tenantId);
+
+  /**
+   * Command to unassign a role from a tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUnassignRoleFromTenantCommand("tenantId")
+   *  .roleId("roleId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP.
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the unassign role from tenant command
+   */
+  UnassignRoleFromTenantCommandStep1 newUnassignRoleFromTenantCommand(String tenantId);
+
+  /**
+   * Executes a search request to query roles assigned to a specific tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newRolesByTenantSearchRequest("tenantId")
+   *  .filter((f) -> f.name("admin"))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(50))
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the roles by tenant search request
+   */
+  RolesByTenantSearchRequest newRolesByTenantSearchRequest(String tenantId);
+
+  /**
+   * Command to unassign a role from a group.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignRoleFromGroupCommand()
+   *   .roleId("roleId")
+   *   .groupId("groupId")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the unassign role from group command
+   */
+  UnassignRoleFromGroupCommandStep1 newUnassignRoleFromGroupCommand();
+
+  /**
+   * Command to unassign a role from a mapping.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignRoleFromMappingCommand()
+   *   .roleId("roleId")
+   *   .mappingId("mappingId")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the unassign role from mapping command
+   */
+  UnassignRoleFromMappingCommandStep1 newUnassignRoleFromMappingCommand();
+
+  /**
+   * Command to unassign a role from a client.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignRoleFromClientCommand()
+   *   .roleId("roleId")
+   *   .clientId("clientId")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the unassign role from client command
+   */
+  UnassignRoleFromClientCommandStep1 newUnassignRoleFromClientCommand();
+
+  /**
+   * Command to assign a role to a user.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newAssignRoleToUserCommand()
+   *   .roleId("roleId")
+   *   .username("username")
+   *   .send();
+   * </pre>
+   *
+   * @return a builder for the assign role to user command
+   */
+  AssignRoleToUserCommandStep1 newAssignRoleToUserCommand();
+
+  /**
+   * Command to unassign a role from a user.
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignRoleFromUserCommand()
+   *   .roleId("roleId")
+   *   .username("username")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC.
+   *
+   * @return a builder for the unassign role from user command
+   */
+  UnassignRoleFromUserCommandStep1 newUnassignRoleFromUserCommand();
+
+  /**
+   * Executes a search request to query users by role.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUsersByRoleSearchRequest("roleId")
+   *  .sort((s) -> s.username().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the users by role search request
+   */
+  UsersByRoleSearchRequest newUsersByRoleSearchRequest(String roleId);
+
+  /**
    * Command to create a group.
    *
    * <pre>
@@ -1157,7 +1473,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newCreateGroupCommand()
-   *  .name(name)
+   *  .groupId("groupId")
+   *  .name("name")
    *  .send();
    * </pre>
    *
@@ -1174,8 +1491,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUpdateGroupCommand("123")
-   *  .name(name)
+   *  .newUpdateGroupCommand("groupId")
+   *  .name("name")
    *  .send();
    * </pre>
    *
@@ -1192,7 +1509,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newDeleteGroupCommand("123")
+   *  .newDeleteGroupCommand("groupId")
    *  .send();
    * </pre>
    *
@@ -1817,20 +2134,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   BatchOperationGetRequest newBatchOperationGetRequest(Long batchOperationKey);
 
   /**
-   * Request to get all items for a batch operation by batch operation key. This request is will
-   * return <b>ALL</b> items of the batch operation. Depending on the number of elements, this may
-   * be a large set of items.
+   * Executes a search request to query batch operations.
    *
    * <pre>
+   *
    * camundaClient
-   *  .newBatchOperationItemsGetRequest(batchOperationKey)
+   *  .newBatchOperationSearchRequest()
+   *  .filter((f) -> f.state(state))
+   *  .sort((s) -> s.startDate().asc())
+   *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @param batchOperationKey the key which identifies the corresponding batch operation
-   * @return a builder for the request
+   * @return a builder for the groups search request
    */
-  BatchOperationItemsGetRequest newBatchOperationItemsGetRequest(Long batchOperationKey);
+  BatchOperationSearchRequest newBatchOperationSearchRequest();
+
+  /**
+   * Executes a search request to query batch operation items.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newBatchOperationItemSearchRequest()
+   *  .filter((f) -> f.state(state))
+   *  .sort((s) -> s.itemKey().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the groups search request
+   */
+  BatchOperationItemSearchRequest newBatchOperationItemsSearchRequest();
 
   /**
    * Command to assign a mapping rule to a group.
@@ -1907,7 +2242,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newUsersByGroupSearchRequest(groupId)
-   *  .filter((f) -> f.username(username))
    *  .sort((s) -> s.username().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
@@ -1951,4 +2285,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the mappings by group search request
    */
   MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(String groupId);
+
+  /**
+   * Executes a search request to query mappings by role.
+   *
+   * <pre>
+   * camundaClient
+   *  .newMappingsByRoleSearchRequest("roleId")
+   *  .filter((f) -> f.mappingId("mapping-123"))
+   *  .sort((s) -> s.mappingId().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the mappings by role search request
+   */
+  MappingsByRoleSearchRequest newMappingsByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query roles by group.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newRolesByGroupSearchRequest(groupId)
+   *    .filter((f) -> f.roleName(roleName))
+   *    .sort((s) -> s.roleName().asc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   *  </pre>
+   *
+   * @param groupId the ID of the group
+   * @return a builder for the roles by group search request
+   */
+  RolesByGroupSearchRequest newRolesByGroupSearchRequest(String groupId);
 }

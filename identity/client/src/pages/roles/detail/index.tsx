@@ -28,6 +28,7 @@ import {
 } from "src/feature-flags";
 import Members from "src/pages/roles/detail/members";
 import Mappings from "src/pages/roles/detail/mappings";
+import Clients from "src/pages/roles/detail/clients";
 import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
@@ -39,7 +40,7 @@ const Details: FC = () => {
   }>();
 
   const { data: role, loading } = useApi(getRoleDetails, {
-    roleKey: id,
+    roleId: id,
   });
 
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
@@ -72,7 +73,7 @@ const Details: FC = () => {
                     </OverflowMenu>
                   </Stack>
                   <p>
-                    {t("roleId")}: {role.roleKey}
+                    {t("roleId")}: {role.roleId}
                   </p>
                   {role?.description && (
                     <Description>
@@ -87,7 +88,7 @@ const Details: FC = () => {
         {(IS_ROLES_USERS_SUPPORTED || IS_ROLES_MAPPINGS_SUPPORTED) && role && (
           <Section>
             {!isOIDC ? (
-              <Members roleId={role.roleKey} />
+              <Members roleId={role.roleId} />
             ) : (
               <Tabs
                 tabs={[
@@ -96,7 +97,7 @@ const Details: FC = () => {
                         {
                           key: "users",
                           label: t("users"),
-                          content: <Members roleId={role.roleKey} />,
+                          content: <Members roleId={role.roleId} />,
                         },
                       ]
                     : []),
@@ -105,7 +106,12 @@ const Details: FC = () => {
                         {
                           key: "mappings",
                           label: t("mappings"),
-                          content: <Mappings roleId={role.roleKey} />,
+                          content: <Mappings roleId={role.roleId} />,
+                        },
+                        {
+                          key: "clients",
+                          label: t("clients"),
+                          content: <Clients roleId={role.roleId} />,
                         },
                       ]
                     : []),

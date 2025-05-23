@@ -12,14 +12,19 @@ import { searchUser } from "src/utility/api/users";
 import { searchGroups } from "src/utility/api/groups";
 import { searchMapping } from "src/utility/api/mappings";
 import { searchRoles } from "src/utility/api/roles";
+import useTranslate from "src/utility/localization";
 import OwnerSelection from "./OwnerSelection";
+import TextField from "src/components/form/TextField";
 
 type SelectionProps = {
   type: OwnerType;
+  ownerId: string;
   onChange: (newOwner: string) => void;
 };
 
-const Selection: FC<SelectionProps> = ({ type, onChange }) => {
+const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
+  const { t } = useTranslate("authorizations");
+
   switch (type) {
     case OwnerType.USER:
       return (
@@ -37,8 +42,8 @@ const Selection: FC<SelectionProps> = ({ type, onChange }) => {
           id="groupSelection"
           onChange={onChange}
           searchFn={searchGroups}
-          getId={(group) => group.groupKey}
-          itemToString={(group) => group.name || group.groupKey}
+          getId={(group) => group.groupId}
+          itemToString={(group) => group.name || group.groupId}
         />
       );
     case OwnerType.MAPPING:
@@ -57,8 +62,19 @@ const Selection: FC<SelectionProps> = ({ type, onChange }) => {
           id="roleSelection"
           onChange={onChange}
           searchFn={searchRoles}
-          getId={(role) => role.roleKey}
-          itemToString={(role) => role.name || role.roleKey}
+          getId={(role) => role.roleId}
+          itemToString={(role) => role.name || role.roleId}
+        />
+      );
+
+    case OwnerType.CLIENT:
+      return (
+        <TextField
+          value={ownerId}
+          label={t("owner")}
+          onChange={onChange}
+          placeholder={t("enterId")}
+          type="text"
         />
       );
     default:

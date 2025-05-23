@@ -625,14 +625,16 @@ public class RequestMapper {
         authenticationBuilder.tenants(
             authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
 
+        authenticationBuilder.groupIds(authenticationContext.groups());
+
         if (authenticationContext.username() != null) {
           final var authenticatedUsername = authenticationContext.username();
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
           authenticationBuilder.user(authenticatedUsername);
         } else {
-          final var authenticatedApplicationId = authenticationContext.applicationId();
-          claims.put(Authorization.AUTHORIZED_APPLICATION_ID, authenticatedApplicationId);
-          authenticationBuilder.applicationId(authenticatedApplicationId);
+          final var authenticatedClientId = authenticationContext.clientId();
+          claims.put(Authorization.AUTHORIZED_CLIENT_ID, authenticatedClientId);
+          authenticationBuilder.clientId(authenticatedClientId);
         }
 
         if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {

@@ -176,6 +176,33 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<RoleUserSearchQuerySortRequest> toRoleUserSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final RoleUserSearchQuerySortRequest request = new RoleUserSearchQuerySortRequest();
+              request.setField(RoleUserSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<RoleClientSearchQuerySortRequest> toRoleClientSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final RoleClientSearchQuerySortRequest request =
+                  new RoleClientSearchQuerySortRequest();
+              request.setField(RoleClientSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<GroupSearchQuerySortRequest> toGroupSearchQuerySortRequest(
       final List<SearchRequestSort> requests) {
     return requests.stream()
@@ -329,6 +356,19 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<GroupUserSearchQuerySortRequest> toGroupUserSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final GroupUserSearchQuerySortRequest request = new GroupUserSearchQuerySortRequest();
+              request.setField(GroupUserSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<IncidentSearchQuerySortRequest> toIncidentSearchQuerySortRequest(
       final List<SearchRequestSort> requests) {
     return requests.stream()
@@ -351,6 +391,36 @@ public class SearchRequestSortMapper {
                   new AuthorizationSearchQuerySortRequest();
               request.setField(
                   AuthorizationSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<BatchOperationSearchQuerySortRequest> toBatchOperationSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final BatchOperationSearchQuerySortRequest request =
+                  new BatchOperationSearchQuerySortRequest();
+              request.setField(
+                  BatchOperationSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<BatchOperationItemSearchQuerySortRequest>
+      toBatchOperationItemSearchQuerySortRequest(final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final BatchOperationItemSearchQuerySortRequest request =
+                  new BatchOperationItemSearchQuerySortRequest();
+              request.setField(
+                  BatchOperationItemSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
               request.setOrder(r.getOrder());
               return request;
             })

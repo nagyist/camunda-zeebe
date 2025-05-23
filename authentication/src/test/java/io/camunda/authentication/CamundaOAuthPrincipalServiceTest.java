@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.OAuthContext;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
@@ -25,6 +26,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +46,8 @@ public class CamundaOAuthPrincipalServiceTest {
   private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
 
   @Nested
-  class ApplicationIdClaimConfiguration {
-    private static final String APPLICATION_ID_CLAIM = "application-id";
+  class ClientIdClaimConfiguration {
+    private static final String APPLICATION_ID_CLAIM = "client-id";
     @Mock private MappingServices mappingServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
@@ -62,8 +64,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
-      when(oidcAuthenticationConfiguration.getApplicationIdClaim())
-          .thenReturn(APPLICATION_ID_CLAIM);
+      when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalService(
@@ -76,7 +77,7 @@ public class CamundaOAuthPrincipalServiceTest {
     }
 
     @Test
-    public void shouldThrowExceptionWhenNoApplicationIdClaimFound() {
+    public void shouldThrowExceptionWhenNoClientIdClaimFound() {
       // given
       final Map<String, Object> claims = Map.of("sub", "user@example.com");
 
@@ -88,15 +89,14 @@ public class CamundaOAuthPrincipalServiceTest {
 
       assertThat(exception.getMessage())
           .isEqualTo(
-              "Neither username claim (%s) nor applicationId claim (%s) could be found in the claims. Please check your OIDC configuration."
+              "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
                   .formatted("not-tested", APPLICATION_ID_CLAIM));
     }
 
     @Test
-    public void shouldThrowExceptionWhenApplicationIdClaimIsNotAString() {
+    public void shouldThrowExceptionWhenClientIdClaimIsNotAString() {
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
-      when(oidcAuthenticationConfiguration.getApplicationIdClaim())
-          .thenReturn(APPLICATION_ID_CLAIM);
+      when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
       // given
       final Map<String, Object> claims = Map.of(APPLICATION_ID_CLAIM, List.of("app-1", "app-2"));
 
@@ -107,11 +107,11 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(CLAIM_NOT_STRING.formatted("application", APPLICATION_ID_CLAIM));
+          .isEqualTo(CLAIM_NOT_STRING.formatted("client", APPLICATION_ID_CLAIM));
     }
 
     @Test
-    public void shouldLoadUserWhenUsingApplicationIdClaim() {
+    public void shouldLoadUserWhenUsingClientIdClaim() {
       // given
       final Map<String, Object> claims =
           Map.of("sub", UUID.randomUUID().toString(), APPLICATION_ID_CLAIM, "app-1");
@@ -122,7 +122,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // then
       assertThat(oAuthContext).isNotNull();
       final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
-      assertThat(authenticationContext.applicationId()).isEqualTo("app-1");
+      assertThat(authenticationContext.clientId()).isEqualTo("app-1");
     }
   }
 
@@ -145,7 +145,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
-      when(oidcAuthenticationConfiguration.getApplicationIdClaim()).thenReturn("not-tested");
+      when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalService(
@@ -170,7 +170,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
       assertThat(exception.getMessage())
           .isEqualTo(
-              "Neither username claim (%s) nor applicationId claim (%s) could be found in the claims. Please check your OIDC configuration."
+              "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
                   .formatted(USERNAME_CLAIM, "not-tested"));
     }
 
@@ -205,9 +205,22 @@ public class CamundaOAuthPrincipalServiceTest {
                   new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
       final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
-      when(roleServices.getRolesByMemberIds(Set.of("test-id", "test-id-2"), EntityType.MAPPING))
-          .thenReturn(List.of(roleR1));
-      when(authorizationServices.getAuthorizedApplications(Set.of("test-id", "test-id-2", "8")))
+      final var groupRole = new RoleEntity(3L, "roleGroup", "Role Group", "description");
+      when(roleServices.getRolesByMappingsAndGroups(
+              Set.of("test-id", "test-id-2"), Set.of("group-g1")))
+          .thenReturn(List.of(roleR1, groupRole));
+
+      when(groupServices.getGroupsByMemberIds(Set.of("test-id", "test-id-2"), EntityType.MAPPING))
+          .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
+
+      final var tenantT1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
+      final var groupTenant = new TenantEntity(200L, "tenant1", "Tenant One", "First Tenant");
+      when(tenantServices.getTenantsByMappingsAndGroupsAndRoles(
+              Set.of("test-id", "test-id-2"), Set.of("group-g1"), Set.of("roleR1", "roleGroup")))
+          .thenReturn(List.of(tenantT1, groupTenant));
+
+      when(authorizationServices.getAuthorizedApplications(
+              Set.of("test-id", "test-id-2", "roleR1", "roleGroup")))
           .thenReturn(List.of("*"));
 
       // when
@@ -217,9 +230,10 @@ public class CamundaOAuthPrincipalServiceTest {
       assertThat(oAuthContext).isNotNull();
       assertThat(oAuthContext.mappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
       final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
-      assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
-      assertThat(authenticationContext.groups()).isEmpty();
-      assertThat(authenticationContext.tenants()).isEmpty();
+      assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1, groupRole));
+      assertThat(authenticationContext.groups()).containsExactly("group-g1");
+      assertThat(authenticationContext.tenants())
+          .containsAll(List.of(TenantDTO.fromEntity(tenantT1), TenantDTO.fromEntity(groupTenant)));
       assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
     }
 
@@ -234,17 +248,21 @@ public class CamundaOAuthPrincipalServiceTest {
 
       when(mappingServices.getMatchingMappings(claims)).thenReturn(List.of(mapping1, mapping2));
 
+      when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
+          .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
+
       final var tenantEntity1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
       final var tenantEntity2 = new TenantEntity(200L, "t2", "Tenant Two", "Second Tenant");
 
-      when(tenantServices.getTenantsByMemberIds(Set.of("map-1", "map-2")))
+      when(tenantServices.getTenantsByMappingsAndGroupsAndRoles(
+              Set.of("map-1", "map-2"), Set.of("group-g1"), Set.of("roleR1")))
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
       final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1", "R1 description");
-      when(roleServices.getRolesByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
+      when(roleServices.getRolesByMappingsAndGroups(Set.of("map-1", "map-2"), Set.of("group-g1")))
           .thenReturn(List.of(roleR1));
 
-      when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "10")))
+      when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "roleR1")))
           .thenReturn(List.of("app-1", "app-2"));
 
       // when
@@ -257,11 +275,10 @@ public class CamundaOAuthPrincipalServiceTest {
       final AuthenticationContext authenticationContext = oAuthContext.authenticationContext();
       assertThat(authenticationContext.username()).isEqualTo("scooby-doo");
       assertThat(authenticationContext.roles()).containsExactly(roleR1);
-      assertThat(authenticationContext.groups()).isEmpty();
+      assertThat(authenticationContext.groups()).containsExactly("group-g1");
       assertThat(authenticationContext.tenants())
           .containsExactlyInAnyOrder(
-              TenantServices.TenantDTO.fromEntity(tenantEntity1),
-              TenantServices.TenantDTO.fromEntity(tenantEntity2));
+              TenantDTO.fromEntity(tenantEntity1), TenantDTO.fromEntity(tenantEntity2));
       assertThat(authenticationContext.authorizedApplications())
           .containsExactlyInAnyOrder("app-1", "app-2");
     }

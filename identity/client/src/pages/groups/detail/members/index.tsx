@@ -10,13 +10,14 @@ import { FC } from "react";
 import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
-import { getMembersByGroup } from "src/utility/api/membership";
+import { searchMembersByGroup } from "src/utility/api/membership";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
+import AssignMemberModal from "src/pages/groups/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
 import { isOIDC } from "src/configuration";
+import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import { UserKeys } from "src/utility/api/users";
 
 type MembersProps = {
@@ -25,25 +26,20 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
-
-  const {
-    data: users,
-    loading,
-    success,
-    reload,
-  } = useApi(getMembersByGroup, {
-    groupId: groupId,
-  });
-
-  const isUsersListEmpty = !users || users.items?.length === 0;
-  const [assignUsers, assignUsersModal] = useEntityModal(
-    AssignMembersModal,
-    reload,
+  const { users, loading, success, reload } = useEnrichedUsers(
+    searchMembersByGroup,
     {
-      assignedUsers: users?.items || [],
+      groupId,
     },
   );
-  const openAssignModal = () => assignUsers({ id: groupId });
+
+  const isUsersListEmpty = !users || users.length === 0;
+  const [assignUsers, assignUsersModal] = useEntityModal(
+    isOIDC ? AssignMemberModal : AssignMembersModal,
+    reload,
+    { assignedUsers: users },
+  );
+  const openAssignModal = () => assignUsers({ groupId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
     reload,
@@ -65,9 +61,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
       <>
         <C3EmptyState
           heading={t("assignUsersToGroup")}
-          description={t(
-            "Members of this group will be given access and roles that are assigned to this group.",
-          )}
+          description={t("membersAccessDisclaimer")}
           button={{
             label: t("assignUser"),
             onClick: openAssignModal,
@@ -89,14 +83,15 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   const membersListHeaders: MembersListHeaders = isOIDC
     ? [{ header: t("username"), key: "username" }]
     : [
-        { header: t("userId"), key: "key" },
         { header: t("username"), key: "username" },
+        { header: t("name"), key: "name" },
+        { header: t("email"), key: "email" },
       ];
 
   return (
     <>
       <EntityList
-        data={users?.items}
+        data={users}
         headers={membersListHeaders}
         sortProperty="username"
         loading={loading}
