@@ -6,22 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ApiDefinition,
-  apiDelete,
-  apiGet,
-  apiPost,
-  apiPatch,
-  apiPut,
-} from "../request";
+import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
-import { Role } from "src/utility/api/roles";
+import { Role, ROLES_ENDPOINT } from "src/utility/api/roles";
 import { Mapping } from "src/utility/api/mappings";
 
 export const GROUPS_ENDPOINT = "/groups";
 
 export type Group = {
-  groupKey: string;
+  groupId: string;
   name: string;
   description?: string;
 };
@@ -30,56 +23,54 @@ export const searchGroups: ApiDefinition<SearchResponse<Group>> = () =>
   apiPost(`${GROUPS_ENDPOINT}/search`);
 
 export type GetGroupParams = {
-  groupKey: string;
+  groupId: string;
 };
 
 export const getGroupDetails: ApiDefinition<Group, GetGroupParams> = ({
-  groupKey,
-}) => apiGet(`${GROUPS_ENDPOINT}/${groupKey}`);
+  groupId,
+}) => apiGet(`${GROUPS_ENDPOINT}/${groupId}`);
 
-export type CreateGroupParams = { name: Group["name"] };
-
-export const createGroup: ApiDefinition<undefined, CreateGroupParams> = (
-  params,
-) => apiPost(GROUPS_ENDPOINT, params);
+export const createGroup: ApiDefinition<undefined, Group> = (params) =>
+  apiPost(GROUPS_ENDPOINT, params);
 
 export const updateGroup: ApiDefinition<undefined, Group> = (group) => {
-  const { groupKey, name } = group;
-  return apiPatch(`${GROUPS_ENDPOINT}/${groupKey}`, {
-    changeset: { name },
+  const { groupId, name, description } = group;
+  return apiPut(`${GROUPS_ENDPOINT}/${groupId}`, {
+    name,
+    description,
   });
 };
 
 type DeleteGroupParams = GetGroupParams;
 
 export const deleteGroup: ApiDefinition<undefined, DeleteGroupParams> = ({
-  groupKey,
-}) => apiDelete(`${GROUPS_ENDPOINT}/${groupKey}`);
+  groupId,
+}) => apiDelete(`${GROUPS_ENDPOINT}/${groupId}`);
 
 // ----------------- Roles within a Group -----------------
 
 export type GetGroupRolesParams = {
   groupId: string;
 };
-export const getRolesByGroupId: ApiDefinition<
+export const searchRolesByGroupId: ApiDefinition<
   SearchResponse<Role>,
   GetGroupRolesParams
 > = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/roles/search`);
 
-type AssignGroupRoleParams = GetGroupRolesParams & { roleKey: string };
+type AssignGroupRoleParams = GetGroupRolesParams & { roleId: string };
 export const assignGroupRole: ApiDefinition<
   undefined,
   AssignGroupRoleParams
-> = ({ groupId, roleKey }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/roles/${roleKey}`);
+> = ({ groupId, roleId }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
 };
 
 type UnassignGroupRoleParams = AssignGroupRoleParams;
 export const unassignGroupRole: ApiDefinition<
   undefined,
   UnassignGroupRoleParams
-> = ({ groupId, roleKey }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/roles/${roleKey}`);
+> = ({ groupId, roleId }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
 
 // ----------------- Mappings within a Group -----------------
 
@@ -106,3 +97,31 @@ export const unassignGroupMapping: ApiDefinition<
   UnassignGroupMappingParams
 > = ({ groupId, mappingId }) =>
   apiDelete(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingId}`);
+
+type GetGroupClientsParams = {
+  groupId: string;
+};
+
+export type Client = {
+  clientId: string;
+};
+
+export const getClientsByGroupId: ApiDefinition<
+  SearchResponse<Client>,
+  GetGroupClientsParams
+> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/clients/search`);
+
+type AssignGroupClientParams = GetGroupClientsParams & Client;
+export const assignGroupClient: ApiDefinition<
+  undefined,
+  AssignGroupClientParams
+> = ({ groupId, clientId }) => {
+  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/clients/${clientId}`);
+};
+
+type UnassignGroupClientParams = AssignGroupClientParams;
+export const unassignGroupClient: ApiDefinition<
+  undefined,
+  UnassignGroupClientParams
+> = ({ groupId, clientId }) =>
+  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/clients/${clientId}`);

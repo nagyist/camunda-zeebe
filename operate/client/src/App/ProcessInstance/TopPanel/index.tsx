@@ -29,7 +29,7 @@ import {
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition, SubprocessOverlay} from 'bpmn-js/lib/NavigatedViewer';
+import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
@@ -58,6 +58,8 @@ import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProce
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
+import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
+import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -103,6 +105,7 @@ const TopPanel: React.FC = observer(() => {
   const visibleAffectedTokenCount =
     totalMoveOperationRunningInstancesVisible || 1;
   const processDefinitionKey = useProcessDefinitionKeyContext();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   const {
     data: processDefinitionData,
@@ -114,7 +117,7 @@ const TopPanel: React.FC = observer(() => {
 
   useEffect(() => {
     if (flowNodeInstancesStatistics?.items) {
-      init(flowNodeInstancesStatistics.items);
+      init(processInstanceId, flowNodeInstancesStatistics.items);
     }
   });
 
@@ -135,22 +138,9 @@ const TopPanel: React.FC = observer(() => {
     (flowNodeId) => businessObjects?.[flowNodeId],
   );
 
-  const subprocessOverlays: SubprocessOverlay[] = [];
-
-  selectableFlowNodesWithIncidents?.forEach((flowNode) => {
-    while (flowNode?.$parent) {
-      const parent = flowNode.$parent;
-      if (parent.$type === 'bpmn:SubProcess') {
-        subprocessOverlays.push({
-          payload: {flowNodeState: 'incidents'},
-          type: OVERLAY_TYPE_STATE,
-          flowNodeId: parent.id,
-          position: overlayPositions.subprocessWithIncidents,
-        });
-      }
-      flowNode = parent;
-    }
-  });
+  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+    selectableFlowNodesWithIncidents,
+  );
 
   const allFlowNodeStateOverlays = [
     ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
@@ -280,13 +270,18 @@ const TopPanel: React.FC = observer(() => {
                   affectedTokenCount,
                   visibleAffectedTokenCount,
                   businessObjects,
+                  processInstanceDetailsStore.state.processInstance
+                    ?.bpmnProcessId,
                 ),
               label: 'Discard',
             }}
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount(totalRunningInstances || 0) > 1 && (
+        getSelectedRunningInstanceCount({
+          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+          isRootNodeSelected,
+        }) > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       {modificationsStore.state.status === 'adding-token' &&
@@ -322,6 +317,8 @@ const TopPanel: React.FC = observer(() => {
                     affectedTokenCount,
                     visibleAffectedTokenCount,
                     businessObjects,
+                    processInstanceDetailsStore.state.processInstance
+                      ?.bpmnProcessId,
                     flowNodeId,
                   );
                 } else {

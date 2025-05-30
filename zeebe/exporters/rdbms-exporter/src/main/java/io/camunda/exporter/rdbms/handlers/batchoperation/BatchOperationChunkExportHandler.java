@@ -39,16 +39,21 @@ public class BatchOperationChunkExportHandler
   public void export(final Record<BatchOperationChunkRecordValue> record) {
     final var value = record.getValue();
     batchOperationWriter.updateBatchAndInsertItems(
-        String.valueOf(value.getBatchOperationKey()), mapItems(value.getItems()));
+        String.valueOf(value.getBatchOperationKey()),
+        mapItems(value.getItems(), record.getValue().getBatchOperationKey()));
   }
 
   private List<BatchOperationItemDbModel> mapItems(
-      final Collection<BatchOperationItemValue> items) {
-    return items.stream().map(this::mapItem).toList();
+      final Collection<BatchOperationItemValue> items, final long batchOperationId) {
+    return items.stream().map(item -> mapItem(item, batchOperationId)).toList();
   }
 
-  private BatchOperationItemDbModel mapItem(final BatchOperationItemValue value) {
+  private BatchOperationItemDbModel mapItem(
+      final BatchOperationItemValue value, final long batchOperationId) {
     return new BatchOperationItemDbModel(
-        value.getItemKey(), value.getProcessInstanceKey(), BatchOperationItemState.ACTIVE);
+        Long.toString(batchOperationId),
+        value.getItemKey(),
+        value.getProcessInstanceKey(),
+        BatchOperationItemState.ACTIVE);
   }
 }

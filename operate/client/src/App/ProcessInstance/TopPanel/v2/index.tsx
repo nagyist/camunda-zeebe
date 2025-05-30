@@ -16,7 +16,7 @@ import {IncidentsBanner} from '../IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from '../styled';
-import {IncidentsWrapper} from '../../IncidentsWrapper';
+import {IncidentsWrapper} from '../../IncidentsWrapper/v2';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -28,8 +28,8 @@ import {
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition, SubprocessOverlay} from 'bpmn-js/lib/NavigatedViewer';
-import {Diagram} from 'modules/components/Diagram';
+import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {Diagram} from 'modules/components/Diagram/v2';
 import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
 import {ModificationInfoBanner} from '../ModificationInfoBanner';
@@ -41,7 +41,11 @@ import {useSelectableFlowNodes} from 'modules/queries/flownodeInstancesStatistic
 import {useExecutedFlowNodes} from 'modules/queries/flownodeInstancesStatistics/useExecutedFlowNodes';
 import {useModificationsByFlowNode} from 'modules/hooks/modifications';
 import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagram';
-import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+  selectFlowNode,
+} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesForFlowNode,
   useTotalRunningInstancesVisibleForFlowNode,
@@ -58,6 +62,11 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -106,6 +115,8 @@ const TopPanel: React.FC = observer(() => {
   const {data: processedSequenceFlows} =
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
+  const rootNode = useRootNode();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   const {
     data: processDefinitionData,
@@ -116,8 +127,11 @@ const TopPanel: React.FC = observer(() => {
   });
 
   useEffect(() => {
-    if (flowNodeInstancesStatistics?.items) {
-      init(flowNodeInstancesStatistics.items);
+    if (flowNodeInstancesStatistics?.items && processInstance) {
+      init(
+        processInstance.processInstanceKey,
+        flowNodeInstancesStatistics.items,
+      );
     }
   });
 
@@ -135,22 +149,9 @@ const TopPanel: React.FC = observer(() => {
     (flowNodeId) => businessObjects?.[flowNodeId],
   );
 
-  const subprocessOverlays: SubprocessOverlay[] = [];
-
-  selectableFlowNodesWithIncidents?.forEach((flowNode) => {
-    while (flowNode?.$parent) {
-      const parent = flowNode.$parent;
-      if (parent.$type === 'bpmn:SubProcess') {
-        subprocessOverlays.push({
-          payload: {flowNodeState: 'incidents'},
-          type: OVERLAY_TYPE_STATE,
-          flowNodeId: parent.id,
-          position: overlayPositions.subprocessWithIncidents,
-        });
-      }
-      flowNode = parent;
-    }
-  });
+  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+    selectableFlowNodesWithIncidents,
+  );
 
   const allFlowNodeStateOverlays = [
     ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
@@ -278,13 +279,17 @@ const TopPanel: React.FC = observer(() => {
                   affectedTokenCount,
                   visibleAffectedTokenCount,
                   businessObjects,
+                  processInstance?.processDefinitionId,
                 ),
               label: 'Discard',
             }}
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount(totalRunningInstances || 0) > 1 && (
+        getSelectedRunningInstanceCount({
+          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+          isRootNodeSelected,
+        }) > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       {modificationsStore.state.status === 'adding-token' &&
@@ -302,7 +307,7 @@ const TopPanel: React.FC = observer(() => {
         <DiagramShell status={getStatus()}>
           {processDefinitionData?.xml !== undefined &&
             businessObjects &&
-            processedSequenceFlows && (
+            processInstance && (
               <Diagram
                 xml={processDefinitionData?.xml}
                 selectableFlowNodes={
@@ -317,16 +322,17 @@ const TopPanel: React.FC = observer(() => {
                 }
                 onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
                   if (modificationsStore.state.status === 'moving-token') {
-                    flowNodeSelectionStore.clearSelection();
+                    clearSelection(rootNode);
                     finishMovingToken(
                       affectedTokenCount,
                       visibleAffectedTokenCount,
                       businessObjects,
+                      processInstance?.processDefinitionId,
                       flowNodeId,
                     );
                   } else {
                     if (modificationsStore.state.status !== 'adding-token') {
-                      flowNodeSelectionStore.selectFlowNode({
+                      selectFlowNode(rootNode, {
                         flowNodeId,
                         isMultiInstance,
                       });
@@ -349,7 +355,7 @@ const TopPanel: React.FC = observer(() => {
                   )
                 }
                 highlightedSequenceFlows={[
-                  ...processedSequenceFlows,
+                  ...(processedSequenceFlows || []),
                   ...compensationAssociationIds,
                 ]}
                 highlightedFlowNodeIds={executedFlowNodes?.map(
@@ -397,7 +403,10 @@ const TopPanel: React.FC = observer(() => {
             )}
         </DiagramShell>
         {processInstance?.hasIncident && (
-          <IncidentsWrapper setIsInTransition={setIsInTransition} />
+          <IncidentsWrapper
+            setIsInTransition={setIsInTransition}
+            processInstance={processInstance}
+          />
         )}
       </DiagramPanel>
     </Container>

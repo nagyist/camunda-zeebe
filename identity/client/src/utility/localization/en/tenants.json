@@ -70,8 +70,12 @@
   "searchAndAssignMappingToTenant": "Search and assign mapping to tenant",
   "deleteTenantConfirmation": "Are you sure you want to delete <strong>{{tenantId}}</strong>? This action cannot be undone.",
   "removeUserFromTenant": "Are you sure you want to remove <strong>{{username}}</strong> from this tenant?",
-  "removeGroupFromTenant": "Are you sure you want to remove <strong>{{groupKey}}</strong> from this tenant?",
+  "removeGroupFromTenant": "Are you sure you want to remove <strong>{{groupId}}</strong> from this tenant?",
   "removeMappingFromTenant": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this tenant?",
-  "removeRoleFromTenant": "Are you sure you want to remove <strong>{{roleKey}}</strong> from this tenant?",
-  "searchAndAssignGroupToTenant": "Search and assign group to tenant"
+  "removeRoleFromTenant": "Are you sure you want to remove <strong>{{roleId}}</strong> from this tenant?",
+  "searchAndAssignGroupToTenant": "Search and assign group to tenant",
+  "assignClientToTenant": "Assign client to tenant",
+  "tenantClientRemoved": "Tenant client removed",
+  "removeClientFromTenant": "Are you sure you want to remove <strong>{{clientId}}</strong> from this tenant?",
+  "assignClientsToTenant": "Assign clients to this Tenant"
 }

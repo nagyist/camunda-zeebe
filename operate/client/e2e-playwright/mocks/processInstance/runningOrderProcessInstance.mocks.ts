@@ -18,6 +18,12 @@ const runningOrderProcessInstance: InstanceMock = {
     processName: 'Order process',
     bpmnProcessId: 'orderProcess',
   },
+  detailV2: {
+    ...runningInstance.detailV2,
+    processInstanceKey: '225179981395430',
+    processDefinitionName: 'Order process',
+    processDefinitionId: 'orderProcess',
+  },
   xml: open('orderProcess.bpmn'),
   statisticsV2: {
     items: [
@@ -47,6 +53,18 @@ const runningOrderProcessInstance: InstanceMock = {
       activityId: 'SequenceFlow_0j6tsnn',
     },
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '225179981395430',
+        elementId: 'SequenceFlow_0j6tsnn',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   flowNodeInstances: {
     '225179981395430': {
       children: [

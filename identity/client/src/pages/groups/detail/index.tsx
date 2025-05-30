@@ -23,14 +23,10 @@ import { useEntityModal } from "src/components/modal";
 import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
-import {
-  IS_GROUP_USERS_SUPPORTED,
-  IS_GROUP_ROLES_SUPPORTED,
-  IS_GROUP_MAPPINGS_SUPPORTED,
-} from "src/feature-flags";
 import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import Mappings from "src/pages/groups/detail/mappings";
+import Clients from "src/pages/groups/detail/clients";
 import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
@@ -45,7 +41,7 @@ const Details: FC = () => {
     data: group,
     loading,
     reload,
-  } = useApi(getGroupDetails, { groupKey: id });
+  } = useApi(getGroupDetails, { groupId: id });
   const [editGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, () =>
     navigate("..", { replace: true }),
@@ -83,9 +79,9 @@ const Details: FC = () => {
                     </OverflowMenu>
                   </Stack>
                   <p>
-                    {t("groupId")}: {group.groupKey}
+                    {t("groupId")}: {group.groupId}
                   </p>
-                  {group?.description && (
+                  {group.description && (
                     <Description>
                       {t("description")}: {group.description}
                     </Description>
@@ -95,46 +91,40 @@ const Details: FC = () => {
             </Flex>
           )}
         </Stack>
-        {(IS_GROUP_USERS_SUPPORTED ||
-          IS_GROUP_ROLES_SUPPORTED ||
-          IS_GROUP_MAPPINGS_SUPPORTED) &&
-          group && (
-            <Section>
-              <Tabs
-                tabs={[
-                  ...(IS_GROUP_USERS_SUPPORTED
-                    ? [
-                        {
-                          key: "users",
-                          label: t("users"),
-                          content: <Members groupId={group?.groupKey} />,
-                        },
-                      ]
-                    : []),
-                  ...(IS_GROUP_ROLES_SUPPORTED
-                    ? [
-                        {
-                          key: "roles",
-                          label: t("roles"),
-                          content: <Roles groupId={group?.groupKey} />,
-                        },
-                      ]
-                    : []),
-                  ...(IS_GROUP_MAPPINGS_SUPPORTED && isOIDC
-                    ? [
-                        {
-                          key: "mappings",
-                          label: t("mappings"),
-                          content: <Mappings groupId={group?.groupKey} />,
-                        },
-                      ]
-                    : []),
-                ]}
-                selectedTabKey={tab}
-                path={`../${id}`}
-              />
-            </Section>
-          )}
+        {group && (
+          <Section>
+            <Tabs
+              tabs={[
+                {
+                  key: "users",
+                  label: t("users"),
+                  content: <Members groupId={group.groupId} />,
+                },
+                {
+                  key: "roles",
+                  label: t("roles"),
+                  content: <Roles groupId={group.groupId} />,
+                },
+                ...(isOIDC
+                  ? [
+                      {
+                        key: "mappings",
+                        label: t("mappings"),
+                        content: <Mappings groupId={group.groupId} />,
+                      },
+                      {
+                        key: "clients",
+                        label: t("clients"),
+                        content: <Clients groupId={group?.groupId} />,
+                      },
+                    ]
+                  : []),
+              ]}
+              selectedTabKey={tab}
+              path={`../${id}`}
+            />
+          </Section>
+        )}
         {editModal}
         {deleteModal}
       </>

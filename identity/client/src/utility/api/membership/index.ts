@@ -6,26 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
+import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { User } from "src/utility/api/users";
 import { GROUPS_ENDPOINT } from "src/utility/api/groups";
 import { SearchResponse } from "src/utility/api";
 import { TENANTS_ENDPOINT } from "src/utility/api/tenants";
 import { ROLES_ENDPOINT } from "src/utility/api/roles";
 
+export type MemberUser = Pick<User, "username">;
+
 export type GetGroupMembersParams = {
   groupId: string;
 };
-export const getMembersByGroup: ApiDefinition<
-  SearchResponse<User>,
+export const searchMembersByGroup: ApiDefinition<
+  SearchResponse<MemberUser>,
   GetGroupMembersParams
-> = ({ groupId }) => apiGet(`${GROUPS_ENDPOINT}/${groupId}/users`);
+> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`);
 
 export type GetTenantMembersParams = {
   tenantId: string;
 };
 export const getMembersByTenantId: ApiDefinition<
-  SearchResponse<User>,
+  SearchResponse<MemberUser>,
   GetTenantMembersParams
 > = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`);
 
@@ -33,7 +35,7 @@ export type GetRoleMembersParams = {
   roleId: string;
 };
 export const getMembersByRole: ApiDefinition<
-  SearchResponse<User>,
+  SearchResponse<MemberUser>,
   GetRoleMembersParams
 > = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/users/search`);
 
@@ -42,7 +44,7 @@ export const assignGroupMember: ApiDefinition<
   undefined,
   AssignGroupMemberParams
 > = ({ groupId, username }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
+  apiPut(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
 
 type UnassignGroupMemberParams = AssignGroupMemberParams;
 export const unassignGroupMember: ApiDefinition<

@@ -11,8 +11,8 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunk
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationExecutionCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecyclePausedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleResumeRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleSuspendedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationModifyProcessInstanceRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationProcessMigratedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationResolveIncidentRecord;
@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -129,7 +130,12 @@ class RdbmsExporterBatchOperationsIT {
 
     // and the items should be canceled
     final var batchOperationItems =
-        rdbmsService.getBatchOperationReader().getItems(String.valueOf(batchOperationKey));
+        rdbmsService
+            .getBatchOperationItemReader()
+            .search(
+                SearchQueryBuilders.batchOperationItemQuery(
+                    q -> q.filter(f -> f.batchOperationIds(Long.toString(batchOperationKey)))))
+            .items();
     assertThat(batchOperationItems).hasSize(3);
     assertThat(
             batchOperationItems.stream()
@@ -138,24 +144,24 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   @Test
-  public void shouldPauseBatchOperation() {
+  public void shouldSuspendBatchOperation() {
     // given
     final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
     final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
-    final var batchOperationPauseRecord =
-        getBatchOperationLifecyclePausedRecord(batchOperationKey, 3L);
+    final var batchOperationSuspendedRecord =
+        getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
 
     exporter.export(batchOperationCreatedRecord);
     exporter.export(batchOperationChunkRecord);
 
-    // when we pause it
-    exporter.export(batchOperationPauseRecord);
+    // when we suspend it
+    exporter.export(batchOperationSuspendedRecord);
 
     // then it should be canceled
     final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
-    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PAUSED);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.SUSPENDED);
   }
 
   @Test
@@ -164,14 +170,14 @@ class RdbmsExporterBatchOperationsIT {
     final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
     final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
-    final var batchOperationPauseRecord =
-        getBatchOperationLifecyclePausedRecord(batchOperationKey, 3L);
+    final var batchOperationSuspendedRecord =
+        getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
     final var batchOperationResumeRecord =
         getBatchOperationLifecycleResumeRecord(batchOperationKey, 4L);
 
     exporter.export(batchOperationCreatedRecord);
     exporter.export(batchOperationChunkRecord);
-    exporter.export(batchOperationPauseRecord);
+    exporter.export(batchOperationSuspendedRecord);
 
     // when we resume it
     exporter.export(batchOperationResumeRecord);

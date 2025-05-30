@@ -25,13 +25,17 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -60,8 +64,12 @@ import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupClientResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
@@ -77,13 +85,23 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCallHierarchyEntry;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
@@ -153,6 +171,25 @@ public final class SearchQueryResponseMapper {
         .completed(result.completed());
   }
 
+  public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
+      final List<SequenceFlowEntity> result) {
+    return new ProcessInstanceSequenceFlowsQueryResult()
+        .items(
+            result.stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceSequenceFlowResult)
+                .toList());
+  }
+
+  private static ProcessInstanceSequenceFlowResult toProcessInstanceSequenceFlowResult(
+      final SequenceFlowEntity result) {
+    return new ProcessInstanceSequenceFlowResult()
+        .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
+        .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
+        .processDefinitionId(result.processDefinitionId())
+        .elementId(result.flowNodeId())
+        .tenantId(result.tenantId());
+  }
+
   public static ProcessInstanceSearchQueryResult toProcessInstanceSearchQueryResponse(
       final SearchQueryResult<ProcessInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -173,6 +210,26 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
   }
 
+  public static RoleUserSearchResult toRoleUserSearchQueryResponse(
+      final SearchQueryResult<RoleMemberEntity> result) {
+    return new RoleUserSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toRoleUsers)
+                .orElseGet(List::of));
+  }
+
+  public static RoleClientSearchResult toRoleClientSearchQueryResponse(
+      final SearchQueryResult<RoleMemberEntity> result) {
+    return new RoleClientSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toRoleClients)
+                .orElseGet(List::of));
+  }
+
   public static GroupSearchQueryResult toGroupSearchQueryResponse(
       final SearchQueryResult<GroupEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -184,6 +241,28 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
+  public static GroupUserSearchResult toGroupUserSearchQueryResponse(
+      final SearchQueryResult<GroupMemberEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GroupUserSearchResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toGroupUsers)
+                .orElseGet(List::of));
+  }
+
+  public static GroupClientSearchResult toGroupClientSearchQueryResponse(
+      final SearchQueryResult<GroupMemberEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GroupClientSearchResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toGroupClients)
+                .orElseGet(List::of));
+  }
+
   public static TenantSearchQueryResult toTenantSearchQueryResponse(
       final SearchQueryResult<TenantEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -192,6 +271,26 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
+  }
+
+  public static TenantUserSearchResult toTenantUserSearchQueryResponse(
+      final SearchQueryResult<TenantMemberEntity> result) {
+    return new TenantUserSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toTenantUsers)
+                .orElseGet(List::of));
+  }
+
+  public static TenantClientSearchResult toTenantClientSearchQueryResponse(
+      final SearchQueryResult<TenantMemberEntity> result) {
+    return new TenantClientSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toTenantClients)
                 .orElseGet(List::of));
   }
 
@@ -284,6 +383,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
+      final SearchQueryResult<BatchOperationItemEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new BatchOperationItemSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toBatchOperationItems)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static IncidentSearchQueryResult toIncidentSearchQueryResponse(
       final SearchQueryResult<IncidentEntity> result) {
     final var page = toSearchQueryPageResponse(result);
@@ -371,6 +481,13 @@ public final class SearchQueryResponseMapper {
             batchOperations.stream().map(SearchQueryResponseMapper::toBatchOperationItem).toList());
   }
 
+  public static List<BatchOperationItemResponse> toBatchOperationItems(
+      final List<BatchOperationItemEntity> batchOperationItems) {
+    return batchOperationItems.stream()
+        .map(SearchQueryResponseMapper::toBatchOperationItem)
+        .toList();
+  }
+
   public static BatchOperationItemResponse toBatchOperationItem(
       final BatchOperationItemEntity entity) {
     return new BatchOperationItemResponse()
@@ -388,7 +505,6 @@ public final class SearchQueryResponseMapper {
 
   public static RoleResult toRole(final RoleEntity roleEntity) {
     return new RoleResult()
-        .roleKey(KeyUtil.keyToString(roleEntity.roleKey()))
         .roleId(roleEntity.roleId())
         .description(roleEntity.description())
         .name(roleEntity.name());
@@ -405,6 +521,23 @@ public final class SearchQueryResponseMapper {
         .description(groupEntity.description());
   }
 
+  private static List<GroupUserResult> toGroupUsers(final List<GroupMemberEntity> groupMembers) {
+    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupUser).toList();
+  }
+
+  private static GroupUserResult toGroupUser(final GroupMemberEntity groupMember) {
+    return new GroupUserResult().username(groupMember.id());
+  }
+
+  private static List<GroupClientResult> toGroupClients(
+      final List<GroupMemberEntity> groupMembers) {
+    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupClient).toList();
+  }
+
+  private static GroupClientResult toGroupClient(final GroupMemberEntity groupMember) {
+    return new GroupClientResult().clientId(groupMember.id());
+  }
+
   private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {
     return tenants.stream().map(SearchQueryResponseMapper::toTenant).toList();
   }
@@ -415,6 +548,38 @@ public final class SearchQueryResponseMapper {
         .name(tenantEntity.name())
         .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId());
+  }
+
+  private static List<TenantUserResult> toTenantUsers(final List<TenantMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toTenantUser).toList();
+  }
+
+  private static List<TenantClientResult> toTenantClients(final List<TenantMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toTenantClient).toList();
+  }
+
+  private static TenantUserResult toTenantUser(final TenantMemberEntity tenantMember) {
+    return new TenantUserResult().username(tenantMember.id());
+  }
+
+  private static TenantClientResult toTenantClient(final TenantMemberEntity tenantMember) {
+    return new TenantClientResult().clientId(tenantMember.id());
+  }
+
+  private static List<RoleUserResult> toRoleUsers(final List<RoleMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toRoleUser).toList();
+  }
+
+  private static List<RoleClientResult> toRoleClients(final List<RoleMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toRoleClient).toList();
+  }
+
+  private static RoleUserResult toRoleUser(final RoleMemberEntity roleMember) {
+    return new RoleUserResult().username(roleMember.id());
+  }
+
+  private static RoleClientResult toRoleClient(final RoleMemberEntity roleMember) {
+    return new RoleClientResult().clientId(roleMember.id());
   }
 
   private static List<MappingResult> toMappings(final List<MappingEntity> mappings) {

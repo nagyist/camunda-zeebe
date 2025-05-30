@@ -7,7 +7,7 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.api.search.enums.OwnerType.APPLICATION;
+import static io.camunda.client.api.search.enums.OwnerType.CLIENT;
 import static io.camunda.client.api.search.enums.OwnerType.USER;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
@@ -28,7 +28,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -64,8 +64,8 @@ class AuthorizationSearchIT {
   private static final String AUTH_SEARCH_ENDPOINT = "v2/authorizations/search";
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(
@@ -74,7 +74,8 @@ class AuthorizationSearchIT {
               new Permissions(AUTHORIZATION, DELETE, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -136,7 +137,7 @@ class AuthorizationSearchIT {
         adminClient
             .newCreateAuthorizationCommand()
             .ownerId(ADMIN)
-            .ownerType(APPLICATION)
+            .ownerType(CLIENT)
             .resourceId(resourceId)
             .resourceType(PROCESS_DEFINITION)
             .permissionTypes(READ_PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE)

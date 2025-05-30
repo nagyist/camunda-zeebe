@@ -12,7 +12,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 
 public record RoleFilter(
-    Long roleKey,
     String roleId,
     String name,
     String description,
@@ -20,14 +19,22 @@ public record RoleFilter(
     Set<String> memberIds,
     EntityType memberType,
     Set<String> roleIds,
+    EntityType childMemberType,
     String tenantId)
     implements FilterBase {
   public Builder toBuilder() {
-    return new Builder().roleKey(roleKey).roleId(roleId).name(name).memberIds(memberIds);
+    return new Builder()
+        .roleId(roleId)
+        .name(name)
+        .description(description)
+        .memberIds(memberIds)
+        .memberType(memberType)
+        .roleIds(roleIds)
+        .childMemberType(childMemberType)
+        .tenantId(tenantId);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
-    private Long roleKey;
     private String roleId;
     private String name;
     private String description;
@@ -35,12 +42,8 @@ public record RoleFilter(
     private Set<String> memberIds;
     private EntityType memberType;
     private Set<String> roleIds;
+    private EntityType childMemberType;
     private String tenantId;
-
-    public Builder roleKey(final Long value) {
-      roleKey = value;
-      return this;
-    }
 
     public Builder roleId(final String value) {
       roleId = value;
@@ -77,7 +80,12 @@ public record RoleFilter(
     }
 
     public Builder roleIds(final Set<String> value) {
-      roleIds = value == null ? Set.of() : value;
+      roleIds = value;
+      return this;
+    }
+
+    public Builder childMemberType(final EntityType value) {
+      childMemberType = value;
       return this;
     }
 
@@ -88,11 +96,10 @@ public record RoleFilter(
 
     @Override
     public RoleFilter build() {
-      if (memberIds != null && memberType == null) {
-        throw new IllegalArgumentException("If memberIds is set, memberType must be set too");
+      if (memberIds != null && childMemberType == null) {
+        throw new IllegalArgumentException("If memberIds is set, childMemberType must be set too");
       }
       return new RoleFilter(
-          roleKey,
           roleId,
           name,
           description,
@@ -100,6 +107,7 @@ public record RoleFilter(
           memberIds,
           memberType,
           roleIds,
+          childMemberType,
           tenantId);
     }
   }

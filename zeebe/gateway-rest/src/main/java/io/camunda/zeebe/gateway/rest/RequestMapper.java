@@ -27,8 +27,9 @@ import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.vali
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
-import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.validateResourceDeletion;
@@ -63,8 +64,8 @@ import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
@@ -100,9 +101,9 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
@@ -625,14 +626,16 @@ public class RequestMapper {
         authenticationBuilder.tenants(
             authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
 
+        authenticationBuilder.groupIds(authenticationContext.groups());
+
         if (authenticationContext.username() != null) {
           final var authenticatedUsername = authenticationContext.username();
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
           authenticationBuilder.user(authenticatedUsername);
         } else {
-          final var authenticatedApplicationId = authenticationContext.applicationId();
-          claims.put(Authorization.AUTHORIZED_APPLICATION_ID, authenticatedApplicationId);
-          authenticationBuilder.applicationId(authenticatedApplicationId);
+          final var authenticatedClientId = authenticationContext.clientId();
+          claims.put(Authorization.AUTHORIZED_CLIENT_ID, authenticatedClientId);
+          authenticationBuilder.clientId(authenticatedClientId);
         }
 
         if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
@@ -793,9 +796,9 @@ public class RequestMapper {
                 request.getOperationReference()));
   }
 
-  public static Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest>
+  public static Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest>
       toProcessInstanceMigrationBatchOperationRequest(
-          final ProcessInstanceMigrationBatchOperationInstruction request) {
+          final ProcessInstanceMigrationBatchOperationRequest request) {
     // First validate filter and return early
     final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
     if (filter.isLeft()) {
@@ -804,9 +807,9 @@ public class RequestMapper {
 
     final var migrationPlan = request.getMigrationPlan();
     return getResult(
-        validateMigrateProcessInstanceRequest(migrationPlan),
+        validateMigrateProcessInstanceBatchOperationRequest(migrationPlan),
         () ->
-            new ProcessInstanceMigrationBatchOperationRequest(
+            new ProcessInstanceMigrateBatchOperationRequest(
                 filter.get(),
                 KeyUtil.keyToLong(migrationPlan.getTargetProcessDefinitionKey()),
                 migrationPlan.getMappingInstructions().stream()
@@ -840,7 +843,7 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest>
       toProcessInstanceModifyBatchOperationRequest(
-          final ProcessInstanceModificationBatchOperationInstruction request) {
+          final ProcessInstanceModificationBatchOperationRequest request) {
     // First validate filter and return early
     final var filter = SearchQueryRequestMapper.toProcessInstanceFilter(request.getFilter());
     if (filter.isLeft()) {
@@ -848,7 +851,7 @@ public class RequestMapper {
     }
 
     return getResult(
-        validateModifyProcessInstanceBatchRequest(request),
+        validateModifyProcessInstanceBatchOperationRequest(request),
         () ->
             new ProcessInstanceModifyBatchOperationRequest(
                 filter.get(),

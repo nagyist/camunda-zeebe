@@ -27,6 +27,18 @@ const compensationProcessInstance: InstanceMock = {
     sortValues: [''],
     tenantId: '<default>',
   },
+  detailV2: {
+    processInstanceKey: '2551799813954282',
+    processDefinitionKey: '2251799813694848',
+    processDefinitionName: 'Compensation Process',
+    processDefinitionVersion: 1,
+    startDate: '2023-10-02T06:10:47.979+0000',
+    endDate: '2023-10-02T06:15:48.042+0000',
+    state: 'COMPLETED',
+    processDefinitionId: 'CompensationProcess',
+    tenantId: '<default>',
+    hasIncident: false,
+  },
   flowNodeInstances: {
     '9007199254744341': {
       children: [
@@ -182,6 +194,50 @@ const compensationProcessInstance: InstanceMock = {
     {processInstanceId: '9007199254744341', activityId: 'Flow_6'},
     {processInstanceId: '9007199254744341', activityId: 'Flow_8'},
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_1',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_2',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_4',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_6',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '9007199254744341',
+        elementId: 'Flow_8',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   variables: [],
 };
 

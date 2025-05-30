@@ -62,7 +62,8 @@ public class UserTaskCommandPreconditionChecker {
 
   protected Either<Rejection, UserTaskRecord> check(final TypedRecord<UserTaskRecord> command) {
     final long userTaskKey = command.getKey();
-    final UserTaskRecord persistedRecord = fetchUserTaskRecord(command);
+    final var persistedRecord =
+        userTaskState.getUserTask(userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command));
 
     if (persistedRecord == null) {
       return Either.left(
@@ -71,17 +72,12 @@ public class UserTaskCommandPreconditionChecker {
               String.format(NO_USER_TASK_FOUND_MESSAGE, intent, userTaskKey)));
     }
 
-    // Skip remaining checks for Zeebe-retried commands (missing request metadata),
-    // as they were already performed during the initial command processing.
-    if (!command.hasRequestMetadata()) {
-      return Either.right(persistedRecord);
-    }
-
     final var authRequest =
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_USER_TASK)
+                PermissionType.UPDATE_USER_TASK,
+                persistedRecord.getTenantId())
             .addResourceId(persistedRecord.getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
@@ -101,13 +97,5 @@ public class UserTaskCommandPreconditionChecker {
         .map(checks -> checks.apply(command, persistedRecord))
         .filter(Either::isLeft)
         .orElse(Either.right(persistedRecord));
-  }
-
-  private UserTaskRecord fetchUserTaskRecord(final TypedRecord<UserTaskRecord> command) {
-    final long userTaskKey = command.getKey();
-    return command.hasRequestMetadata()
-        ? userTaskState.getUserTask(userTaskKey, authCheckBehavior.getAuthorizedTenantIds(command))
-        // For Zeebe-retried commands (missing metadata), fetch the user task without tenant checks.
-        : userTaskState.getUserTask(userTaskKey);
   }
 }

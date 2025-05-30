@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
+import io.camunda.security.auth.Authentication;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -38,18 +41,23 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ObjectProperty<>("migrationPlan", new BatchOperationProcessInstanceMigrationPlan());
   private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
+  private final BooleanProperty initializedProp = new BooleanProperty("initialized", false);
   private final ArrayProperty<LongValue> chunkKeysProp =
       new ArrayProperty<>("chunkKeys", LongValue::new);
+  // Authentication claims, needed for query + command auth
+  private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
 
   public PersistedBatchOperation() {
-    super(7);
+    super(9);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
-        .declareProperty(chunkKeysProp);
+        .declareProperty(chunkKeysProp)
+        .declareProperty(initializedProp)
+        .declareProperty(authenticationProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -58,26 +66,42 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setEntityFilter(record.getEntityFilterBuffer());
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
+    setAuthentication(record.getAuthenticationBuffer());
     return this;
+  }
+
+  /** Marks this batch operation as initialized. */
+  public void markAsInitialized() {
+    initializedProp.setValue(true);
+  }
+
+  /**
+   * Returns true if the batch operation is initialized and ready for execution. A batch operation
+   * is considered initialized if it has been started once.
+   *
+   * @return true if the batch operation is initialized, false otherwise
+   */
+  public boolean isInitialized() {
+    return initializedProp.getValue();
   }
 
   public boolean canCancel() {
     return getStatus() == BatchOperationStatus.CREATED
         || getStatus() == BatchOperationStatus.STARTED
-        || getStatus() == BatchOperationStatus.PAUSED;
+        || getStatus() == BatchOperationStatus.SUSPENDED;
   }
 
-  public boolean canPause() {
+  public boolean canSuspend() {
     return getStatus() == BatchOperationStatus.CREATED
         || getStatus() == BatchOperationStatus.STARTED;
   }
 
   public boolean canResume() {
-    return isPaused();
+    return isSuspended();
   }
 
-  public boolean isPaused() {
-    return getStatus() == BatchOperationStatus.PAUSED;
+  public boolean isSuspended() {
+    return getStatus() == BatchOperationStatus.SUSPENDED;
   }
 
   public long getKey() {
@@ -124,6 +148,19 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public PersistedBatchOperation setEntityFilter(final DirectBuffer filter) {
     entityFilterProp.setValue(new UnsafeBuffer(filter));
+    return this;
+  }
+
+  public Authentication getAuthentication() {
+    if (authenticationProp.getValue() != null) {
+      return MsgPackConverter.convertToObject(authenticationProp.getValue(), Authentication.class);
+    } else {
+      return Authentication.none();
+    }
+  }
+
+  public PersistedBatchOperation setAuthentication(final DirectBuffer authentication) {
+    authenticationProp.setValue(authentication);
     return this;
   }
 
@@ -180,7 +217,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   public enum BatchOperationStatus {
     CREATED,
     STARTED,
-    PAUSED,
+    SUSPENDED,
     CANCELED,
     FAILED
   }

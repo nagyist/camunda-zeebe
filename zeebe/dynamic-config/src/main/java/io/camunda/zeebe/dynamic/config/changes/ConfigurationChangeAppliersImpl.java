@@ -90,12 +90,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               enableExporterOperation.initializeFrom(),
               partitionChangeExecutor);
       case final PartitionBootstrapOperation bootstrapOperation ->
-          new PartitionBootstrapApplier(
-              bootstrapOperation.partitionId(),
-              bootstrapOperation.priority(),
-              bootstrapOperation.memberId(),
-              bootstrapOperation.config(),
-              partitionChangeExecutor);
+          new PartitionBootstrapApplier(bootstrapOperation, partitionChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new DeleteHistoryApplier(deleteHistoryOperation.memberId(), clusterChangeExecutor);
       case final ScaleUpOperation scaleUpOperation ->
@@ -108,9 +103,8 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
             case final AwaitRedistributionCompletion awaitRedistributionCompletion ->
                 new AwaitRedistributionCompletionApplier(
                     partitionScalingChangeExecutor, awaitRedistributionCompletion);
-            case final AwaitRelocationCompletion ignored ->
-                // TODO IMPLEMENT
-                throw new UnsupportedOperationException("Not implemented yet");
+            case final AwaitRelocationCompletion relocation ->
+                new AwaitRelocationCompletionApplier(partitionScalingChangeExecutor, relocation);
           };
     };
   }

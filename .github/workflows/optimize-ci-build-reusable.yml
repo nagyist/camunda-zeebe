@@ -48,8 +48,8 @@ jobs:
       - name: Set GitHub environment variables
         run: |
           GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
-          echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
 
       #########################################################################
       # Setup: read java version from pom
@@ -96,7 +96,7 @@ jobs:
       #########################################################################
       # Build Docker image
       - name: Build and push Docker image
-        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false

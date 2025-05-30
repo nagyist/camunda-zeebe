@@ -32,7 +32,7 @@ public final class BatchOperationFixtures {
     final var key = CommonFixtures.nextStringKey();
     final var builder =
         new Builder()
-            .batchOperationKey(key)
+            .batchOperationId(key)
             .state(randomEnum(BatchOperationState.class))
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
@@ -89,7 +89,7 @@ public final class BatchOperationFixtures {
                 .map(
                     itemKey ->
                         new BatchOperationItemDbModel(
-                            itemKey, itemKey, BatchOperationItemState.ACTIVE))
+                            batchOperationKey, itemKey, itemKey, BatchOperationItemState.ACTIVE))
                 .toList());
     rdbmsWriter.flush();
   }

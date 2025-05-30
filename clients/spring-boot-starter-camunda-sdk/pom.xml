@@ -96,6 +96,7 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <dependency>
@@ -106,6 +107,7 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <dependency>
@@ -116,16 +118,6 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-collections</groupId>
-      <artifactId>commons-collections</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-beanutils</groupId>
-      <artifactId>commons-beanutils</artifactId>
     </dependency>
 
     <dependency>
@@ -160,7 +152,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <scope>provided</scope>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
@@ -198,7 +190,6 @@
         <configuration>
           <usedDependencies>
             <dependency>org.springframework.boot:spring-boot-configuration-processor</dependency>
-            <dependency>commons-collections:commons-collections</dependency>
           </usedDependencies>
           <ignoredUsedUndeclaredDependencies>
             <dependency>commons-logging:commons-logging</dependency>

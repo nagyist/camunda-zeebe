@@ -7,11 +7,14 @@
  */
 package io.camunda.search.schema;
 
+import static java.util.Optional.ofNullable;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
+import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.retry.RetryDecorator;
@@ -25,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +44,7 @@ public class SchemaManager {
   private final ObjectMapper objectMapper;
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
+  private final SchemaManagerMetrics schemaManagerMetrics;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -47,6 +52,17 @@ public class SchemaManager {
       final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
       final SearchEngineConfiguration config,
       final ObjectMapper objectMapper) {
+    this(
+        searchEngineClient, indexDescriptors, indexTemplateDescriptors, config, objectMapper, null);
+  }
+
+  private SchemaManager(
+      final SearchEngineClient searchEngineClient,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final Collection<IndexTemplateDescriptor> indexTemplateDescriptors,
+      final SearchEngineConfiguration config,
+      final ObjectMapper objectMapper,
+      final SchemaManagerMetrics schemaManagerMetrics) {
     virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
     this.searchEngineClient = searchEngineClient;
     this.indexDescriptors = indexDescriptors;
@@ -54,6 +70,17 @@ public class SchemaManager {
     this.config = config;
     this.objectMapper = objectMapper;
     retryDecorator = new RetryDecorator(config.schemaManager().getRetry());
+    this.schemaManagerMetrics = schemaManagerMetrics;
+  }
+
+  public SchemaManager withMetrics(final SchemaManagerMetrics schemaManagerMetrics) {
+    return new SchemaManager(
+        searchEngineClient,
+        indexDescriptors,
+        indexTemplateDescriptors,
+        config,
+        objectMapper,
+        schemaManagerMetrics);
   }
 
   public void startup() {
@@ -62,7 +89,13 @@ public class SchemaManager {
           "Will not make any changes to indices and index templates as [createSchema] is false");
       return;
     }
+    final var timer =
+        ofNullable(schemaManagerMetrics)
+            .map(SchemaManagerMetrics::startSchemaInitTimer)
+            .orElse(() -> {});
     retryDecorator.decorate("init schema", this::initializeSchema);
+    // record the time taken to initialize schema only if it was successful
+    timer.close();
   }
 
   private void initializeSchema() {
@@ -95,29 +128,17 @@ public class SchemaManager {
   }
 
   private void updateSchemaSettings() {
-    final var existingTemplateNames =
-        searchEngineClient
-            .getMappings(config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-            .keySet();
+    indexTemplateDescriptors.forEach(
+        desc -> {
+          searchEngineClient.updateIndexTemplateSettings(
+              desc, getIndexSettingsFromConfig(desc.getIndexName()));
+        });
 
-    final var existingIndexNames = existingIndexNames();
+    getAllIndexDescriptors().forEach(this::updateIndexReplicaCount);
+  }
 
-    indexTemplateDescriptors.stream()
-        .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
-        .forEach(
-            desc -> {
-              searchEngineClient.updateIndexTemplateSettings(
-                  desc, getIndexSettingsFromConfig(desc.getIndexName()));
-            });
-
-    // update matching index for the index template descriptor
-    indexTemplateDescriptors.stream()
-        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
-        .forEach(this::updateIndexReplicaCount);
-
-    indexDescriptors.stream()
-        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
-        .forEach(this::updateIndexReplicaCount);
+  private Collection<IndexDescriptor> getAllIndexDescriptors() {
+    return Stream.concat(indexDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
   }
 
   private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {

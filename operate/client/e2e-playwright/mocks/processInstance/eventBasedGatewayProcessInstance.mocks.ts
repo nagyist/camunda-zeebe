@@ -27,6 +27,17 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
     sortValues: [''],
     permissions: [],
   },
+  detailV2: {
+    processInstanceKey: '2251799813888430',
+    processDefinitionKey: '2251799813687567',
+    processDefinitionName: 'Event based gateway with timer start',
+    processDefinitionVersion: 2,
+    startDate: '2023-09-29T12:36:31.762+0000',
+    state: 'ACTIVE',
+    processDefinitionId: 'eventBasedGatewayProcess',
+    tenantId: '<default>',
+    hasIncident: true,
+  },
   xml: `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_13jk2qx" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.5.0">
       <bpmn:process id="eventBasedGatewayProcess" name="Event based gateway with timer start" isExecutable="true">
@@ -375,6 +386,26 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       activityId: 'SequenceFlow_0lplwad',
     },
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '2251799813888430',
+        elementId: 'SequenceFlow_027co6p',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+      {
+        processInstanceKey: '2251799813888430',
+        elementId: 'SequenceFlow_0lplwad',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   statisticsV2: {
     items: [
       {

@@ -7,13 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import static io.camunda.zeebe.engine.processing.batchoperation.BatchOperationExecutionScheduler.CHUNK_SIZE_IN_RECORD;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.BatchOperationType.MODIFY_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.BatchOperationType.RESOLVE_INCIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
@@ -51,8 +53,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 public class BatchOperationExecutionSchedulerTest {
 
+  public static final Duration SCHEDULER_INTERVAL = Duration.ofSeconds(1);
+  public static final int CHUNK_SIZE = 10;
   private static final int PARTITION_ID = 1;
-
   @Mock private Supplier<ScheduledTaskState> scheduledTaskStateFactory;
   @Mock private BatchOperationItemProvider entityKeyProvider;
   @Mock private TaskResultBuilder taskResultBuilder;
@@ -70,10 +73,12 @@ public class BatchOperationExecutionSchedulerTest {
   public void setUp() {
     setUpBasicSchedulerBehaviour();
 
+    final var filter = FilterBuilders.processInstance().build();
+
     when(batchOperation.getBatchOperationType()).thenReturn(CANCEL_PROCESS_INSTANCE);
     lenient()
         .when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
-        .thenReturn(mock(ProcessInstanceFilter.class));
+        .thenReturn(filter);
     doAnswer(
             invocation -> {
               final BatchOperationVisitor visitor = invocation.getArgument(0);
@@ -85,8 +90,8 @@ public class BatchOperationExecutionSchedulerTest {
     lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
 
     final var engineConfiguration = mock(EngineConfiguration.class);
-    when(engineConfiguration.getBatchOperationSchedulerInterval())
-        .thenReturn(Duration.ofSeconds(1));
+    when(engineConfiguration.getBatchOperationSchedulerInterval()).thenReturn(SCHEDULER_INTERVAL);
+    when(engineConfiguration.getBatchOperationChunkSize()).thenReturn(CHUNK_SIZE);
 
     scheduler =
         new BatchOperationExecutionScheduler(
@@ -119,11 +124,8 @@ public class BatchOperationExecutionSchedulerTest {
 
   @Test
   public void shouldAppendChunkForBatchOperations() {
-    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
-
     // given
-    when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchProcessInstanceItems(eq(PARTITION_ID), any(), any(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -142,12 +144,87 @@ public class BatchOperationExecutionSchedulerTest {
   }
 
   @Test
-  public void shouldAppendChunkOfIncidents() {
-    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+  public void shouldQueryOnlyActiveRootProcessInstancesWhenCancelProcessInstancesBatch() {
+    final var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+
+    // given
+    when(entityKeyProvider.fetchProcessInstanceItems(
+            eq(PARTITION_ID), filterCaptor.capture(), any(), any()))
+        .thenReturn(createItems(1L, 2L, 3L));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    final var filter = filterCaptor.getValue();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    assertThat(filter.parentProcessInstanceKeyOperations())
+        .containsExactly(Operation.exists(false));
+  }
+
+  @Test
+  public void shouldQueryOnlyActiveProcessInstancesWhenMigrateProcessInstancesBatch() {
+    final var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+    when(batchOperation.getBatchOperationType()).thenReturn(MIGRATE_PROCESS_INSTANCE);
+
+    // given
+    when(entityKeyProvider.fetchProcessInstanceItems(
+            eq(PARTITION_ID), filterCaptor.capture(), any(), any()))
+        .thenReturn(createItems(1L, 2L, 3L));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    final var filter = filterCaptor.getValue();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    assertThat(filter.parentProcessInstanceKeyOperations()).isEmpty();
+  }
+
+  @Test
+  public void shouldQueryOnlyActiveProcessInstancesWhenModifyProcessInstancesBatch() {
+    final var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
+    when(batchOperation.getBatchOperationType()).thenReturn(MODIFY_PROCESS_INSTANCE);
+
+    // given
+    when(entityKeyProvider.fetchProcessInstanceItems(
+            eq(PARTITION_ID), filterCaptor.capture(), any(), any()))
+        .thenReturn(createItems(1L, 2L, 3L));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    final var filter = filterCaptor.getValue();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    assertThat(filter.parentProcessInstanceKeyOperations()).isEmpty();
+  }
+
+  @Test
+  public void shouldQueryOnlyActiveProcessInstancesWhenResolveIncidentsBatch() {
+    final var filterCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
     when(batchOperation.getBatchOperationType()).thenReturn(RESOLVE_INCIDENT);
 
     // given
-    when(entityKeyProvider.fetchIncidentItems(eq(PARTITION_ID), queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchIncidentItems(
+            eq(PARTITION_ID), filterCaptor.capture(), any(), any()))
+        .thenReturn(createItems(1L, 2L, 3L));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    final var filter = filterCaptor.getValue();
+    assertThat(filter.stateOperations()).containsExactly(Operation.eq("ACTIVE"));
+    assertThat(filter.parentProcessInstanceKeyOperations()).isEmpty();
+  }
+
+  @Test
+  public void shouldAppendChunkOfIncidents() {
+    when(batchOperation.getBatchOperationType()).thenReturn(RESOLVE_INCIDENT);
+
+    // given
+    when(entityKeyProvider.fetchIncidentItems(eq(PARTITION_ID), any(), any(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -172,7 +249,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // given
     when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -195,9 +272,9 @@ public class BatchOperationExecutionSchedulerTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
 
     // given
-    final var queryItems = createItems(LongStream.range(0, CHUNK_SIZE_IN_RECORD * 2).toArray());
+    final var queryItems = createItems(LongStream.range(0, CHUNK_SIZE * 2).toArray());
     when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(new HashSet<>(queryItems));
 
     // when our scheduler fires
@@ -212,16 +289,15 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture());
     var batchOperationChunkRecord = chunkRecordCaptor.getAllValues().getFirst();
-    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE);
     assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
-            extractQueryItemKeys(queryItems, 0, CHUNK_SIZE_IN_RECORD).toArray(Long[]::new));
+            extractQueryItemKeys(queryItems, 0, CHUNK_SIZE).toArray(Long[]::new));
     batchOperationChunkRecord = chunkRecordCaptor.getAllValues().get(1);
-    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE_IN_RECORD);
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(CHUNK_SIZE);
     assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
-            extractQueryItemKeys(queryItems, CHUNK_SIZE_IN_RECORD, CHUNK_SIZE_IN_RECORD)
-                .toArray(Long[]::new));
+            extractQueryItemKeys(queryItems, CHUNK_SIZE, CHUNK_SIZE).toArray(Long[]::new));
   }
 
   @Test
@@ -230,7 +306,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // given
     when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(new HashSet<>(createItems(1L)));
 
     // when our scheduler fires

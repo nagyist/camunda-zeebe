@@ -14,7 +14,14 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useTotalRunningInstancesForFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+} from 'modules/utils/flowNodeSelection';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -55,9 +62,12 @@ const Diagram: React.FC<Props> = observer(
     const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
     const {data: totalRunningInstances} =
       useTotalRunningInstancesForFlowNode(flowNodeId);
-    const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
-      totalRunningInstances ?? 0,
-    );
+    const isRootNodeSelected = useIsRootNodeSelected();
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+      isRootNodeSelected,
+    });
+    const rootNode = useRootNode();
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -118,11 +128,11 @@ const Diagram: React.FC<Props> = observer(
           );
 
           if (rootElementId !== currentSelectionRootId) {
-            flowNodeSelectionStore.clearSelection();
+            clearSelection(rootNode);
           }
         };
       }
-    }, [viewer, onFlowNodeSelection]);
+    }, [viewer, onFlowNodeSelection, rootNode]);
 
     useEffect(() => {
       return () => {
@@ -143,12 +153,12 @@ const Diagram: React.FC<Props> = observer(
             {children}
           </>
         )}
-        {!isViewboxChanging &&
-          React.isValidElement(selectedFlowNodeOverlay) &&
-          React.cloneElement(selectedFlowNodeOverlay, {
-            selectedFlowNodeRef: viewer.selectedFlowNode,
-            diagramCanvasRef,
-          })}
+        {!isViewboxChanging && React.isValidElement(selectedFlowNodeOverlay)
+          ? React.cloneElement(selectedFlowNodeOverlay, {
+              selectedFlowNodeRef: viewer.selectedFlowNode,
+              diagramCanvasRef,
+            })
+          : null}
       </StyledDiagram>
     );
   },

@@ -7,15 +7,11 @@
  */
 
 import {FlowNodeModification, modificationsStore} from './modifications';
-import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {
   createAddVariableModification,
   createEditVariableModification,
 } from 'modules/mocks/modifications';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {createInstance} from 'modules/testUtils';
 import {
@@ -33,7 +29,6 @@ type AddModificationPayload = Extract<
 describe('stores/modifications', () => {
   afterEach(() => {
     modificationsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
     processInstanceDetailsStore.reset();
   });
 
@@ -50,12 +45,6 @@ describe('stores/modifications', () => {
   });
 
   it('should add/remove flow node modifications', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     const uniqueID = generateUniqueID();
     const uniqueIDForMove = generateUniqueID();
     expect(modificationsStore.state.modifications).toEqual([]);
@@ -275,12 +264,6 @@ describe('stores/modifications', () => {
   });
 
   it('should remove last modification', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     const uniqueID = generateUniqueID();
 
     modificationsStore.addModification({
@@ -327,12 +310,6 @@ describe('stores/modifications', () => {
   });
 
   it('should move tokens', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     expect(
       modificationsStore.state.sourceFlowNodeIdForMoveOperation,
     ).toBeNull();
@@ -474,11 +451,6 @@ describe('stores/modifications', () => {
     processInstanceDetailsStore.setProcessInstance(
       createInstance({bpmnProcessId: 'nested_sub_process'}),
     );
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
 
     modificationsStore.addModification({
       type: 'token',
@@ -491,6 +463,7 @@ describe('stores/modifications', () => {
         parentScopeIds: generateParentScopeIds(
           mockNestedSubProcessBusinessObjects,
           'user_task',
+          'nested_sub_process',
         ),
       },
     });
@@ -505,6 +478,7 @@ describe('stores/modifications', () => {
         parentScopeIds: generateParentScopeIds(
           mockNestedSubProcessBusinessObjects,
           'user_task',
+          'nested_sub_process',
         ),
       },
     });
@@ -929,6 +903,7 @@ describe('stores/modifications', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: 'inner_sub_process',
     });
 
     modificationsStore.addModification({
@@ -1023,12 +998,6 @@ describe('stores/modifications', () => {
   });
 
   it('should add tokens to flow nodes that has multiple running scopes', async () => {
-    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(
-      'processInstanceId',
-    );
-
     expect(modificationsStore.state.sourceFlowNodeIdForAddOperation).toBeNull();
 
     modificationsStore.startAddingToken('subprocess-service-task');

@@ -18,18 +18,23 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
@@ -43,6 +48,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
@@ -100,6 +106,12 @@ public class RdbmsSearchClient implements SearchClientsProxy {
                         .sort(query.sort())
                         .page(p -> p.size(Integer.MAX_VALUE))))
         .items();
+  }
+
+  @Override
+  public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for sequence flow: {}", query);
+    return rdbmsService.getSequenceFlowReader().search(query);
   }
 
   @Override
@@ -205,6 +217,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
+  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
+    throw new UnsupportedOperationException("Group member search not implemented on RDBMS");
+  }
+
+  @Override
   public List<GroupEntity> findAllGroups(final GroupQuery query) {
     LOG.debug("[RDBMS Search Client] Search for all groups: {}", query);
 
@@ -243,6 +260,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
+    throw new UnsupportedOperationException("Role member search not implemented on RDBMS");
+  }
+
+  @Override
   public List<RoleEntity> findAllRoles(final RoleQuery filter) {
     return List.of();
   }
@@ -252,6 +274,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
     LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
 
     return rdbmsService.getTenantReader().search(query);
+  }
+
+  @Override
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
+    throw new UnsupportedOperationException("Tenant member search not implemented on RDBMS");
   }
 
   @Override
@@ -294,11 +321,10 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
-    LOG.debug(
-        "[RDBMS Search Client] Search for batch operation items by batchOperationId: {}",
-        batchOperationId);
+  public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
+      final BatchOperationItemQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for batch operation items: {}", query);
 
-    return rdbmsService.getBatchOperationReader().getItems(batchOperationId);
+    return rdbmsService.getBatchOperationItemReader().search(query);
   }
 }
