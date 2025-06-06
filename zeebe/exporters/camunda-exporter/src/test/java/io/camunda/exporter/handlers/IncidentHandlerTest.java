@@ -17,11 +17,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
-import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -41,9 +40,7 @@ public class IncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-incident";
   private final TestProcessCache processCache = new TestProcessCache();
-  private final IncidentNotifier incidentNotifier = mock(IncidentNotifier.class);
-  private final IncidentHandler underTest =
-      new IncidentHandler(indexName, processCache, incidentNotifier);
+  private final IncidentHandler underTest = new IncidentHandler(indexName, processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -154,7 +151,6 @@ public class IncidentHandlerTest {
                 incidentRecordValue.getProcessDefinitionKey(),
                 "treePath",
                 incidentEntity.getTreePath()));
-    verify(incidentNotifier).notifyAsync(List.of(incidentEntity));
   }
 
   @Test
@@ -292,10 +288,12 @@ public class IncidentHandlerTest {
 
     processCache.put(
         processDefinitionKey1,
-        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1)));
+        new CachedProcessEntity(
+            null, null, List.of("0", "1", "2", callActivityId1), Map.of("FI1", "FN1")));
 
     processCache.put(
-        processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
+        processDefinitionKey2,
+        new CachedProcessEntity(null, null, List.of("0", callActivityId2), Map.of("FI1", "FN1")));
 
     // when
     final IncidentEntity incidentEntity = new IncidentEntity();

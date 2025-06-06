@@ -17,6 +17,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -24,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.SearchEngineException;
+import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -32,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
@@ -40,6 +44,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,7 +76,8 @@ public class SchemaManagerIT {
             CONFIG_PREFIX + "-template_name",
             "/mappings.json");
 
-    index = mockIndex(CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
+    index =
+        mockIndex(CONFIG_PREFIX + "-index-qualified_name", "alias", "index_name", "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
   }
@@ -83,11 +89,7 @@ public class SchemaManagerIT {
     // given
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config),
-            Set.of(index),
-            Set.of(),
-            SearchEngineConfiguration.of(b -> b),
-            objectMapper);
+            searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper);
 
     schemaManager.initialiseResources();
 
@@ -533,6 +535,60 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  void shouldIsSchemaReadyForUseReturnTrueWhenAllIndicesAndTemplatesAreCreated(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(index),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // when, then
+    assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+  }
+
+  @TestTemplate
+  void shouldIsSchemaReadyForUseReturnFalseWhenARuntimeTemplatedIndexIsMissing(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(index), Set.of(indexTemplate), config, objectMapper);
+
+    schemaManager.startup();
+
+    // delete the templated runtime index
+    searchEngineClient.deleteIndex(indexTemplate.getFullQualifiedName());
+
+    // when, then
+    assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+  }
+
+  @TestTemplate
+  void shouldIsSchemaReadyForUseReturnFalseWhenTemplateHasDifferentMapping(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClient, Set.of(), Set.of(indexTemplate), config, objectMapper);
+
+    schemaManager.startup();
+
+    // update the index template with a different mapping
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+
+    // when, then
+    assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
+  }
+
+  @TestTemplate
   void shouldUseReplicaAndShardFromConfigIfConflictingWithValuesInJsonSchema(
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
@@ -729,6 +785,93 @@ public class SchemaManagerIT {
   }
 
   @TestTemplate
+  void shouldUpdateTemplateIndicesWithNewMapping(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final String runtimeIndexName = indexTemplate.getFullQualifiedName();
+    final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(mappingsMatch(initialRuntimeIndex.get("mappings"), "/mappings.json")).isTrue();
+
+    final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
+    searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
+    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+    assertThat(mappingsMatch(initialArchiveIndex.get("mappings"), "/mappings.json")).isTrue();
+
+    // when
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    schemaManager.startup();
+
+    // then
+    final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(mappingsMatch(updatedRuntimeIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+
+    final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+    assertThat(mappingsMatch(updatedArchiveIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  @TestTemplate
+  void shouldUpdateTemplateIndicesWithNewReplicaCount(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var replicaSettingPath = "/settings/index/number_of_replicas";
+    final var shardsSettingPath = "/settings/index/number_of_shards";
+
+    final String runtimeIndexName = indexTemplate.getFullQualifiedName();
+    final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+
+    assertThat(initialRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
+    searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
+
+    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+    assertThat(initialArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    // when
+    config.index().setNumberOfReplicas(5);
+    config.index().setNumberOfShards(5);
+
+    schemaManager.startup();
+
+    // then
+    final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+
+    assertThat(updatedRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+    assertThat(updatedRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+
+    assertThat(updatedArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+    assertThat(updatedArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+  }
+
+  @TestTemplate
   void shouldCreateHarmonizedSchema(
       final SearchEngineConfiguration config, final SearchClientAdapter adapter)
       throws IOException {
@@ -785,5 +928,46 @@ public class SchemaManagerIT {
             newPrefix + "-tasklist-task-variable-8.3.0_",
             newPrefix + "-tasklist-import-position-8.2.0_",
             newPrefix + "-tasklist-user-1.4.0_");
+  }
+
+  @TestTemplate
+  void shouldRecordSchemaInitTimerMetric(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var schemaManager =
+        new SchemaManager(
+                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+            .withMetrics(new SchemaManagerMetrics(registry));
+
+    // when
+    schemaManager.startup();
+
+    // then
+    final var measuredTime = registry.find("camunda.schema.init.time").timer();
+    assertThat(measuredTime.count()).isEqualTo(1);
+    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isGreaterThan(0);
+  }
+
+  @TestTemplate
+  void shouldNotRecordSchemaInitTimerMetricOnFailure(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    // alter configuration to trigger failure
+    config.connect().setUrl("http://bad-url");
+    config.schemaManager().getRetry().setMaxRetries(1);
+    final var schemaManager =
+        new SchemaManager(
+                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+            .withMetrics(new SchemaManagerMetrics(registry));
+
+    // when
+    assertThrows(SearchEngineException.class, () -> schemaManager.startup());
+
+    // then
+    final var measuredTime = registry.find("camunda.schema.init.time").timer();
+    assertThat(measuredTime.count()).isEqualTo(0);
+    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(0);
   }
 }

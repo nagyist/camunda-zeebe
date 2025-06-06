@@ -18,11 +18,23 @@ public record TenantFilter(
     String name,
     String joinParentId,
     EntityType entityType,
-    Set<String> memberIds)
+    Set<String> memberIds,
+    EntityType childMemberType)
     implements FilterBase {
 
   public static TenantFilter of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
+  }
+
+  public Builder toBuilder() {
+    return new Builder()
+        .key(key)
+        .tenantId(tenantId)
+        .name(name)
+        .joinParentId(joinParentId)
+        .memberType(entityType)
+        .memberIds(memberIds)
+        .childMemberType(childMemberType);
   }
 
   public static final class Builder implements ObjectBuilder<TenantFilter> {
@@ -33,6 +45,7 @@ public record TenantFilter(
     private String joinParentId;
     private EntityType entityType;
     private Set<String> memberIds;
+    private EntityType childMemberType;
 
     public Builder key(final Long value) {
       key = value;
@@ -64,9 +77,15 @@ public record TenantFilter(
       return this;
     }
 
+    public Builder childMemberType(final EntityType value) {
+      childMemberType = value;
+      return this;
+    }
+
     @Override
     public TenantFilter build() {
-      return new TenantFilter(key, tenantId, name, joinParentId, entityType, memberIds);
+      return new TenantFilter(
+          key, tenantId, name, joinParentId, entityType, memberIds, childMemberType);
     }
   }
 }

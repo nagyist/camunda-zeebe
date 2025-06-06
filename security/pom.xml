@@ -23,6 +23,7 @@
   <modules>
     <module>security-core</module>
     <module>security-services</module>
+    <module>security-protocol</module>
   </modules>
 
 </project>

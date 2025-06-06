@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -49,7 +50,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -122,7 +122,6 @@ public final class TypedEventRegistry {
     registry.put(ValueType.SCALE, ScaleRecord.class);
     registry.put(ValueType.MAPPING, MappingRecord.class);
     registry.put(ValueType.GROUP, GroupRecord.class);
-    registry.put(ValueType.REDISTRIBUTION, RedistributionRecord.class);
     registry.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord.class);
     registry.put(ValueType.BATCH_OPERATION_CREATION, BatchOperationCreationRecord.class);
     registry.put(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionRecord.class);
@@ -130,6 +129,9 @@ public final class TypedEventRegistry {
     registry.put(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         BatchOperationLifecycleManagementRecord.class);
+    registry.put(
+        ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+        BatchOperationPartitionLifecycleRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

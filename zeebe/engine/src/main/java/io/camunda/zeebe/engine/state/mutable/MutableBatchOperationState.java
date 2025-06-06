@@ -30,9 +30,18 @@ public interface MutableBatchOperationState extends BatchOperationState {
 
   void cancel(final long batchOperationKey);
 
-  void pause(final long batchOperationKey);
+  void suspend(final long batchOperationKey);
 
   void resume(final long batchOperationKey);
 
   void complete(final long batchOperationKey);
+
+  /**
+   * Marks a partition of a batch operation as finished. This is called when the partition has been
+   * completed or failed.
+   *
+   * @param batchOperationKey the batch operation key
+   * @param partitionId the partition ID
+   */
+  void finishPartition(final long batchOperationKey, int partitionId);
 }

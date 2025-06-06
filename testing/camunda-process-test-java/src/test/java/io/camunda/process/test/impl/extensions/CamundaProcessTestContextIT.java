@@ -19,15 +19,21 @@ import static io.camunda.process.test.api.CamundaAssert.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -76,7 +82,10 @@ public class CamundaProcessTestContextIT {
 
     // Then
     assertThat(processInstanceEvent).hasCompletedElements("error-end");
-    assertThat(processInstanceEvent).hasVariables(variables);
+
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("error_code", 123);
+    assertThat(processInstanceEvent).hasVariables(expectedVariables);
   }
 
   @Test
@@ -215,7 +224,10 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThat(processInstanceEvent).isCompleted();
     assertThat(processInstanceEvent).hasCompletedElements("error-end");
-    assertThat(processInstanceEvent).hasVariables(variables);
+
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("error_code", 123);
+    assertThat(processInstanceEvent).hasVariables(expectedVariables);
   }
 
   @Test
@@ -447,6 +459,265 @@ public class CamundaProcessTestContextIT {
         .hasProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
   }
 
+  @Test
+  void shouldFindBusinessRuleTaskByName() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/decision-table-unique.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
+
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variable("lightsaber_color", "blue")
+        .send()
+        .join();
+
+    // Then
+    final Map<String, Object> expectedOutput = new HashMap<>();
+    expectedOutput.put("jedi_or_sith", "jedi");
+    expectedOutput.put("force_user", "Mace");
+
+    assertThat(DecisionSelectors.byName("Jedi or Sith")).isEvaluated().hasOutput(expectedOutput);
+  }
+
+  @Test
+  void shouldFindBusinessRuleTaskById() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/decision-table-unique.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
+
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variable("lightsaber_color", "blue")
+        .send()
+        .join();
+
+    // Then
+    final Map<String, Object> expectedResult = new HashMap<>();
+    expectedResult.put("jedi_or_sith", "jedi");
+    expectedResult.put("force_user", "Mace");
+
+    assertThat(DecisionSelectors.byId("jedi_or_sith"))
+        .isEvaluated()
+        .hasOutput(expectedResult)
+        .hasMatchedRules(1);
+  }
+
+  @Test
+  void shouldFindBusinessRuleTaskByProcessInstanceKey() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/decision-table-unique.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
+
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variable("lightsaber_color", "blue")
+            .send()
+            .join();
+
+    // Then
+    final Map<String, Object> expectedResult = new HashMap<>();
+    expectedResult.put("jedi_or_sith", "jedi");
+    expectedResult.put("force_user", "Mace");
+
+    assertThat(DecisionSelectors.byProcessInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+        .isEvaluated()
+        .hasOutput(expectedResult)
+        .hasMatchedRules(1);
+  }
+
+  @Test
+  void shouldMatchBusinessRuleWithStringResult() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/simple-decision-table.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey =
+        deployProcessModel(processModelWithBusinessRuleTask("simple_decision", "result"));
+
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variable("yes_or_no", "yes")
+            .send()
+            .join();
+
+    // Then
+    assertThat(DecisionSelectors.byProcessInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+        .isEvaluated()
+        .hasOutput(":)")
+        .hasMatchedRules(1);
+  }
+
+  @Test
+  void shouldMatchBusinessRuleWithListResult() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/decision-table-collect.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey = deployProcessModel(processModelWithBusinessRuleTask());
+
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variable("lightsaber_color", "green")
+            .send()
+            .join();
+
+    // Then
+    final Map<String, Object> firstMatch = new HashMap<>();
+    firstMatch.put("jedi_or_sith", "jedi");
+    firstMatch.put("force_user", "Anakin");
+    final Map<String, Object> secondMatch = new HashMap<>();
+    secondMatch.put("jedi_or_sith", "sith");
+    secondMatch.put("force_user", "Mace");
+
+    assertThat(DecisionSelectors.byProcessInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+        .isEvaluated()
+        .hasOutput(Arrays.asList(firstMatch, secondMatch))
+        .hasMatchedRules(2, 3);
+  }
+
+  @Test
+  void shouldMatchBusinessRuleWithListResultOfDifferentTypes() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/simple-decision-table-collect.dmn")
+        .send()
+        .join();
+
+    final long processDefinitionKey =
+        deployProcessModel(processModelWithBusinessRuleTask("simple_decision", "result"));
+
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variable("yes_or_no", "yes")
+            .send()
+            .join();
+
+    // Then
+    final List<Object> expectedOutput = new ArrayList<>();
+    expectedOutput.add(":)");
+    expectedOutput.add(1);
+
+    assertThat(DecisionSelectors.byProcessInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+        .isEvaluated()
+        .hasOutput(expectedOutput)
+        .hasMatchedRules(1, 3);
+  }
+
+  @Test
+  void shouldEvaluateSimpleDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/simple-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("yes_or_no", "yes");
+
+    // when
+    final EvaluateDecisionResponse response =
+        evaluateDecisionByDecisionId("simple_decision", variables);
+
+    // Then
+    assertThat(response).isEvaluated().hasOutput(":)").hasMatchedRules(1);
+  }
+
+  @Test
+  void shouldEvaluateComplexDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/complex-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("color", "green");
+    variables.put("language", "german");
+
+    // when
+    final EvaluateDecisionResponse response =
+        evaluateDecisionByDecisionId("decision_overall_happiness", variables);
+
+    // Then
+    assertThat(response).isEvaluated().hasOutput("pretty happy").hasMatchedRules(3);
+
+    assertThat(DecisionSelectors.byId("decision_color_happiness"))
+        .isEvaluated()
+        .hasOutput(90)
+        .hasMatchedRules(2);
+
+    assertThat(DecisionSelectors.byName("Language Happiness"))
+        .isEvaluated()
+        .hasOutput(10)
+        .hasMatchedRules(1);
+  }
+
+  @Test
+  void unableToEvaluateDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/faulty-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("color", "green");
+    variables.put("language", "german");
+
+    // when
+    final EvaluateDecisionResponse response =
+        evaluateDecisionByDecisionId("decision_overall_happiness", variables);
+
+    // Then
+    Assertions.assertThatThrownBy(() -> assertThat(response).isEvaluated())
+        .hasMessage(
+            "No DecisionInstance [Determine Overall Happiness "
+                + "(decisionId: decision_overall_happiness)] "
+                + "found.");
+
+    Assertions.assertThatThrownBy(
+            () -> assertThat(DecisionSelectors.byId("decision_overall_happiness")).isEvaluated())
+        .hasMessage("No DecisionInstance [decision_overall_happiness] found.");
+    Assertions.assertThatThrownBy(
+            () -> assertThat(DecisionSelectors.byId("decision_language_happiness")).isEvaluated())
+        .hasMessage("No DecisionInstance [decision_language_happiness] found.");
+  }
+
   /**
    * Deploys a process model and waits until it is accessible via the API.
    *
@@ -499,6 +770,7 @@ public class CamundaProcessTestContextIT {
         .zeebeJobType("test")
         .boundaryEvent("error-boundary-event")
         .error("bpmn-error")
+        .zeebeOutputExpression("abc", "error_code")
         .endEvent("error-end")
         .moveToActivity("service-task-1")
         .endEvent("success-end")
@@ -666,5 +938,31 @@ public class CamundaProcessTestContextIT {
     rule2.addChildElement(rule2OutputEntryDescription);
     decisionTable.addChildElement(rule2);
     return modelInstance;
+  }
+
+  private BpmnModelInstance processModelWithBusinessRuleTask() {
+    return processModelWithBusinessRuleTask("jedi_or_sith", "jedi_or_sith");
+  }
+
+  private BpmnModelInstance processModelWithBusinessRuleTask(
+      final String decisionId, final String resultVariable) {
+    return Bpmn.createExecutableProcess("test-process")
+        .startEvent()
+        .businessRuleTask("business-rule-1")
+        .zeebeCalledDecisionId(decisionId)
+        .zeebeResultVariable(resultVariable)
+        .userTask("user-task-1")
+        .endEvent("success-end")
+        .done();
+  }
+
+  private EvaluateDecisionResponse evaluateDecisionByDecisionId(
+      final String decisionId, final Map<String, Object> variables) {
+    return client
+        .newEvaluateDecisionCommand()
+        .decisionId(decisionId)
+        .variables(variables)
+        .send()
+        .join();
   }
 }

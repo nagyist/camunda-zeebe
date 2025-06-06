@@ -333,6 +333,10 @@
     "relativeDateYearsFmt_time": "d MMM yyyy, p",
     "relativeDateYearsFmt_speech": "do. MMMM, yyyy",
     "relativeDateYearsFmt_time_speech": "do. MMMM, yyyy 'um' p",
-    "relativeDateUnknown": "'Unbekannt'"
+    "relativeDateUnknown": "'Unbekannt'",
+    "processesTabPreviousPageButtonLabel": "Vorherige Seite",
+    "processesTabNextPageButtonLabel": "Nächste Seite",
+    "processesTabPaginationOfLabel": "{{currentPage}} von {{totalPages}}",
+    "deniedReason": "Die Aufgabe {{type}} wurde vom System abgelehnt."
   }
 }

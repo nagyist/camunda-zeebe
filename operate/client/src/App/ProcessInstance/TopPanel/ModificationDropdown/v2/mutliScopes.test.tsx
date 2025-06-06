@@ -7,7 +7,6 @@
  */
 
 import {screen} from '@testing-library/react';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
@@ -16,6 +15,9 @@ import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {cancelAllTokens} from 'modules/utils/modifications';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   const stats = {
@@ -45,6 +47,19 @@ describe('Modification Dropdown - Multi Scopes', () => {
   };
 
   beforeEach(() => {
+    const mockProcessInstance: ProcessInstance = {
+      processInstanceKey: 'instance_id',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionKey: '2',
+      processDefinitionVersion: 1,
+      processDefinitionId: 'someKey',
+      tenantId: '<default>',
+      processDefinitionName: 'someProcessName',
+      hasIncident: false,
+    };
+
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(
       open('multipleInstanceSubProcess.bpmn'),
     );
@@ -87,9 +102,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
     renderPopover();
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TaskB',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'TaskB',
+        },
+      );
     });
 
     expect(
@@ -106,9 +124,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       renderPopover();
 
       act(() => {
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        });
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        );
       });
 
       expect(
@@ -152,9 +173,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       renderPopover();
 
       act(() => {
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        });
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        );
       });
 
       expect(
@@ -174,9 +198,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       act(() => cancelAllTokens('TaskB', 0, 0, {}));
 
       act(() =>
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        }),
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        ),
       );
 
       expect(
@@ -199,9 +226,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       act(() => cancelAllTokens('TaskB', 0, 0, {}));
 
       act(() =>
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        }),
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        ),
       );
 
       expect(

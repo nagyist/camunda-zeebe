@@ -19,7 +19,7 @@ import { Mapping } from "src/utility/api/mappings";
 export const ROLES_ENDPOINT = "/roles";
 
 export type Role = {
-  roleKey: string;
+  roleId: string;
   name: string;
   description: string;
 };
@@ -28,23 +28,22 @@ export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
   apiPost(`${ROLES_ENDPOINT}/search`);
 
 type GetRoleParams = {
-  roleKey: string;
+  roleId: string;
 };
 export const getRoleDetails: ApiDefinition<Role, GetRoleParams> = ({
-  roleKey,
-}) => apiGet(`${ROLES_ENDPOINT}/${roleKey}`);
+  roleId,
+}) => apiGet(`${ROLES_ENDPOINT}/${roleId}`);
 
-type CreateRoleParams = Omit<Role, "roleKey">;
-export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
+export const createRole: ApiDefinition<undefined, Role> = (role) =>
   apiPost(ROLES_ENDPOINT, role);
 
 export type DeleteRoleParams = {
-  roleKey: string;
+  roleId: string;
   name: string;
 };
-export const deleteRole: ApiDefinition<undefined, { roleKey: string }> = ({
-  roleKey,
-}) => apiDelete(`${ROLES_ENDPOINT}/${roleKey}`);
+export const deleteRole: ApiDefinition<undefined, { roleId: string }> = ({
+  roleId,
+}) => apiDelete(`${ROLES_ENDPOINT}/${roleId}`);
 
 // ----------------- Mappings within a Role -----------------
 
@@ -61,7 +60,7 @@ export const assignRoleMapping: ApiDefinition<
   undefined,
   AssignRoleMappingParams
 > = ({ roleId, mappingId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mappings/${mappingId}`);
 };
 
 type UnassignRoleMappingParams = AssignRoleMappingParams;
@@ -69,4 +68,34 @@ export const unassignRoleMapping: ApiDefinition<
   undefined,
   UnassignRoleMappingParams
 > = ({ roleId, mappingId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mappings/${mappingId}`);
+
+// ----------------- Clients within a Role -----------------
+
+type GetRoleClientsParams = {
+  roleId: string;
+};
+
+export type Client = {
+  clientId: string;
+};
+
+export const getClientsByRoleId: ApiDefinition<
+  SearchResponse<Client>,
+  GetRoleClientsParams
+> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/clients/search`);
+
+type AssignRoleClientParams = GetRoleClientsParams & Client;
+export const assignRoleClient: ApiDefinition<
+  undefined,
+  AssignRoleClientParams
+> = ({ roleId, clientId }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/clients/${clientId}`);
+};
+
+type UnassignRoleClientParams = AssignRoleClientParams;
+export const unassignRoleClient: ApiDefinition<
+  undefined,
+  UnassignRoleClientParams
+> = ({ roleId, clientId }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/clients/${clientId}`);

@@ -14,17 +14,13 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
-import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
@@ -34,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ScaleUpTest {
-  @Rule public final EngineRule engine = EngineRule.multiplePartition(3);
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(2);
 
   @Before
   public void beforeEach() {
@@ -45,7 +41,6 @@ public class ScaleUpTest {
   @Test
   public void shouldRespondToScaleUp() {
     // given
-    initRoutingState();
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
@@ -62,7 +57,7 @@ public class ScaleUpTest {
   @Test
   public void shouldFinishScaling() {
     // given
-    initRoutingState();
+
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
@@ -81,6 +76,9 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectWithoutRoutingState() {
     // given
+    engine.stop();
+    engine.withInitializeRoutingState(false);
+    engine.start();
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
@@ -102,7 +100,6 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectEmptyScaleUp() {
     // given
-    initRoutingState();
     final var command = RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord());
 
     // when
@@ -121,7 +118,7 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectScaleUpWithInvalidPartitionCount() {
     // given
-    initRoutingState();
+
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(10000));
@@ -142,7 +139,6 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectScaleDown() {
     // given
-    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState()).initializeRoutingInfo(2);
     final var command =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1));
@@ -163,10 +159,9 @@ public class ScaleUpTest {
 
   @Test
   public void shouldRejectRedundantScaleUp() {
-    // given - a scale up from 1 to 3 was already requested
-    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState()).initializeRoutingInfo(1);
+    // given - a scale up from 2 to 3 was already requested
     ((MutableRoutingState) engine.getProcessingState(1).getRoutingState())
-        .setDesiredPartitions(Set.of(1, 2, 3));
+        .setDesiredPartitions(Set.of(1, 2, 3), 999L);
 
     // when
     engine.writeRecords(
@@ -184,50 +179,8 @@ public class ScaleUpTest {
   }
 
   @Test
-  public void shouldRedistributeDeployment() {
-    // given
-    initRoutingState();
-    final var deploymentKey1 = Protocol.encodePartitionId(1, 1);
-    final var deploymentRecord1 = new DeploymentRecord().setDeploymentKey(deploymentKey1);
-    ((MutableDeploymentState) engine.getProcessingState(1).getDeploymentState())
-        .storeDeploymentRecord(deploymentKey1, deploymentRecord1);
-    final var deploymentKey2 = Protocol.encodePartitionId(1, 5);
-    final var deploymentRecord2 = new DeploymentRecord().setDeploymentKey(deploymentKey2);
-    ((MutableDeploymentState) engine.getProcessingState(1).getDeploymentState())
-        .storeDeploymentRecord(deploymentKey2, deploymentRecord2);
-
-    final var command =
-        RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
-
-    // when
-    engine.writeRecords(command);
-
-    // then
-    assertThat(
-            RecordingExporter.scaleRecords()
-                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
-                .map(Record::getIntent))
-        .containsExactly(ScaleIntent.SCALE_UP, ScaleIntent.SCALING_UP, ScaleIntent.SCALED_UP);
-    assertThat(
-            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
-                .withPartitionId(2)
-                .map(Record::getKey)
-                .limit(2))
-        .containsExactly(deploymentKey1, deploymentKey2);
-    assertThat(
-            RecordingExporter.deploymentRecords(DeploymentIntent.CREATE)
-                .withPartitionId(3)
-                .map(Record::getKey)
-                .limit(2))
-        .containsExactly(deploymentKey1, deploymentKey2);
-  }
-
-  @Test
   public void shouldRejectScaleUpStatusCommandWhenDesiredPartitionCountIsWrong() {
     // given
-    initRoutingState();
-
     final var command =
         RecordToWrite.command()
             .scale(
@@ -248,14 +201,12 @@ public class ScaleUpTest {
     assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(record.getRejectionReason())
         .contains(
-            "In progress scale up number of desired partitions is 0, but desired partitions in the request are 4.");
+            "In progress scale up number of desired partitions is 2, but desired partitions in the request are 4.");
   }
 
   @Test
   public void shouldRespondWithTheCurrentNumberOfRedistributedPartitions() {
     // given
-    initRoutingState();
-
     final var scaleUpCommand =
         RecordToWrite.command()
             .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(4));
@@ -268,7 +219,7 @@ public class ScaleUpTest {
                     .setDesiredPartitionCount(4)
                     .setRedistributedPartitions(List.of(4)));
     // when
-    engine.writeRecords(scaleUpCommand, getStatusCommand);
+    final var key = engine.writeRecords(scaleUpCommand, getStatusCommand);
 
     // then
 
@@ -281,9 +232,41 @@ public class ScaleUpTest {
         // In the future, the expected number of partitions should be (1,2,3)
         // until redistribution is completed
         .containsExactlyInAnyOrder(1, 2, 3, 4);
+    assertThat(record.getValue().getBootstrappedAt()).isGreaterThanOrEqualTo(key);
   }
 
-  private void initRoutingState() {
-    ((MutableRoutingState) engine.getProcessingState(1).getRoutingState()).initializeRoutingInfo(1);
+  @Test
+  public void shouldScaleUpContinuously() {
+    // given
+    final var command =
+        RecordToWrite.command()
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+
+    // when
+    engine.writeRecords(command);
+
+    // then
+    assertThat(
+            RecordingExporter.scaleRecords()
+                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
+                .map(Record::getIntent))
+        .hasSize(3)
+        .containsSequence(ScaleIntent.SCALE_UP, ScaleIntent.SCALING_UP, ScaleIntent.SCALED_UP);
+
+    RecordingExporter.reset();
+
+    // when scaling up again
+    final var command2 =
+        RecordToWrite.command()
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(4));
+    engine.writeRecords(command2);
+
+    // then
+    assertThat(
+            RecordingExporter.scaleRecords()
+                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
+                .map(Record::getIntent))
+        .hasSize(3)
+        .containsSequence(ScaleIntent.SCALE_UP, ScaleIntent.SCALING_UP, ScaleIntent.SCALED_UP);
   }
 }

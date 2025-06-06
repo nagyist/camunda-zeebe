@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -93,7 +94,8 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
                     mockProcessInstanceEntity(3L)))
             .total(3)
             .build();
-    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenReturn(result);
 
     // when
@@ -109,12 +111,15 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
     // then
     assertThat(
             RecordingExporter.batchOperationCreationRecords()
-                .withBatchOperationKey(batchOperationKey))
+                .withBatchOperationKey(batchOperationKey)
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.CREATED)))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.CREATED);
 
     assertThat(
-            RecordingExporter.batchOperationChunkRecords().withBatchOperationKey(batchOperationKey))
+            RecordingExporter.batchOperationChunkRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .limit(record -> record.getIntent().equals(BatchOperationChunkIntent.CREATED)))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
   }

@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.APPLICATION_ID;
-import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc.CONFIGURED_CLAIM_NOT_A_STRING;
+import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.CLIENT_ID;
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -181,7 +180,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
         .interceptCall(
@@ -197,7 +196,7 @@ public class AuthenticationInterceptorTest {
   }
 
   @Test
-  public void missingUsernameAndApplicationIdIsRejected() {
+  public void missingUsernameAndClientIdIsRejected() {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
@@ -211,7 +210,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("sub");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
 
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
         .interceptCall(
@@ -228,7 +227,7 @@ public class AuthenticationInterceptorTest {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
                   .isEqualTo(
-                      "Expected either a username (claim: sub) or application ID (claim: application_id) on the token, but no matching claim found");
+                      "Expected either a username (claim: sub) or client ID (claim: client_id) on the token, but no matching claim found");
             });
   }
 
@@ -247,7 +246,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
         .interceptCall(
@@ -263,18 +262,22 @@ public class AuthenticationInterceptorTest {
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
-                  .isEqualTo(CONFIGURED_CLAIM_NOT_A_STRING.formatted("username", "username"));
+                  .isEqualTo("Failed to load OIDC principals, see cause for details");
+              assertThat(status.getCause())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining(
+                      "Value for $['username'] is not a string. Please check your OIDC configuration.");
             });
   }
 
   @Test
-  public void nonStringApplicationIdIsRejected() {
+  public void nonStringClientIdIsRejected() {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
 
     final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("application_id", List.of("test-user"));
+    final Map<String, Object> claims = Map.of("client_id", List.of("test-user"));
     when(jwt.getClaims()).thenReturn(claims);
 
     final var jwtDecoder = mock(JwtDecoder.class);
@@ -282,7 +285,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
 
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
         .interceptCall(
@@ -298,8 +301,11 @@ public class AuthenticationInterceptorTest {
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
-                  .isEqualTo(
-                      CONFIGURED_CLAIM_NOT_A_STRING.formatted("application id", "application_id"));
+                  .isEqualTo("Failed to load OIDC principals, see cause for details");
+              assertThat(status.getCause())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining(
+                      "Value for $['client_id'] is not a string. Please check your OIDC configuration.");
             });
   }
 
@@ -326,7 +332,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     // when
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
@@ -360,7 +366,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     // when
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
@@ -376,7 +382,7 @@ public class AuthenticationInterceptorTest {
   }
 
   @Test
-  public void addsApplicationIdInOidcToContext() {
+  public void addsClientIdInOidcToContext() {
     // given
     final Metadata metadata = createAuthHeader();
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
@@ -393,7 +399,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     // when
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
@@ -402,7 +408,7 @@ public class AuthenticationInterceptorTest {
             metadata,
             (call, headers) -> {
               // then;
-              assertApplicationId().isEqualTo("app-id");
+              assertClientId().isEqualTo("app-id");
 
               call.close(Status.OK, headers);
               return null;
@@ -410,7 +416,7 @@ public class AuthenticationInterceptorTest {
   }
 
   @Test
-  public void addsUsernameInPreferenceToApplicationIdInOidcToContext() {
+  public void addsUsernameInPreferenceToClientIdInOidcToContext() {
     // given
     final Metadata metadata = createAuthHeader();
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
@@ -427,7 +433,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setApplicationIdClaim("application_id");
+    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
 
     // when
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
@@ -437,7 +443,7 @@ public class AuthenticationInterceptorTest {
             (call, headers) -> {
               // then
               assertUsername().isEqualTo("test-user");
-              assertApplicationId().isNull();
+              assertClientId().isNull();
 
               call.close(Status.OK, headers);
               return null;
@@ -481,9 +487,9 @@ public class AuthenticationInterceptorTest {
     }
   }
 
-  private static StringAssert assertApplicationId() {
+  private static StringAssert assertClientId() {
     try {
-      return (StringAssert) assertThat(Context.current().call(() -> APPLICATION_ID.get()));
+      return (StringAssert) assertThat(Context.current().call(() -> CLIENT_ID.get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve user key from context", e);
     }

@@ -8,6 +8,7 @@
 package io.camunda.security.auth;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH_OPERATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GROUP;
@@ -27,67 +28,20 @@ import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_PROCE
 import static io.camunda.zeebe.protocol.record.value.PermissionType.UPDATE_USER_TASK;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.Objects;
 import java.util.function.Function;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public final class Authorization {
+public record Authorization(
+    @JsonProperty("resource_type") AuthorizationResourceType resourceType,
+    @JsonProperty("permission_type") PermissionType permissionType) {
 
   public static final String WILDCARD = "*";
-  private final AuthorizationResourceType resourceType;
-  private final PermissionType permissionType;
-
-  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-  public Authorization(
-      final @JsonProperty("resource_type") AuthorizationResourceType resourceType,
-      final @JsonProperty("permission_type") PermissionType permissionType) {
-    this.resourceType = resourceType;
-    this.permissionType = permissionType;
-  }
 
   public static Authorization of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
-  }
-
-  public AuthorizationResourceType resourceType() {
-    return resourceType;
-  }
-
-  public PermissionType permissionType() {
-    return permissionType;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(resourceType, permissionType);
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (obj == this) {
-      return true;
-    }
-    if (obj == null || obj.getClass() != getClass()) {
-      return false;
-    }
-    final Authorization that = (Authorization) obj;
-    return Objects.equals(resourceType, that.resourceType)
-        && Objects.equals(permissionType, that.permissionType);
-  }
-
-  @Override
-  public String toString() {
-    return "Authorization["
-        + "resourceType="
-        + resourceType
-        + ", "
-        + "permissionType="
-        + permissionType
-        + ']';
   }
 
   public static class Builder {
@@ -174,6 +128,10 @@ public final class Authorization {
 
     public Builder readDecisionInstance() {
       return permissionType(READ_DECISION_INSTANCE);
+    }
+
+    public Builder batchOperation() {
+      return resourceType(BATCH_OPERATION);
     }
 
     public Authorization build() {

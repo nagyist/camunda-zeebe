@@ -26,6 +26,7 @@ import Members from "src/pages/tenants/detail/members";
 import Groups from "src/pages/tenants/detail/groups";
 import Roles from "src/pages/tenants/detail/roles";
 import Mappings from "src/pages/tenants/detail/mappings";
+import Clients from "src/pages/tenants/detail/clients";
 import {
   IS_TENANT_GROUPS_SUPPORTED,
   IS_TENANT_ROLES_SUPPORTED,
@@ -116,6 +117,11 @@ const Details: FC = () => {
                         key: "mappings",
                         label: t("mappings"),
                         content: <Mappings tenantId={tenant.tenantId} />,
+                      },
+                      {
+                        key: "clients",
+                        label: t("clients"),
+                        content: <Clients tenantId={tenant.tenantId} />,
                       },
                     ]
                   : []),

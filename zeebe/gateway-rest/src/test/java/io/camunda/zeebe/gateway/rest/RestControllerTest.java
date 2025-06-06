@@ -82,7 +82,7 @@ public abstract class RestControllerTest {
         Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
       mockRequestMapper
           .when(RequestMapper::getAuthentication)
-          .thenReturn(Authentication.of(a -> a.user("foo").group(456L).tenant(tenantId)));
+          .thenReturn(Authentication.of(a -> a.user("foo").group("groupId").tenant(tenantId)));
       return function.apply(webClient);
     }
   }
@@ -121,6 +121,15 @@ public abstract class RestControllerTest {
       final String filterKey,
       final Function<List<Operation<Long>>, Object> builderMethod) {
     BASIC_LONG_OPERATIONS.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
+        .forEach(streamBuilder::add);
+  }
+
+  public static void basicStringOperationTestCases(
+      final Stream.Builder<Arguments> streamBuilder,
+      final String filterKey,
+      final Function<List<Operation<String>>, Object> builderMethod) {
+    BASIC_STRING_OPERATIONS.stream()
         .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
         .forEach(streamBuilder::add);
   }

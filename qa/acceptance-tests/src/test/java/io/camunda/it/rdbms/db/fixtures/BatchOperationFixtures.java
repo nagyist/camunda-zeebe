@@ -32,7 +32,7 @@ public final class BatchOperationFixtures {
     final var key = CommonFixtures.nextStringKey();
     final var builder =
         new Builder()
-            .batchOperationKey(key)
+            .batchOperationId(key)
             .state(randomEnum(BatchOperationState.class))
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
@@ -56,12 +56,18 @@ public final class BatchOperationFixtures {
 
   public static List<Long> createAndSaveRandomBatchOperationItems(
       final RdbmsWriter rdbmsWriter, final String batchOperationKey, final int count) {
+    return createSaveReturnRandomBatchOperationItems(rdbmsWriter, batchOperationKey, count).stream()
+        .map(BatchOperationItemDbModel::itemKey)
+        .toList();
+  }
+
+  public static List<BatchOperationItemDbModel> createSaveReturnRandomBatchOperationItems(
+      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final int count) {
     final Set<Long> itemKeys =
         IntStream.range(0, count)
             .mapToObj(i -> CommonFixtures.nextKey())
             .collect(Collectors.toSet());
-    insertBatchOperationsItems(rdbmsWriter, batchOperationKey, itemKeys);
-    return itemKeys.stream().toList();
+    return insertBatchOperationsItems(rdbmsWriter, batchOperationKey, itemKeys);
   }
 
   public static BatchOperationDbModel createAndSaveBatchOperation(
@@ -79,18 +85,19 @@ public final class BatchOperationFixtures {
     rdbmsWriter.flush();
   }
 
-  public static void insertBatchOperationsItems(
-      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final Set<Long> items) {
-    rdbmsWriter
-        .getBatchOperationWriter()
-        .updateBatchAndInsertItems(
-            batchOperationKey,
-            items.stream()
-                .map(
-                    itemKey ->
-                        new BatchOperationItemDbModel(
-                            itemKey, itemKey, BatchOperationItemState.ACTIVE))
-                .toList());
+  public static List<BatchOperationItemDbModel> insertBatchOperationsItems(
+      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final Set<Long> itemKeys) {
+    final var batchItems =
+        itemKeys.stream()
+            .map(
+                itemKey ->
+                    new BatchOperationItemDbModel(
+                        batchOperationKey, itemKey, itemKey, BatchOperationItemState.ACTIVE))
+            .toList();
+
+    rdbmsWriter.getBatchOperationWriter().updateBatchAndInsertItems(batchOperationKey, batchItems);
     rdbmsWriter.flush();
+
+    return batchItems;
   }
 }

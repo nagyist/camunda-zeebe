@@ -30,9 +30,12 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
         xml: eventBasedGatewayProcessInstance.xml,
@@ -131,9 +134,12 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
         xml: eventBasedGatewayProcessInstance.xml,
@@ -248,9 +254,12 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [
           {
             id: '2251799813888430-test',
@@ -389,9 +398,12 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
         xml: eventBasedGatewayProcessInstance.xml,

@@ -12,8 +12,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.scaling.redistribution.DbRedistributionState;
-import io.camunda.zeebe.engine.scaling.redistribution.MutableRedistributionState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.DbMappingState;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
@@ -42,6 +40,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.metrics.DbUsageMetricState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
@@ -73,6 +72,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
@@ -118,13 +118,13 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableClockState clockState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
-  private final MutableRedistributionState redistributionState;
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
   private final MutableGroupState groupState;
   private final MutableMappingState mappingState;
   private final MutableBatchOperationState batchOperationState;
   private final MutableMembershipState membershipState;
+  private final MutableUsageMetricState usageMetricState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
@@ -174,13 +174,13 @@ public class ProcessingDbState implements MutableProcessingState {
     clockState = new DbClockState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
-    redistributionState = new DbRedistributionState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingState = new DbMappingState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
+    usageMetricState = new DbUsageMetricState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
@@ -318,11 +318,6 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableRedistributionState getRedistributionState() {
-    return redistributionState;
-  }
-
-  @Override
   public MutableClockState getClockState() {
     return clockState;
   }
@@ -355,6 +350,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableMembershipState getMembershipState() {
     return membershipState;
+  }
+
+  @Override
+  public MutableUsageMetricState getUsageMetricState() {
+    return usageMetricState;
   }
 
   @Override

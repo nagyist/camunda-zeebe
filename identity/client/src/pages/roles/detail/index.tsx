@@ -22,12 +22,9 @@ import { getRoleDetails } from "src/utility/api/roles";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
-import {
-  IS_ROLES_USERS_SUPPORTED,
-  IS_ROLES_MAPPINGS_SUPPORTED,
-} from "src/feature-flags";
 import Members from "src/pages/roles/detail/members";
 import Mappings from "src/pages/roles/detail/mappings";
+import Clients from "src/pages/roles/detail/clients";
 import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
@@ -39,7 +36,7 @@ const Details: FC = () => {
   }>();
 
   const { data: role, loading } = useApi(getRoleDetails, {
-    roleKey: id,
+    roleId: id,
   });
 
   const [deleteRole, deleteModal] = useEntityModal(DeleteModal, () =>
@@ -72,7 +69,7 @@ const Details: FC = () => {
                     </OverflowMenu>
                   </Stack>
                   <p>
-                    {t("roleId")}: {role.roleKey}
+                    {t("roleId")}: {role.roleId}
                   </p>
                   {role?.description && (
                     <Description>
@@ -84,31 +81,28 @@ const Details: FC = () => {
             </Flex>
           )}
         </Stack>
-        {(IS_ROLES_USERS_SUPPORTED || IS_ROLES_MAPPINGS_SUPPORTED) && role && (
+        {role && (
           <Section>
             {!isOIDC ? (
-              <Members roleId={role.roleKey} />
+              <Members roleId={role.roleId} />
             ) : (
               <Tabs
                 tabs={[
-                  ...(IS_ROLES_USERS_SUPPORTED
-                    ? [
-                        {
-                          key: "users",
-                          label: t("users"),
-                          content: <Members roleId={role.roleKey} />,
-                        },
-                      ]
-                    : []),
-                  ...(IS_ROLES_MAPPINGS_SUPPORTED
-                    ? [
-                        {
-                          key: "mappings",
-                          label: t("mappings"),
-                          content: <Mappings roleId={role.roleKey} />,
-                        },
-                      ]
-                    : []),
+                  {
+                    key: "users",
+                    label: t("users"),
+                    content: <Members roleId={role.roleId} />,
+                  },
+                  {
+                    key: "mappings",
+                    label: t("mappings"),
+                    content: <Mappings roleId={role.roleId} />,
+                  },
+                  {
+                    key: "clients",
+                    label: t("clients"),
+                    content: <Clients roleId={role.roleId} />,
+                  },
                 ]}
                 selectedTabKey={tab}
                 path={`../${id}`}

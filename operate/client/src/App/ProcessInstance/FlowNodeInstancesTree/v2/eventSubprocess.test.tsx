@@ -9,31 +9,30 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {FlowNodeInstancesTree} from '.';
 
 import {
   eventSubProcessFlowNodeInstances,
   mockFlowNodeInstance,
-  processId,
   processInstanceId,
   Wrapper,
   eventSubprocessProcessInstance,
+  mockEventSubprocessInstance,
 } from './mocks';
 import {eventSubProcess} from 'modules/testUtils';
 import {createRef} from 'react';
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 describe('FlowNodeInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
-    mockFetchProcessInstance().withSuccess(eventSubprocessProcessInstance);
-    mockFetchProcessXML().withSuccess(eventSubProcess);
+    mockFetchProcessInstance().withSuccess(mockEventSubprocessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      eventSubprocessProcessInstance,
+    );
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();

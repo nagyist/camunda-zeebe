@@ -775,6 +775,14 @@
               <id>prefix-migration</id>
               <mainClass>io.camunda.application.StandalonePrefixMigration</mainClass>
             </program>
+            <program>
+              <id>identity-migration</id>
+              <mainClass>io.camunda.application.StandaloneIdentityMigration</mainClass>
+            </program>
+            <program>
+              <id>process-migration</id>
+              <mainClass>io.camunda.application.StandaloneProcessMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>
@@ -905,7 +913,7 @@
       <plugin>
         <groupId>io.github.git-commit-id</groupId>
         <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>9.0.1</version>
+        <version>9.0.2</version>
         <configuration>
           <dotGitDirectory>${maven.multiModuleProjectDirectory}/.git</dotGitDirectory>
           <generateGitPropertiesFile>true</generateGitPropertiesFile>

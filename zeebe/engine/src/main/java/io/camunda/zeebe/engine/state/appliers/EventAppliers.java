@@ -10,9 +10,6 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.scaling.ScaleUpStatusResponseApplier;
 import io.camunda.zeebe.engine.scaling.ScaledUpApplier;
 import io.camunda.zeebe.engine.scaling.ScalingUpApplier;
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionCompletedApplier;
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionContinuedApplier;
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionStartedApplier;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
@@ -68,7 +65,6 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -242,11 +238,16 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         1,
-        new ProcessInstanceElementMigratedApplier(elementInstanceState, processState));
+        new ProcessInstanceElementMigratedV1Applier(elementInstanceState, processState));
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         2,
         new ProcessInstanceElementMigratedV2Applier(
+            elementInstanceState, processState, state.getMessageState()));
+    register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        3,
+        new ProcessInstanceElementMigratedV3Applier(
             elementInstanceState, processState, state.getMessageState()));
     register(
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
@@ -569,9 +570,6 @@ public final class EventAppliers implements EventApplier {
     register(ScaleIntent.SCALING_UP, new ScalingUpApplier(state.getRoutingState()));
     register(ScaleIntent.SCALED_UP, new ScaledUpApplier(state.getRoutingState()));
     register(ScaleIntent.STATUS_RESPONSE, new ScaleUpStatusResponseApplier());
-    register(RedistributionIntent.STARTED, new RedistributionStartedApplier(state));
-    register(RedistributionIntent.CONTINUED, new RedistributionContinuedApplier(state));
-    register(RedistributionIntent.COMPLETED, new RedistributionCompletedApplier(state));
   }
 
   private void registerTenantAppliers(final MutableProcessingState state) {
@@ -610,14 +608,22 @@ public final class EventAppliers implements EventApplier {
         BatchOperationIntent.CANCELED,
         new BatchOperationCanceledApplier(state.getBatchOperationState()));
     register(
-        BatchOperationIntent.PAUSED,
-        new BatchOperationPausedApplier(state.getBatchOperationState()));
+        BatchOperationIntent.SUSPENDED,
+        new BatchOperatioSuspendedApplier(state.getBatchOperationState()));
     register(
         BatchOperationIntent.RESUMED,
         new BatchOperationResumedApplier(state.getBatchOperationState()));
     register(
-        BatchOperationExecutionIntent.COMPLETED,
+        BatchOperationIntent.COMPLETED,
         new BatchOperationCompletedApplier(state.getBatchOperationState()));
+    register(
+        BatchOperationIntent.PARTITION_COMPLETED,
+        new BatchOperationPartitionCompletedApplier(
+            state.getBatchOperationState(), state.getPartitionId()));
+    register(
+        BatchOperationIntent.PARTITION_FAILED,
+        new BatchOperationPartitionFailedApplier(
+            state.getBatchOperationState(), state.getPartitionId()));
   }
 
   private void registerIdentitySetupAppliers() {

@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
+import io.camunda.security.auth.Authentication;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -23,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Comparator;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -38,18 +43,29 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ObjectProperty<>("migrationPlan", new BatchOperationProcessInstanceMigrationPlan());
   private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
+  private final BooleanProperty initializedProp = new BooleanProperty("initialized", false);
   private final ArrayProperty<LongValue> chunkKeysProp =
       new ArrayProperty<>("chunkKeys", LongValue::new);
+  // Authentication claims, needed for query + command auth
+  private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
+  private final ArrayProperty<IntegerValue> partitionsProp =
+      new ArrayProperty<>("partitions", IntegerValue::new);
+  private final ArrayProperty<IntegerValue> finishedPartitionsProp =
+      new ArrayProperty<>("finishedPartitions", IntegerValue::new);
 
   public PersistedBatchOperation() {
-    super(7);
+    super(11);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
-        .declareProperty(chunkKeysProp);
+        .declareProperty(chunkKeysProp)
+        .declareProperty(initializedProp)
+        .declareProperty(authenticationProp)
+        .declareProperty(partitionsProp)
+        .declareProperty(finishedPartitionsProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -58,26 +74,43 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setEntityFilter(record.getEntityFilterBuffer());
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
+    setAuthentication(record.getAuthenticationBuffer());
+    setPartitions(record.getPartitionIds());
     return this;
+  }
+
+  /** Marks this batch operation as initialized. */
+  public void markAsInitialized() {
+    initializedProp.setValue(true);
+  }
+
+  /**
+   * Returns true if the batch operation is initialized and ready for execution. A batch operation
+   * is considered initialized if it has been started once.
+   *
+   * @return true if the batch operation is initialized, false otherwise
+   */
+  public boolean isInitialized() {
+    return initializedProp.getValue();
   }
 
   public boolean canCancel() {
     return getStatus() == BatchOperationStatus.CREATED
         || getStatus() == BatchOperationStatus.STARTED
-        || getStatus() == BatchOperationStatus.PAUSED;
+        || getStatus() == BatchOperationStatus.SUSPENDED;
   }
 
-  public boolean canPause() {
+  public boolean canSuspend() {
     return getStatus() == BatchOperationStatus.CREATED
         || getStatus() == BatchOperationStatus.STARTED;
   }
 
   public boolean canResume() {
-    return isPaused();
+    return isSuspended();
   }
 
-  public boolean isPaused() {
-    return getStatus() == BatchOperationStatus.PAUSED;
+  public boolean isSuspended() {
+    return getStatus() == BatchOperationStatus.SUSPENDED;
   }
 
   public long getKey() {
@@ -127,6 +160,19 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public Authentication getAuthentication() {
+    if (authenticationProp.getValue() != null) {
+      return MsgPackConverter.convertToObject(authenticationProp.getValue(), Authentication.class);
+    } else {
+      return Authentication.none();
+    }
+  }
+
+  public PersistedBatchOperation setAuthentication(final DirectBuffer authentication) {
+    authenticationProp.setValue(authentication);
+    return this;
+  }
+
   public <T> T getEntityFilter(final Class<T> clazz) {
     return MsgPackConverter.convertToObject(entityFilterProp.getValue(), clazz);
   }
@@ -139,6 +185,27 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
     migrationPlanProp.getValue().wrap(migrationPlan);
     return this;
+  }
+
+  public List<Integer> getPartitions() {
+    return partitionsProp.stream().map(IntegerValue::getValue).toList();
+  }
+
+  public PersistedBatchOperation setPartitions(final List<Integer> partitions) {
+    partitionsProp.reset();
+    for (final var partition : partitions) {
+      partitionsProp.add().setValue(partition);
+    }
+    return this;
+  }
+
+  public PersistedBatchOperation addFinishedPartition(final int partitionId) {
+    finishedPartitionsProp.add().setValue(partitionId);
+    return this;
+  }
+
+  public List<Integer> getFinishedPartitions() {
+    return finishedPartitionsProp.stream().map(IntegerValue::getValue).toList();
   }
 
   public long nextChunkKey() {
@@ -180,7 +247,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   public enum BatchOperationStatus {
     CREATED,
     STARTED,
-    PAUSED,
+    SUSPENDED,
     CANCELED,
     FAILED
   }

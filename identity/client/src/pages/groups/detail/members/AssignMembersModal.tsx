@@ -25,10 +25,10 @@ const SelectedUsers = styled.div`
 
 const AssignMembersModal: FC<
   UseEntityModalCustomProps<
-    { id: Group["groupKey"] },
+    { groupId: Group["groupId"] },
     { assignedUsers: User[] }
   >
-> = ({ entity: group, assignedUsers, onSuccess, open, onClose }) => {
+> = ({ entity: { groupId }, assignedUsers, onSuccess, open, onClose }) => {
   const { t } = useTranslate("groups");
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
@@ -61,7 +61,7 @@ const AssignMembersModal: FC<
       );
     };
 
-  const canSubmit = group && selectedUsers.length;
+  const canSubmit = groupId && selectedUsers.length;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -70,7 +70,7 @@ const AssignMembersModal: FC<
 
     const results = await Promise.all(
       selectedUsers.map(({ username }) =>
-        callAssignUser({ username, groupId: group.id }),
+        callAssignUser({ username, groupId }),
       ),
     );
 
@@ -104,7 +104,7 @@ const AssignMembersModal: FC<
         <SelectedUsers>
           {selectedUsers.map((user) => (
             <Tag
-              key={user.id}
+              key={user.username}
               onClose={onUnselectUser(user)}
               size="md"
               type="blue"

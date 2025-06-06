@@ -19,12 +19,15 @@ public class ErrorMessages {
 
   public static final String ERROR_NOT_FOUND_AD_HOC_SUB_PROCESS =
       "Failed to find ad-hoc sub-process with ID '%s'";
+  public static final String ERROR_NOT_FOUND_AUTHORIZATION_BY_KEY =
+      "Authorization with authorization key %d not found";
   public static final String ERROR_NOT_FOUND_ENTITY_BY_KEY = "%s with key %s not found";
   public static final String ERROR_NOT_FOUND_FORM_BY_KEY = "Form with formKey %d not found";
   public static final String ERROR_NOT_FOUND_GROUP_BY_ID = "Group with ID %s not found";
   public static final String ERROR_NOT_FOUND_GROUP_BY_NAME = "Group with group name %s not found";
   public static final String ERROR_NOT_FOUND_MAPPING_BY_ID = "Mapping with mappingId %s not found";
   public static final String ERROR_NOT_FOUND_ROLE_BY_ID = "Role with role ID %s not found";
+  public static final String ERROR_NOT_FOUND_USER_BY_USERNAME = "User with username %s not found";
   public static final String ERROR_NOT_FOUND_TENANT = "Tenant matching %s not found";
 
   public static final String ERROR_NOT_UNIQUE_ENTITY = "Found %s with key %s more than once";

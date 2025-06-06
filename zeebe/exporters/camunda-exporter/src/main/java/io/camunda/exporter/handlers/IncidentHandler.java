@@ -9,16 +9,15 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 
-import io.camunda.exporter.cache.ExporterEntityCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
-import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
-import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -30,7 +29,6 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,15 +37,11 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentHandler.class);
   private final String indexName;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
-  private final IncidentNotifier incidentNotifier;
 
   public IncidentHandler(
-      final String indexName,
-      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      final IncidentNotifier incidentNotifier) {
+      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
     this.processCache = processCache;
-    this.incidentNotifier = incidentNotifier;
   }
 
   @Override
@@ -116,9 +110,6 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
     final Intent intent = (record == null) ? null : record.getIntent();
     if (intent == null) {
       LOGGER.warn("Intent is null for incident: id {}", entity.getId());
-    }
-    if (Objects.equals(intent, IncidentIntent.CREATED)) {
-      incidentNotifier.notifyAsync(List.of(entity));
     }
   }
 

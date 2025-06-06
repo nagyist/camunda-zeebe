@@ -17,7 +17,6 @@ package io.camunda.zeebe.protocol.record.intent;
 
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,7 +66,6 @@ public interface Intent {
           RoleIntent.class,
           TenantIntent.class,
           ScaleIntent.class,
-          RedistributionIntent.class,
           GroupIntent.class,
           MappingIntent.class,
           IdentitySetupIntent.class,
@@ -176,8 +174,6 @@ public interface Intent {
         return TenantIntent.from(intent);
       case SCALE:
         return ScaleIntent.from(intent);
-      case REDISTRIBUTION:
-        return RedistributionIntent.from(intent);
       case GROUP:
         return GroupIntent.from(intent);
       case MAPPING:
@@ -191,6 +187,8 @@ public interface Intent {
       case BATCH_OPERATION_CHUNK:
         return BatchOperationChunkIntent.from(intent);
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
+        return BatchOperationIntent.from(intent);
+      case BATCH_OPERATION_PARTITION_LIFECYCLE:
         return BatchOperationIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
@@ -298,6 +296,8 @@ public interface Intent {
       case BATCH_OPERATION_CHUNK:
         return BatchOperationChunkIntent.valueOf(intent);
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
+        return BatchOperationIntent.valueOf(intent);
+      case BATCH_OPERATION_PARTITION_LIFECYCLE:
         return BatchOperationIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:

@@ -11,11 +11,14 @@ import static io.camunda.zeebe.engine.processing.processinstance.migration.Migra
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPauseProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionCompleteProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionFailProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
@@ -26,7 +29,6 @@ import io.camunda.zeebe.engine.processing.identity.GroupCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupUpdateProcessor;
-import io.camunda.zeebe.engine.processing.identity.IdentitySetupInitializeProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.MappingUpdateProcessor;
@@ -47,16 +49,12 @@ import io.camunda.zeebe.engine.processing.tenant.TenantUpdateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserCreateProcessor;
 import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
-import io.camunda.zeebe.engine.search.NoopSearchClientsProxy;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
+import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
@@ -65,7 +63,6 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -125,7 +122,7 @@ public class CommandDistributionIdempotencyTest {
   public static final EngineRule ENGINE =
       EngineRule.multiplePartition(2)
           .withEngineConfig(c -> c.setBatchOperationSchedulerInterval(Duration.ofDays(1)))
-          .withSearchClientsProxy(new NoopSearchClientsProxy());
+          .withSearchClientsProxy(SearchClientsProxy.noop());
 
   private static final Set<Class<?>> DISTRIBUTING_PROCESSORS =
       new HashSet<>(
@@ -265,19 +262,19 @@ public class CommandDistributionIdempotencyTest {
             BatchOperationCancelProcessor.class
           },
           {
-            "BatchOperation.PAUSE is idempotent",
+            "BatchOperation.SUSPEND is idempotent",
             new Scenario(
                 ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-                BatchOperationIntent.PAUSE,
+                BatchOperationIntent.SUSPEND,
                 () -> {
                   final var batchOperation = createBatchOperation();
                   return ENGINE
                       .batchOperation()
                       .newLifecycle()
                       .withBatchOperationKey(batchOperation.getKey())
-                      .pause();
+                      .suspend();
                 }),
-            BatchOperationPauseProcessor.class
+            BatchOperationSuspendProcessor.class
           },
           {
             "BatchOperation.RESUME is idempotent",
@@ -286,7 +283,7 @@ public class CommandDistributionIdempotencyTest {
                 BatchOperationIntent.RESUME,
                 () -> {
                   final var batchOperation = createBatchOperation();
-                  pauseBatchOperation(batchOperation.getKey());
+                  suspendBatchOperation(batchOperation.getKey());
                   return ENGINE
                       .batchOperation()
                       .newLifecycle()
@@ -294,6 +291,38 @@ public class CommandDistributionIdempotencyTest {
                       .resume();
                 }),
             BatchOperationResumeProcessor.class
+          },
+          {
+            "BatchOperation.FAIL_PARTITION is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+                BatchOperationIntent.FAIL_PARTITION,
+                () -> {
+                  // create BO on partition 2 to enforce distribution later
+                  final var batchOperation = createBatchOperation(2);
+                  return ENGINE
+                      .batchOperation()
+                      .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .fail();
+                }),
+            BatchOperationPartitionFailProcessor.class
+          },
+          {
+            "BatchOperation.COMPLETE_PARTITION is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+                BatchOperationIntent.COMPLETE_PARTITION,
+                () -> {
+                  // create BO on partition 2 to enforce distribution later
+                  final var batchOperation = createBatchOperation(2);
+                  return ENGINE
+                      .batchOperation()
+                      .newExecution()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .execute();
+                }),
+            BatchOperationPartitionCompleteProcessor.class
           },
           {
             "Clock.RESET is idempotent",
@@ -629,39 +658,6 @@ public class CommandDistributionIdempotencyTest {
                 MessageSubscriptionIntent.MIGRATE,
                 CommandDistributionIdempotencyTest::migrateMessageSubscription),
             MessageSubscriptionMigrateProcessor.class
-          },
-          {
-            "IdentitySetup.INITIALIZE is idempotent",
-            new Scenario(
-                ValueType.IDENTITY_SETUP,
-                IdentitySetupIntent.INITIALIZE,
-                () ->
-                    ENGINE
-                        .identitySetup()
-                        .initialize()
-                        .withRole(
-                            new RoleRecord()
-                                .setRoleKey(1L)
-                                .setRoleId(Strings.newRandomValidIdentityId()))
-                        .withUser(
-                            new UserRecord()
-                                .setUserKey(2L)
-                                .setUsername("user")
-                                .setEmail("email")
-                                .setPassword("password")
-                                .setName("name"))
-                        .withTenant(
-                            new TenantRecord()
-                                .setTenantKey(3L)
-                                .setTenantId("tenant-id")
-                                .setName("tenant-name"))
-                        .withMapping(
-                            new MappingRecord()
-                                .setMappingId("mapping-id")
-                                .setClaimName("claimName")
-                                .setClaimValue("claimValue"))
-                        .initialize()),
-            IdentitySetupInitializeProcessor.class
           }
         });
   }
@@ -721,9 +717,15 @@ public class CommandDistributionIdempotencyTest {
   }
 
   private static Record<BatchOperationCreationRecordValue> createBatchOperation() {
+    return createBatchOperation(BatchOperationClient.DEFAULT_PARTITION);
+  }
+
+  private static Record<BatchOperationCreationRecordValue> createBatchOperation(
+      final int partitionId) {
     return ENGINE
         .batchOperation()
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .onPartition(partitionId)
         .withFilter(
             new UnsafeBuffer(
                 MsgPackConverter.convertToMsgPack(
@@ -731,9 +733,9 @@ public class CommandDistributionIdempotencyTest {
         .create();
   }
 
-  private static Record<BatchOperationLifecycleManagementRecordValue> pauseBatchOperation(
+  private static Record<BatchOperationLifecycleManagementRecordValue> suspendBatchOperation(
       final long batchKey) {
-    return ENGINE.batchOperation().newLifecycle().withBatchOperationKey(batchKey).pause();
+    return ENGINE.batchOperation().newLifecycle().withBatchOperationKey(batchKey).suspend();
   }
 
   private static Record<UserRecordValue> createUser() {

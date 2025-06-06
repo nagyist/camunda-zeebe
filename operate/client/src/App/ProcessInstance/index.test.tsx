@@ -26,9 +26,12 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 jest.mock('modules/utils/bpmn');
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: false,
+}));
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
@@ -56,7 +59,6 @@ describe('ProcessInstance', () => {
   });
 
   it('should render and set the page title', async () => {
-    mockFetchProcessXML().withSuccess('');
     jest.useFakeTimers();
 
     render(<ProcessInstance />, {wrapper: getWrapper()});
@@ -219,7 +221,6 @@ describe('ProcessInstance', () => {
   });
 
   it('should display forbidden content after polling', async () => {
-    mockFetchProcessXML().withSuccess('');
     jest.useFakeTimers();
     render(<ProcessInstance />, {wrapper: getWrapper()});
 

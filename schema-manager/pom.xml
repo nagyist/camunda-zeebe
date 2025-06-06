@@ -18,6 +18,12 @@
   <artifactId>camunda-schema-manager</artifactId>
 
   <name>Camunda Schema manager</name>
+
+  <properties>
+    <skipITs>false</skipITs>
+    <excludeITNames></excludeITNames>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -77,6 +83,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
     </dependency>
 
     <dependency>
@@ -161,13 +172,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>**/IT*.java</include>
-            <include>**/*IT.java</include>
-            <include>**/*ITCase.java</include>
-          </includes>
-        </configuration>
       </plugin>
 
     </plugins>

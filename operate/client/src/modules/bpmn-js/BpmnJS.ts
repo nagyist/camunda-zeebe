@@ -99,11 +99,11 @@ class BpmnJS {
     const {
       container,
       xml,
-      selectableFlowNodes = [],
-      selectedFlowNodeIds,
+      selectableFlowNodes: unfilteredSelectableFlowNodes = [],
+      selectedFlowNodeIds: unfilteredSelectedFlowNodeIds,
       overlaysData = [],
       highlightedSequenceFlows = [],
-      highlightedFlowNodeIds = [],
+      highlightedFlowNodeIds: unfilteredHighlightedFlowNodeIds = [],
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
     } = options;
@@ -116,6 +116,19 @@ class BpmnJS {
       this.#xml = xml;
       await this.import(xml);
     }
+
+    const doesElementExist = (flowNodeId: string) => {
+      return (
+        this.#navigatedViewer?.get('elementRegistry')?.get(flowNodeId) !==
+        undefined
+      );
+    };
+    const selectedFlowNodeIds =
+      unfilteredSelectedFlowNodeIds?.filter(doesElementExist);
+    const highlightedFlowNodeIds =
+      unfilteredHighlightedFlowNodeIds?.filter(doesElementExist);
+    const selectableFlowNodes =
+      unfilteredSelectableFlowNodes?.filter(doesElementExist);
 
     // if render is called a second time before importing has finished,
     // exit early because there is no root element yet.

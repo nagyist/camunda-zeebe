@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication;
 
-import io.camunda.authentication.ConditionalOnUnprotectedApi.ApiProtectedCondition;
+import io.camunda.authentication.ConditionalOnUnprotectedApi.ApiUnprotectedCondition;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import java.lang.annotation.Documented;
@@ -25,10 +25,10 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@Conditional(ApiProtectedCondition.class)
+@Conditional(ApiUnprotectedCondition.class)
 public @interface ConditionalOnUnprotectedApi {
 
-  class ApiProtectedCondition implements Condition {
+  class ApiUnprotectedCondition implements Condition {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final Environment env = context.getEnvironment();

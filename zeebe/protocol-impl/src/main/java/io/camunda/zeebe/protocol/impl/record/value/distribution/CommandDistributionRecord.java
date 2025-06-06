@@ -20,12 +20,12 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
-import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -57,12 +57,13 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.TENANT, TenantRecord::new);
     RECORDS_BY_TYPE.put(ValueType.MAPPING, MappingRecord::new);
     RECORDS_BY_TYPE.put(ValueType.GROUP, GroupRecord::new);
-    RECORDS_BY_TYPE.put(ValueType.REDISTRIBUTION, RedistributionRecord::new);
     RECORDS_BY_TYPE.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord::new);
     RECORDS_BY_TYPE.put(ValueType.BATCH_OPERATION_CREATION, BatchOperationCreationRecord::new);
     RECORDS_BY_TYPE.put(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         BatchOperationLifecycleManagementRecord::new);
+    RECORDS_BY_TYPE.put(
+        ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE, BatchOperationPartitionLifecycleRecord::new);
   }
 
   /*

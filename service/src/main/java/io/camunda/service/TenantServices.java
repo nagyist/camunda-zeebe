@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryResult;
@@ -26,7 +27,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateReq
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.io.Serializable;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +52,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.tenant().read())))
         .searchTenants(query);
+  }
+
+  public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantQuery query) {
+    return tenantSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.tenant().read())))
+        .searchTenantMembers(query);
   }
 
   public List<TenantEntity> findAll(final TenantQuery query) {
@@ -100,12 +109,32 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             .setEntity(request.entityType(), request.entityId()));
   }
 
-  public Collection<TenantEntity> getTenantsByMemberId(final String memberId) {
-    return getTenantsByMemberIds(Set.of(memberId));
+  public List<TenantEntity> getTenantsByMemberIds(
+      final Set<String> memberIds, final EntityType memberType) {
+    return findAll(
+        TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds).childMemberType(memberType))));
   }
 
-  public List<TenantEntity> getTenantsByMemberIds(final Set<String> memberIds) {
-    return findAll(TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds))));
+  public List<TenantEntity> getTenantsByUserAndGroupsAndRoles(
+      final String username, final Set<String> groupIds, final Set<String> roleIds) {
+    final var tenants = new ArrayList<>(getTenantsByMemberIds(Set.of(username), EntityType.USER));
+    final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
+    final var roleTenants = getTenantsByMemberIds(roleIds, EntityType.ROLE);
+
+    tenants.addAll(groupTenants);
+    tenants.addAll(roleTenants);
+    return tenants.stream().distinct().toList();
+  }
+
+  public List<TenantEntity> getTenantsByMappingsAndGroupsAndRoles(
+      final Set<String> mappings, final Set<String> groupIds, final Set<String> roleIds) {
+    final var tenants = new ArrayList<>(getTenantsByMemberIds(mappings, EntityType.MAPPING));
+    final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
+    final var roleTenants = getTenantsByMemberIds(roleIds, EntityType.ROLE);
+
+    tenants.addAll(groupTenants);
+    tenants.addAll(roleTenants);
+    return tenants.stream().distinct().toList();
   }
 
   public TenantEntity getById(final String tenantId) {

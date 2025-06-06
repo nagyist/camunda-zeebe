@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
+import io.camunda.db.rdbms.read.domain.BatchOperationItemDbQuery;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -36,26 +37,28 @@ public interface BatchOperationMapper {
 
   List<BatchOperationDbModel> search(BatchOperationDbQuery query);
 
-  List<BatchOperationItemEntity> getItems(String batchOperationKey);
+  Long countItems(BatchOperationItemDbQuery query);
+
+  List<BatchOperationItemEntity> searchItems(BatchOperationItemDbQuery query);
 
   record BatchOperationUpdateDto(
-      String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
+      String batchOperationId, BatchOperationState state, OffsetDateTime endDate) {}
 
-  record BatchOperationUpdateTotalCountDto(String batchOperationKey, int operationsTotalCount) {}
+  record BatchOperationUpdateTotalCountDto(String batchOperationId, int operationsTotalCount) {}
 
-  record BatchOperationUpdateCountsDto(String batchOperationKey, long itemKey) {}
+  record BatchOperationUpdateCountsDto(String batchOperationId, long itemKey) {}
 
-  record BatchOperationItemsDto(String batchOperationKey, List<BatchOperationItemDbModel> items) {}
+  record BatchOperationItemsDto(String batchOperationId, List<BatchOperationItemDbModel> items) {}
 
   record BatchOperationItemDto(
-      String batchOperationKey,
+      String batchOperationId,
       Long itemKey,
       BatchOperationEntity.BatchOperationItemState state,
       OffsetDateTime processedDate,
       String errorMessage) {}
 
   record BatchOperationItemStatusUpdateDto(
-      String batchOperationKey,
+      String batchOperationId,
       BatchOperationEntity.BatchOperationItemState oldState,
       BatchOperationEntity.BatchOperationItemState newState) {}
 }

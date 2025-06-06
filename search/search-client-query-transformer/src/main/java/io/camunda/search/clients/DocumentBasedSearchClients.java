@@ -34,6 +34,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
@@ -62,8 +63,8 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
@@ -119,6 +120,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return getSearchExecutor()
         .findAll(
             filter, io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class);
+  }
+
+  @Override
+  public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery filter) {
+    return getSearchExecutor()
+        .findAll(filter, io.camunda.webapps.schema.entities.SequenceFlowEntity.class);
   }
 
   @Override
@@ -311,6 +318,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
+    return getSearchExecutor()
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class);
+  }
+
+  @Override
   public List<RoleEntity> findAllRoles(final RoleQuery filter) {
     return getSearchExecutor()
         .findAll(filter, io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class);
@@ -320,6 +333,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
     return getSearchExecutor()
         .search(filter, io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
+    return getSearchExecutor()
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
   }
 
   @Override
@@ -334,8 +353,17 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     if (groupQuery.filter().tenantId() != null) {
       query = expandTenantFilter(groupQuery);
     }
+    if (groupQuery.filter().roleId() != null) {
+      query = expandRoleFilter(groupQuery);
+    }
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
+    return getSearchExecutor()
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class);
   }
 
   @Override
@@ -516,6 +544,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
         .build();
   }
 
+  private GroupQuery expandRoleFilter(final GroupQuery groupQuery) {
+    final var groupIds = getRoleMemberIds(groupQuery.filter().roleId(), GROUP);
+    return groupQuery.toBuilder()
+        .filter(groupQuery.filter().toBuilder().groupIds(groupIds).build())
+        .build();
+  }
+
   public Set<String> getRoleMemberIds(final String roleId, final EntityType memberType) {
     final List<RoleMemberEntity> roleMembers =
         getSearchExecutor()
@@ -535,15 +570,6 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
-    // TODO must be refactored to always use paged filter #31777
-    return searchBatchOperationItems(
-            SearchQueryBuilders.batchOperationItemQuery()
-                .filter(f -> f.batchOperationIds(batchOperationId))
-                .build())
-        .items();
-  }
-
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
     return getSearchExecutor()

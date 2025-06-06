@@ -6,19 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
-import {
-  render,
-  screen,
-  UserEvent,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {VariablePanel} from './index';
+import {render, screen, UserEvent, waitFor} from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createInstance, createVariable} from 'modules/testUtils';
@@ -31,6 +24,18 @@ import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
+}));
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
@@ -99,6 +104,19 @@ const getWrapper = (
 };
 
 describe('New Variable Modifications', () => {
+  const mockProcessInstance: ProcessInstance = {
+    processInstanceKey: 'instance_id',
+    state: 'ACTIVE',
+    startDate: '2018-06-21',
+    processDefinitionKey: '2',
+    processDefinitionVersion: 1,
+    processDefinitionId: 'someKey',
+    tenantId: '<default>',
+    processDefinitionName: 'someProcessName',
+    hasIncident: false,
+  };
+  const mockProcessInstanceDeprecated = createInstance({id: 'instance_id'});
+
   beforeEach(async () => {
     const statisticsData = [
       {
@@ -122,6 +140,7 @@ describe('New Variable Modifications', () => {
     });
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
@@ -137,9 +156,6 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-skeleton'),
-    );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -165,8 +181,6 @@ describe('New Variable Modifications', () => {
       modificationsStore.enableModificationMode();
 
       const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -198,10 +212,14 @@ describe('New Variable Modifications', () => {
     async (type) => {
       jest.useFakeTimers();
       modificationsStore.enableModificationMode();
+      mockFetchProcessInstanceDeprecated().withSuccess(
+        mockProcessInstanceDeprecated,
+      );
+      mockFetchProcessInstanceListeners().withSuccess(noListeners);
+      mockFetchVariables().withSuccess([createVariable()]);
+      mockFetchVariables().withSuccess([createVariable()]);
 
       const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -214,18 +232,30 @@ describe('New Variable Modifications', () => {
       ).toBeInTheDocument();
       await editNameFromTextfieldAndBlur(user, 'testVariableName');
       await editValue(type, user, '123');
-      expect(
-        screen.getByRole('button', {name: /add variable/i}),
-      ).toBeDisabled();
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', {name: /add variable/i}),
+        ).toBeDisabled(),
+      );
       expect(
         await screen.findByText(/Name should be unique/i),
       ).toBeInTheDocument();
-      expect(modificationsStore.state.modifications.length).toBe(0);
 
       await user.clear(screen.getByTestId('new-variable-name'));
       await editNameFromTextfieldAndBlur(user, 'test2');
 
       expect(modificationsStore.state.modifications).toEqual([
+        {
+          payload: {
+            flowNodeName: 'someProcessName',
+            id: expect.any(String),
+            name: 'testVariableName',
+            newValue: '123',
+            operation: 'ADD_VARIABLE',
+            scopeId: 'instance_id',
+          },
+          type: 'variable',
+        },
         {
           payload: {
             flowNodeName: 'someProcessName',
@@ -250,6 +280,17 @@ describe('New Variable Modifications', () => {
           payload: {
             flowNodeName: 'someProcessName',
             id: expect.any(String),
+            name: 'testVariableName',
+            newValue: '123',
+            operation: 'ADD_VARIABLE',
+            scopeId: 'instance_id',
+          },
+          type: 'variable',
+        },
+        {
+          payload: {
+            flowNodeName: 'someProcessName',
+            id: expect.any(String),
             name: 'test2',
             newValue: '123',
             operation: 'ADD_VARIABLE',
@@ -269,8 +310,6 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -310,8 +349,6 @@ describe('New Variable Modifications', () => {
         </>,
         {wrapper: getWrapper()},
       );
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -493,7 +530,6 @@ describe('New Variable Modifications', () => {
       modificationsStore.enableModificationMode();
 
       const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
         expect(
@@ -550,9 +586,17 @@ describe('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchVariables().withSuccess([createVariable()]);
 
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -580,23 +624,28 @@ describe('New Variable Modifications', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'someProcessName',
-        flowNodeInstanceId: 'test',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'someProcessName',
+          flowNodeInstanceId: 'test',
+        },
+      );
     });
 
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     mockFetchVariables().withSuccess([]);
-
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeInstanceId: 'instance_id',
-        isMultiInstance: false,
-      });
+      selectFlowNode(
+        {flowNodeInstanceId: 'instance_id', isMultiInstance: false},
+        {
+          flowNodeInstanceId: 'instance_id',
+          isMultiInstance: false,
+        },
+      );
     });
 
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
@@ -636,9 +685,12 @@ describe('New Variable Modifications', () => {
     });
 
     // select flow node without instance id (use case: from the diagram)
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'flow-node-that-has-not-run-yet',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'flow-node-that-has-not-run-yet',
+      },
+    );
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     expect(
@@ -661,10 +713,13 @@ describe('New Variable Modifications', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'someProcessName',
-        flowNodeInstanceId: 'test',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'someProcessName',
+          flowNodeInstanceId: 'test',
+        },
+      );
     });
 
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
@@ -673,9 +728,12 @@ describe('New Variable Modifications', () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'flow-node-that-has-not-run-yet',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'flow-node-that-has-not-run-yet',
+        },
+      );
     });
 
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));

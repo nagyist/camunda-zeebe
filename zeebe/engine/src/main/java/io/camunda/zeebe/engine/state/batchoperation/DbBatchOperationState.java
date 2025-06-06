@@ -81,6 +81,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var batchOperation = get(batchOperationKey);
     if (batchOperation.isPresent()) {
       batchOperation.get().setStatus(BatchOperationStatus.STARTED);
+      batchOperation.get().markAsInitialized();
       batchOperationColumnFamily.update(batchKey, batchOperation.get());
       pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
     } else {
@@ -161,31 +162,43 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void pause(final long batchOperationKey) {
-    LOGGER.trace("Pausing batch operation with key {}", batchOperationKey);
+  public void suspend(final long batchOperationKey) {
+    LOGGER.trace("Suspending batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);
 
-    // Set status to PAUSED
+    // Set status to SUSPENDED
     final var batch = batchOperationColumnFamily.get(batchKey);
-    batch.setStatus(BatchOperationStatus.PAUSED);
+    batch.setStatus(BatchOperationStatus.SUSPENDED);
     batchOperationColumnFamily.update(batchKey, batch);
   }
 
   @Override
   public void resume(final long batchOperationKey) {
     LOGGER.trace("Resume batch operation with key {}", batchOperationKey);
-    this.batchKey.wrapLong(batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
 
     // Set status to STARTED
-    final var batch = batchOperationColumnFamily.get(this.batchKey);
-    batch.setStatus(BatchOperationStatus.STARTED);
-    batchOperationColumnFamily.update(this.batchKey, batch);
+    final var batch = batchOperationColumnFamily.get(batchKey);
+    batch.setStatus(
+        batch.isInitialized() ? BatchOperationStatus.STARTED : BatchOperationStatus.CREATED);
+    batchOperationColumnFamily.update(batchKey, batch);
   }
 
   @Override
   public void complete(final long batchOperationKey) {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
     deleteBatchOperation(batchOperationKey);
+  }
+
+  @Override
+  public void finishPartition(final long batchOperationKey, final int partitionId) {
+    LOGGER.trace(
+        "Finish batch operation with key {} on partition {}", batchOperationKey, partitionId);
+    batchKey.wrapLong(batchOperationKey);
+
+    final var batch = batchOperationColumnFamily.get(batchKey);
+    batch.addFinishedPartition(partitionId);
+    batchOperationColumnFamily.update(batchKey, batch);
   }
 
   @Override

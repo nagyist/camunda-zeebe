@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.security.permission;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
-import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
@@ -199,7 +198,7 @@ public class PermissionsService {
         SecurityContextHolder.getContext().getAuthentication();
     if (requestAuthentication != null) {
       final Object principal = requestAuthentication.getPrincipal();
-      if (principal instanceof final CamundaUser authenticatedPrincipal) {
+      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
         return authenticatedPrincipal.getUsername();
       }
     }
@@ -215,6 +214,18 @@ public class PermissionsService {
         return authenticatedPrincipal.getAuthenticationContext().roles().stream()
             .map(RoleEntity::roleId)
             .toList();
+      }
+    }
+    return Collections.emptyList();
+  }
+
+  private List<String> getAuthenticatedUserGroupIds() {
+    final Authentication requestAuthentication =
+        SecurityContextHolder.getContext().getAuthentication();
+    if (requestAuthentication != null) {
+      final Object principal = requestAuthentication.getPrincipal();
+      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
+        return authenticatedPrincipal.getAuthenticationContext().groups();
       }
     }
     return Collections.emptyList();
@@ -251,11 +262,12 @@ public class PermissionsService {
     final var authenticatedUsername = getAuthenticatedUsername();
     final List<String> authenticatedRoleIds = getAuthenticatedUserRoleIds();
     final List<String> authenticatedTenantIds = getAuthenticatedUserTenantIds();
-    // groups  will come later
+    final List<String> authenticatedGroupIds = getAuthenticatedUserGroupIds();
     return new io.camunda.security.auth.Authentication.Builder()
         .user(authenticatedUsername)
         .roleIds(authenticatedRoleIds)
         .tenants(authenticatedTenantIds)
+        .groupIds(authenticatedGroupIds)
         .build();
   }
 

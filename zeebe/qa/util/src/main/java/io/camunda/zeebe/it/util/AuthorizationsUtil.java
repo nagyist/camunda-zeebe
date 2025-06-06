@@ -109,7 +109,7 @@ public class AuthorizationsUtil implements CloseableSilently {
         .join()
         .getTenantKey();
     for (final var username : usernames) {
-      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
+      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
     }
     awaitTenantExistsInElasticsearch(tenantId);
   }
@@ -156,7 +156,7 @@ public class AuthorizationsUtil implements CloseableSilently {
   }
 
   public void awaitUserExistsInElasticsearch(final String username) {
-    final var userQuery = UserQuery.of(b -> b.filter(f -> f.username(username)));
+    final var userQuery = UserQuery.of(b -> b.filter(f -> f.usernames(username)));
     awaitEntityExistsInElasticsearch(() -> documentBasedSearchClients.searchUsers(userQuery));
   }
 

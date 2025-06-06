@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
@@ -56,7 +57,6 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.scaling.ScalingProcessors;
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -116,6 +116,8 @@ public final class EngineProcessors {
     final var jobMetrics = new JobProcessingMetrics(typedRecordProcessorContext.getMeterRegistry());
     final var processEngineMetrics =
         new ProcessEngineMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var distributionMetrics =
+        new DistributionMetrics(typedRecordProcessorContext.getMeterRegistry());
 
     subscriptionCommandSender.setWriters(writers);
 
@@ -145,7 +147,8 @@ public final class EngineProcessors {
             writers,
             typedRecordProcessorContext.getPartitionId(),
             routingInfo,
-            interPartitionCommandSender);
+            interPartitionCommandSender,
+            distributionMetrics);
 
     final var deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
@@ -162,7 +165,8 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         config,
         clock,
-        authCheckBehavior);
+        authCheckBehavior,
+        routingInfo);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -236,11 +240,11 @@ public final class EngineProcessors {
         authCheckBehavior);
     addCommandDistributionProcessors(
         commandDistributionBehavior,
+        scheduledTaskStateFactory,
         typedRecordProcessors,
         writers,
         processingState,
-        scheduledTaskStateFactory,
-        interPartitionCommandSender);
+        routingInfo);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -282,10 +286,8 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior);
 
-    final var redistributionBehavior =
-        new RedistributionBehavior(writers, commandDistributionBehavior, processingState);
     ScalingProcessors.addScalingProcessors(
-        redistributionBehavior, typedRecordProcessors, writers, keyGenerator, processingState);
+        typedRecordProcessors, writers, keyGenerator, processingState);
 
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
@@ -304,13 +306,7 @@ public final class EngineProcessors {
         commandDistributionBehavior);
 
     IdentitySetupProcessors.addIdentitySetupProcessors(
-        keyGenerator,
-        typedRecordProcessors,
-        processingState,
-        writers,
-        commandDistributionBehavior,
-        securityConfig,
-        featureFlags);
+        keyGenerator, typedRecordProcessors, writers, securityConfig, featureFlags);
 
     addResourceFetchProcessors(typedRecordProcessors, writers, processingState, authCheckBehavior);
 
@@ -324,7 +320,8 @@ public final class EngineProcessors {
         searchClientsProxy,
         processingState,
         config,
-        partitionId);
+        partitionId,
+        routingInfo);
 
     return typedRecordProcessors;
   }
@@ -415,7 +412,8 @@ public final class EngineProcessors {
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final RoutingInfo routingInfo) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -437,7 +435,8 @@ public final class EngineProcessors {
     final var deploymentRedistributor =
         new DeploymentRedistributor(
             deploymentDistributionCommandSender,
-            scheduledTaskStateSupplier.get().getDeploymentState());
+            scheduledTaskStateSupplier.get().getDeploymentState(),
+            routingInfo);
     typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed
@@ -586,16 +585,18 @@ public final class EngineProcessors {
 
   private static void addCommandDistributionProcessors(
       final CommandDistributionBehavior commandDistributionBehavior,
+      final Supplier<ScheduledTaskState> scheduledTaskStateSupplier,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
-      final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final InterPartitionCommandSender interPartitionCommandSender) {
+      final RoutingInfo routingInfo) {
 
     // periodically retries command distribution
     typedRecordProcessors.withListener(
         new CommandRedistributor(
-            scheduledTaskStateFactory.get().getDistributionState(), interPartitionCommandSender));
+            commandDistributionBehavior.withScheduledState(
+                scheduledTaskStateSupplier.get().getDistributionState()),
+            routingInfo));
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(
@@ -606,10 +607,12 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.FINISH,
-        new CommandDistributionFinishProcessor(writers, commandDistributionBehavior));
+        new CommandDistributionFinishProcessor(commandDistributionBehavior));
     typedRecordProcessors.onCommand(
         ValueType.COMMAND_DISTRIBUTION,
         CommandDistributionIntent.CONTINUE,
         new CommandDistributionContinueProcessor(distributionState, writers));
+
+    typedRecordProcessors.withListener(commandDistributionBehavior);
   }
 }

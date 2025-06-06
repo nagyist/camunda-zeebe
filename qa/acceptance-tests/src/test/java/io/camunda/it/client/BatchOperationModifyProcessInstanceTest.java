@@ -8,12 +8,15 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
-import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.getScopedVariables;
+import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForActiveScopedUserTasks;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.filter;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
@@ -21,7 +24,6 @@ import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatc
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceModificationStep;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
-import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
@@ -29,58 +31,67 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "es")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "os")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationModifyProcessInstanceTest {
 
-  static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  static final List<Long> PROCESS_INSTANCES_PATH1 = new ArrayList<>();
-  static final List<Long> PROCESS_INSTANCES_PATH2 = new ArrayList<>();
-
   private static CamundaClient camundaClient;
+  String testScopeId;
 
-  @BeforeAll
-  public static void beforeAll() {
+  final List<Process> deployedProcesses = new ArrayList<>();
+  final List<Long> processInstancesPath1 = new ArrayList<>();
+  final List<Long> processInstancesPath2 = new ArrayList<>();
+
+  @BeforeEach
+  public void beforeEach(final TestInfo testInfo) {
+    Objects.requireNonNull(camundaClient);
+    testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+
     Objects.requireNonNull(camundaClient);
     final List<String> processes =
         List.of("multi_instance_subprocess.bpmn", "service_tasks_v1.bpmn");
     processes.forEach(
         process ->
-            DEPLOYED_PROCESSES.addAll(
+            deployedProcesses.addAll(
                 deployResource(camundaClient, String.format("process/%s", process))
                     .getProcesses()));
 
-    waitForProcessesToBeDeployed(camundaClient, DEPLOYED_PROCESSES.size());
+    waitForProcessesToBeDeployed(camundaClient, deployedProcesses.size());
 
     // start some random process instances we want to not match the filter
-    IntStream.range(0, 10).forEach(i -> startProcessInstance(camundaClient, "service_tasks_v1"));
+    IntStream.range(0, 10)
+        .forEach(i -> startScopedProcessInstance(camundaClient, "service_tasks_v1", testScopeId));
 
     // start some process instances for one path
     IntStream.range(0, 10)
         .forEach(
             i -> {
               final var processInstance =
-                  startProcessInstance(
+                  startScopedProcessInstance(
                       camundaClient,
                       "multi_instance_subprocess",
-                      "{\"variables\": [\"foo\", \"bar\"], \"foo\": 1}");
-              PROCESS_INSTANCES_PATH1.add(processInstance.getProcessInstanceKey());
+                      testScopeId,
+                      Map.of("variables", Set.of("foo", "bar"), "foo", 1));
+              processInstancesPath1.add(processInstance.getProcessInstanceKey());
             });
 
     // start some process instances for another path
@@ -88,39 +99,51 @@ public class BatchOperationModifyProcessInstanceTest {
         .forEach(
             i -> {
               final var processInstance =
-                  startProcessInstance(
+                  startScopedProcessInstance(
                       camundaClient,
                       "multi_instance_subprocess",
-                      "{\"variables\": [\"foo\", \"bar\"], \"foo\": 2}");
-              PROCESS_INSTANCES_PATH2.add(processInstance.getProcessInstanceKey());
+                      testScopeId,
+                      Map.of("variables", Set.of("foo", "bar"), "foo", 2));
+              processInstancesPath2.add(processInstance.getProcessInstanceKey());
             });
 
-    waitForProcessInstancesToStart(camundaClient, 30);
+    waitForScopedProcessInstancesToStart(camundaClient, testScopeId, 30);
+    final var expectedUserTasks =
+        (processInstancesPath1.size() * 2) + 10 + (processInstancesPath2.size() * 2) + 10;
+    waitForActiveScopedUserTasks(camundaClient, testScopeId, expectedUserTasks);
   }
 
-  @AfterAll
-  static void afterAll() {
-    DEPLOYED_PROCESSES.clear();
-    PROCESS_INSTANCES_PATH1.clear();
-    PROCESS_INSTANCES_PATH2.clear();
+  @AfterEach
+  void afterEach() {
+    testScopeId = null;
+    deployedProcesses.clear();
+    processInstancesPath1.clear();
+    processInstancesPath2.clear();
   }
 
   @Test
   void shouldModifyProcessInstancesWithBatch() {
     final var allProcessInstances = new ArrayList<Long>();
-    allProcessInstances.addAll(PROCESS_INSTANCES_PATH1);
-    allProcessInstances.addAll(PROCESS_INSTANCES_PATH2);
+    allProcessInstances.addAll(processInstancesPath1);
+    allProcessInstances.addAll(processInstancesPath2);
 
     // when
-    final var batchOperationKey =
+    final var batchOperationId =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskE", "userTaskF")
-                    .filter(f -> f.processDefinitionId("multi_instance_subprocess")));
-    // then
-    shouldCompleteBatchOperation(batchOperationKey);
+                    .filter(
+                        f ->
+                            f.variables(getScopedVariables(testScopeId))
+                                .processDefinitionId("multi_instance_subprocess")));
+
+    // then wait if batch has correct amount of items. (To fail fast if not)
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId, 20);
+
+    // and
+    waitForBatchOperationCompleted(camundaClient, batchOperationId, 20, 0);
     batchOperationHasItemsWithState(
-        batchOperationKey, BatchOperationItemState.COMPLETED, allProcessInstances);
+        batchOperationId, BatchOperationItemState.COMPLETED, allProcessInstances);
 
     for (final long itemKey : allProcessInstances) {
       processInstanceHasActiveUserTasks(camundaClient, itemKey, Map.of("userTaskF", 2L));
@@ -130,37 +153,51 @@ public class BatchOperationModifyProcessInstanceTest {
   @Test
   void shouldModifyProcessInstancesWithMultipleBatches() {
     // given
-    final var processInstanceKey1 = PROCESS_INSTANCES_PATH1.get(0);
-    final var processInstanceKey2 = PROCESS_INSTANCES_PATH1.get(1);
+    final var processInstanceKey1 = processInstancesPath1.get(0);
+    final var processInstanceKey2 = processInstancesPath1.get(1);
 
     // when
-    final var batchOperationKey1 =
+    final var batchOperationId1 =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskE", "userTaskF")
-                    .filter(f -> f.processInstanceKey(processInstanceKey1)));
-    final var batchOperationKey2 =
+                    .filter(
+                        f ->
+                            f.variables(getScopedVariables(testScopeId))
+                                .processInstanceKey(processInstanceKey1)));
+    final var batchOperationId2 =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskC", "userTaskD")
-                    .filter(f -> f.processInstanceKey(processInstanceKey1)));
-    final var batchOperationKey3 =
+                    .filter(
+                        f ->
+                            f.variables(getScopedVariables(testScopeId))
+                                .processInstanceKey(processInstanceKey1)));
+    final var batchOperationId3 =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskE", "userTaskF")
-                    .filter(f -> f.processInstanceKey(processInstanceKey2)));
+                    .filter(
+                        f ->
+                            f.variables(getScopedVariables(testScopeId))
+                                .processInstanceKey(processInstanceKey2)));
 
-    // then
-    shouldCompleteBatchOperation(batchOperationKey1);
-    shouldCompleteBatchOperation(batchOperationKey2);
-    shouldCompleteBatchOperation(batchOperationKey3);
+    // then wait if batch has correct amount of items. (If not, fail fast)
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId1, 1);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId2, 1);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId3, 1);
+
+    // and
+    waitForBatchOperationCompleted(camundaClient, batchOperationId1, 1, 0);
+    waitForBatchOperationCompleted(camundaClient, batchOperationId2, 1, 0);
+    waitForBatchOperationCompleted(camundaClient, batchOperationId3, 1, 0);
 
     batchOperationHasItemsWithState(
-        batchOperationKey1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
+        batchOperationId1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
     batchOperationHasItemsWithState(
-        batchOperationKey1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
+        batchOperationId1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
     batchOperationHasItemsWithState(
-        batchOperationKey1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey2));
+        batchOperationId1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey2));
 
     processInstanceHasActiveUserTasks(
         camundaClient, processInstanceKey1, Map.of("userTaskD", 1L, "userTaskF", 2L));
@@ -170,23 +207,29 @@ public class BatchOperationModifyProcessInstanceTest {
   @Test
   void shouldModifyProcessInstancesWithBatchFail() {
     // when
-    final var batchOperationKey =
+    final var batchOperationId =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskA", "userTaskB")
                     .addMoveInstruction("userTaskC", "FAIL")
                     .addMoveInstruction("userTaskE", "userTaskF")
-                    .filter(f -> f.processDefinitionId("multi_instance_subprocess")));
+                    .filter(
+                        f ->
+                            f.variables(getScopedVariables(testScopeId))
+                                .processDefinitionId("multi_instance_subprocess")));
 
     // then
-    shouldCompleteBatchOperation(batchOperationKey);
-    batchOperationHasItemsWithState(
-        batchOperationKey, BatchOperationItemState.FAILED, PROCESS_INSTANCES_PATH1);
-    batchOperationHasItemsWithState(
-        batchOperationKey, BatchOperationItemState.COMPLETED, PROCESS_INSTANCES_PATH2);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId, 20);
 
     // and
-    for (final long itemKey : PROCESS_INSTANCES_PATH2) {
+    waitForBatchOperationCompleted(camundaClient, batchOperationId, 10, 10);
+    batchOperationHasItemsWithState(
+        batchOperationId, BatchOperationItemState.FAILED, processInstancesPath1);
+    batchOperationHasItemsWithState(
+        batchOperationId, BatchOperationItemState.COMPLETED, processInstancesPath2);
+
+    // and
+    for (final long itemKey : processInstancesPath2) {
       processInstanceHasActiveUserTasks(
           camundaClient,
           itemKey,
@@ -196,7 +239,7 @@ public class BatchOperationModifyProcessInstanceTest {
     }
   }
 
-  public long modifyProcessInstance(
+  public String modifyProcessInstance(
       final Function<
               ProcessInstanceModificationStep<ProcessInstanceFilter>,
               CreateBatchOperationCommandStep3<ProcessInstanceFilter>>
@@ -205,37 +248,32 @@ public class BatchOperationModifyProcessInstanceTest {
         .apply(camundaClient.newCreateBatchOperationCommand().modifyProcessInstance())
         .send()
         .join()
-        .getBatchOperationKey();
+        .getBatchOperationId();
   }
 
-  public void shouldCompleteBatchOperation(final long batchOperationKey) {
-    await("should complete batch operation")
+  public void batchOperationHasItemsWithState(
+      final String batchOperationId,
+      final BatchOperationItemState state,
+      final List<Long> failedItemKeys) {
+    await("should have items with state")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              // and
-              final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
-              assertThat(batch).isNotNull();
-              assertThat(batch.getEndDate()).isNotNull();
-              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              final var itemsObj =
+                  camundaClient
+                      .newBatchOperationItemsSearchRequest()
+                      .filter(f -> f.batchOperationId(batchOperationId))
+                      .send()
+                      .join();
+
+              final var filteredItems =
+                  itemsObj.items().stream().filter(i -> i.getStatus() == state).toList();
+              assertThat(filteredItems).hasSize(failedItemKeys.size());
+              assertThat(filteredItems.stream().map(BatchOperationItem::getItemKey))
+                  .hasSize(failedItemKeys.size());
             });
-  }
-
-  public void batchOperationHasItemsWithState(
-      final long batchOperationKey,
-      final BatchOperationItemState state,
-      final List<Long> failedItemKeys) {
-    final var itemsObj =
-        camundaClient.newBatchOperationItemsGetRequest(batchOperationKey).send().join();
-
-    final var filteredItems =
-        itemsObj.items().stream().filter(i -> i.getStatus() == state).toList();
-    assertThat(filteredItems).hasSize(failedItemKeys.size());
-    assertThat(filteredItems.stream().map(BatchOperationItem::getItemKey))
-        .hasSize(failedItemKeys.size());
   }
 
   public void processInstanceHasActiveUserTasks(

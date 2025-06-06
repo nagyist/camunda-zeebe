@@ -9,15 +9,16 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
 import { getMembersByTenantId } from "src/utility/api/membership";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
 import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
+import AssignMemberModal from "src/pages/tenants/detail/members/AssignMemberModal";
 import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
+import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 
 type MembersProps = {
   tenantId: string;
@@ -26,24 +27,20 @@ type MembersProps = {
 const Members: FC<MembersProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
 
-  const {
-    data: users,
-    loading,
-    success,
-    reload,
-  } = useApi(getMembersByTenantId, {
-    tenantId: tenantId,
-  });
-
-  const isAssignedUsersListEmpty = !users || users.items?.length === 0;
-  const [assignUsers, assignUsersModal] = useEntityModal(
-    AssignMembersModal,
-    reload,
+  const { users, loading, success, reload } = useEnrichedUsers(
+    getMembersByTenantId,
     {
-      assignedUsers: users?.items || [],
+      tenantId,
     },
   );
-  const openAssignModal = () => assignUsers({ id: tenantId });
+
+  const isAssignedUsersListEmpty = !users || users.length === 0;
+  const [assignUsers, assignUsersModal] = useEntityModal(
+    isOIDC ? AssignMemberModal : AssignMembersModal,
+    reload,
+    { assignedUsers: users },
+  );
+  const openAssignModal = () => assignUsers({ tenantId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
     reload,
@@ -96,7 +93,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
   return (
     <>
       <EntityList
-        data={users?.items}
+        data={users}
         headers={membersListHeaders}
         sortProperty="username"
         loading={loading}
