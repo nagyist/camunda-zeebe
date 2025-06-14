@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
@@ -31,16 +31,15 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {init} from 'modules/utils/flowNodeMetadata';
+import {init as initFlowNodeMetadata} from 'modules/utils/flowNodeMetadata';
 import {cancelAllTokens} from 'modules/utils/modifications';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
+import {
+  init as initFlowNodeSelection,
+  selectFlowNode,
+} from 'modules/utils/flowNodeSelection';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -79,20 +78,20 @@ const getWrapper = (
   return Wrapper;
 };
 
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: 'instance_id',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: false,
+};
+
 describe('VariablePanel', () => {
   beforeEach(() => {
-    const mockProcessInstance: ProcessInstance = {
-      processInstanceKey: 'instance_id',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    };
-
     const mockProcessInstanceDeprecated = createInstance();
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -144,6 +143,7 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -152,13 +152,11 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    init(statistics);
-    flowNodeSelectionStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
+    initFlowNodeMetadata('instance_id', statistics);
+    initFlowNodeSelection(
+      {flowNodeId: 'Activity_0qtp1k6', flowNodeInstanceId: 'instance_id'},
+      'instance_id',
+      true,
     );
   });
 
@@ -182,50 +180,41 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-
     expect(
-      screen.getByRole('button', {name: /add variable/i}),
+      await screen.findByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
+    mockFetchVariables().withSuccess([]);
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
-    });
-
-    await waitFor(() =>
-      expect(flowNodeMetaDataStore.state.metaData).toEqual({
-        ...singleInstanceMetadata,
-        flowNodeInstanceId: '2251799813695856',
-        instanceCount: 1,
-        instanceMetadata: {
-          ...singleInstanceMetadata.instanceMetadata!,
-          endDate: null,
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
         },
-      }),
-    );
+      );
+    });
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     // initial state
-    expect(
-      await screen.findByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: /add variable/i}),
-    ).toBeInTheDocument();
-
     act(() => {
       cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
     });
 
-    expect(
-      screen.getByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
+    await waitFor(async () => {
+      expect(
+        await screen.findByText('The Flow Node has no Variables'),
+      ).toBeInTheDocument();
+    });
 
     // add a new token
     act(() => {
@@ -293,10 +282,13 @@ describe('VariablePanel', () => {
 
     // select existing scope
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: '2251799813695856',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+          flowNodeInstanceId: '2251799813695856',
+        },
+      );
     });
 
     await waitFor(() =>
@@ -329,11 +321,14 @@ describe('VariablePanel', () => {
 
     // select new scope
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: 'some-new-scope-id',
-        isPlaceholder: true,
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+          flowNodeInstanceId: 'some-new-scope-id',
+          isPlaceholder: true,
+        },
+      );
     });
 
     expect(
@@ -354,7 +349,13 @@ describe('VariablePanel', () => {
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -364,9 +365,12 @@ describe('VariablePanel', () => {
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'flowNode-without-running-tokens',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'flowNode-without-running-tokens',
+        },
+      );
     });
 
     // initial state
@@ -454,11 +458,14 @@ describe('VariablePanel', () => {
 
     // select only one of the scopes
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'flowNode-without-running-tokens',
-        flowNodeInstanceId: 'some-new-scope-id-1',
-        isPlaceholder: true,
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'flowNode-without-running-tokens',
+          flowNodeInstanceId: 'some-new-scope-id-1',
+          isPlaceholder: true,
+        },
+      );
     });
 
     expect(
@@ -474,11 +481,14 @@ describe('VariablePanel', () => {
 
     // select new parent scope
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'another-flownode-without-any-tokens',
-        flowNodeInstanceId: 'some-new-parent-scope-id',
-        isPlaceholder: true,
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'another-flownode-without-any-tokens',
+          flowNodeInstanceId: 'some-new-parent-scope-id',
+          isPlaceholder: true,
+        },
+      );
     });
 
     expect(
@@ -519,30 +529,41 @@ describe('VariablePanel', () => {
         endDate: '2022-09-08T12:44:45.406+0000',
       },
     });
+    mockFetchVariables().withSuccess([createVariable()]);
 
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+        },
+      );
     });
 
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
         ...singleInstanceMetadata,
-        flowNodeInstanceId: null,
         instanceMetadata: {
           ...singleInstanceMetadata.instanceMetadata!,
           endDate: '2018-12-12 00:00:00',
@@ -597,11 +618,14 @@ describe('VariablePanel', () => {
 
     // select only one of the scopes
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: 'some-new-scope-id',
-        isPlaceholder: true,
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+          flowNodeInstanceId: 'some-new-scope-id',
+          isPlaceholder: true,
+        },
+      );
     });
 
     expect(

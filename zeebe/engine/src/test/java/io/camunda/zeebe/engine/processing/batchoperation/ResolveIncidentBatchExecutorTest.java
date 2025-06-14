@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -29,6 +31,8 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
   @Test
   public void shouldResolveJobIncident() {
     // given
+    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+
     // create a process with a failed job
     engine
         .deployment()
@@ -70,37 +74,49 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
             .getKey();
 
     final var batchOperationKey =
-        createNewResolveIncidentsBatchOperation(Map.of(processInstanceKey, Set.of(incidentKey)));
+        createNewResolveIncidentsBatchOperation(
+            Map.of(processInstanceKey, Set.of(incidentKey)), claims);
 
-    // then we have executed and completed event
+    // then we have completed event
     assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
+            RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
         .extracting(Record::getIntent)
-        .containsSequence(
-            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
+        .containsSequence(BatchOperationIntent.COMPLETED);
 
     // and a follow op up command to execute again
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have a job retry command and a resolve incident command
-    assertThat(RecordingExporter.jobRecords().withRecordKey(failedEvent.getKey()))
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withRecordKey(failedEvent.getKey())
+                .limit(r -> r.getIntent() == JobIntent.UPDATE_RETRIES))
         .extracting(Record::getIntent)
         .containsSequence(JobIntent.UPDATE_RETRIES);
-    assertThat(RecordingExporter.incidentRecords().withRecordKey(incidentKey))
-        .extracting(Record::getIntent)
-        .containsSequence(IncidentIntent.RESOLVE);
+
+    final var incidentCommand =
+        RecordingExporter.incidentRecords()
+            .withRecordType(RecordType.COMMAND)
+            .withRecordKey(incidentKey)
+            .getFirst();
+    assertThat(incidentCommand.getIntent()).isEqualTo(IncidentIntent.RESOLVE);
+    assertThat(incidentCommand.getAuthorizations()).isEqualTo(claims);
   }
 
   @Test
   public void shouldResolveNonJobIncident() {
     // given
+    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+
     // create a process with a failed job
     engine
         .deployment()
@@ -127,28 +143,33 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
             .getKey();
 
     final var batchOperationKey =
-        createNewResolveIncidentsBatchOperation(Map.of(processInstanceKey, Set.of(incidentKey)));
+        createNewResolveIncidentsBatchOperation(
+            Map.of(processInstanceKey, Set.of(incidentKey)), claims);
 
-    // then we have executed and completed event
+    // then we have completed event
     assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
+            RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
         .extracting(Record::getIntent)
-        .containsSequence(
-            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
+        .containsSequence(BatchOperationIntent.COMPLETED);
 
     // and a follow op up command to execute again
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have a resolve incident command
     assertThat(RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey)).isEmpty();
-    assertThat(RecordingExporter.incidentRecords().withRecordKey(incidentKey))
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .withRecordKey(incidentKey)
+                .limit(r -> r.getIntent() == IncidentIntent.RESOLVE))
         .extracting(Record::getIntent)
         .containsSequence(IncidentIntent.RESOLVE);
   }

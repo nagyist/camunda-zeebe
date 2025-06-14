@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {
   render,
   screen,
@@ -151,7 +151,7 @@ describe('VariablePanel', () => {
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    init(statistics);
+    init('process-instance', statistics);
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -161,22 +161,31 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     jest.clearAllMocks();
     jest.clearAllTimers();
-    await new Promise(process.nextTick);
   });
 
   it('should render variables', async () => {
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    mockFetchVariables().withSuccess([createVariable()]);
 
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
   });
 
   it('should add new variable', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -244,6 +253,7 @@ describe('VariablePanel', () => {
         name: /save variable/i,
       }),
     );
+
     expect(
       screen.queryByRole('button', {
         name: /add variable/i,
@@ -293,10 +303,12 @@ describe('VariablePanel', () => {
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
       flowNodeInstanceId: '2251799813686104',
-      instanceCount: 1,
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -362,7 +374,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'TEST_FLOW_NODE',
         flowNodeInstanceId: '2',
@@ -388,7 +400,12 @@ describe('VariablePanel', () => {
   });
 
   it('should display validation error if backend validation fails while adding variable', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    mockFetchVariables().withSuccess([createVariable()]);
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -485,7 +502,10 @@ describe('VariablePanel', () => {
   it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -565,33 +585,22 @@ describe('VariablePanel', () => {
 
   it('should select correct tab when navigating between flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
+    mockFetchVariables().withSuccess([createVariable()]);
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessDefinitionXml().withSuccess('');
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'Activity_0qtp1k6',
         flowNodeInstanceId: '2',
@@ -607,7 +616,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockFetchProcessDefinitionXml().withSuccess('');
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'Event_0bonl61',
       });
@@ -625,7 +634,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.clearSelection();
     });
 
@@ -645,7 +654,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'StartEvent_1',
       });

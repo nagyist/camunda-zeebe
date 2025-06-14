@@ -71,9 +71,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   const [apiCall, { loading, error }] = useApiCall(createAuthorization, {
     suppressErrorNotification: true,
   });
-  const [ownerType, setOwnerType] = useState<OwnerType>(
-    isOIDC ? OwnerType.MAPPING : OwnerType.USER,
-  );
+  const [ownerType, setOwnerType] = useState<OwnerType>(OwnerType.USER);
   const [ownerId, setOwnerId] = useState("");
   const [resourceId, setResourceId] = useState("");
   const [resourceType, setResourceType] =
@@ -131,8 +129,11 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           label={t("selectOwnerType")}
           titleText={t("ownerType")}
           items={ownerTypeItems.filter((ownerType) => {
-            const excludedType = isOIDC ? OwnerType.USER : OwnerType.MAPPING;
-            return ownerType !== excludedType;
+            const excludedType = isOIDC
+              ? []
+              : [OwnerType.MAPPING, OwnerType.CLIENT];
+
+            return !excludedType.includes(ownerType);
           })}
           onChange={(item: { selectedItem: OwnerType }) => {
             setOwnerId("");
@@ -144,7 +145,11 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           selectedItem={ownerType}
         />
         <TextFieldContainer>
-          <OwnerSelection type={ownerType} onChange={setOwnerId} />
+          <OwnerSelection
+            type={ownerType}
+            ownerId={ownerId}
+            onChange={setOwnerId}
+          />
         </TextFieldContainer>
       </Row>
       <Divider />
@@ -178,7 +183,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           <PermissionsSectionLabel>
             <Translate i18nKey="selectPermission">
               Select at least one permission. Visit{" "}
-              <DocumentationLink path="/concepts/authorizations/" withIcon>
+              <DocumentationLink path="" withIcon>
                 authorizations
               </DocumentationLink>{" "}
               for a full overview.

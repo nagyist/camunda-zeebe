@@ -68,6 +68,7 @@ public class CamundaOidcUserServiceTest {
                     .withUsername("test")
                     .withRoles(List.of(roleR1))
                     .withAuthorizedApplications(List.of("*"))
+                    .withGroups(List.of("G1"))
                     .withTenants(List.of(new TenantDTO(1L, "tenant-1", "Tenant One", "desc")))
                     .build()));
 
@@ -82,15 +83,15 @@ public class CamundaOidcUserServiceTest {
     assertThat(camundaUser.getMappingIds()).isEqualTo(Set.of("test-id", "test-id-2"));
     final AuthenticationContext authenticationContext = camundaUser.getAuthenticationContext();
     assertThat(authenticationContext.roles()).containsAll(Set.of(roleR1));
-    assertThat(authenticationContext.groups()).isEmpty();
     assertThat(authenticationContext.tenants()).hasSize(1);
     assertThat(authenticationContext.tenants().get(0).tenantId()).isEqualTo("tenant-1");
+    assertThat(authenticationContext.groups()).containsExactly("G1");
 
     assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
   }
 
   @Test
-  public void applicationIdIsSetInAuthContext() {
+  public void clientIdIsSetInAuthContext() {
     // given
     final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
 
@@ -99,14 +100,14 @@ public class CamundaOidcUserServiceTest {
             new OAuthContext(
                 Set.of("test-id", "test-id-2"),
                 new AuthenticationContext.AuthenticationContextBuilder()
-                    .withApplicationId("blah")
+                    .withClientId("blah")
                     .build()));
 
     final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
     final var camundaUser = (CamundaOidcUser) oidcUser;
     final var authenticationContext = camundaUser.getAuthenticationContext();
 
-    assertThat(authenticationContext.applicationId()).isEqualTo("blah");
+    assertThat(authenticationContext.clientId()).isEqualTo("blah");
     assertThat(authenticationContext.username()).isNull();
   }
 

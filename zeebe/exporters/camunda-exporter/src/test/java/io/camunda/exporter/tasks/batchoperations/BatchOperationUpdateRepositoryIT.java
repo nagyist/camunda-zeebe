@@ -25,11 +25,13 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
@@ -190,14 +192,14 @@ abstract class BatchOperationUpdateRepositoryIT {
 
   @Nested
   @Order(2)
-  final class GetFinishedOperationsCountTest {
+  final class GetOperationsCountTest {
     @Test
     void shouldReturnEmptyList() {
       // given
       final var repository = createRepository();
 
       // when
-      var operationsAggData = repository.getFinishedOperationsCount(List.of());
+      var operationsAggData = repository.getOperationsCount(List.of());
       // then
       assertThat(operationsAggData)
           .succeedsWithin(REQUEST_TIMEOUT)
@@ -205,7 +207,7 @@ abstract class BatchOperationUpdateRepositoryIT {
           .isEmpty();
 
       // when
-      operationsAggData = repository.getFinishedOperationsCount(null);
+      operationsAggData = repository.getOperationsCount(null);
       // then
       assertThat(operationsAggData)
           .succeedsWithin(REQUEST_TIMEOUT)
@@ -224,16 +226,22 @@ abstract class BatchOperationUpdateRepositoryIT {
       createOperationEntity("444", "3", OperationState.COMPLETED);
       createOperationEntity("555", "4", OperationState.LOCKED);
       createOperationEntity("666", "5", OperationState.SENT);
-      final var expected = List.of(new OperationsAggData("1", 2), new OperationsAggData("2", 1));
+
+      final var expected =
+          List.of(
+              new OperationsAggData("1", Map.of("COMPLETED", 1L, "FAILED", 1L)),
+              new OperationsAggData("2", Map.of("COMPLETED", 1L)),
+              new OperationsAggData("4", Map.of("LOCKED", 1L)),
+              new OperationsAggData("5", Map.of("SENT", 1L)));
 
       // when
-      final var documents = repository.getFinishedOperationsCount(List.of("1", "2", "4", "5"));
+      final var documents = repository.getOperationsCount(List.of("1", "2", "4", "5"));
 
       // then
       assertThat(documents)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(OperationsAggData.class))
-          .hasSize(2)
+          .hasSize(4)
           .isEqualTo(expected);
     }
 
@@ -261,19 +269,24 @@ abstract class BatchOperationUpdateRepositoryIT {
     public void shouldUpdateBatchOperations() throws PersistenceException {
       // given
       final var repository = createRepository();
-      createBatchOperationEntity("1", 2);
-      createBatchOperationEntity("2", 100);
-      createBatchOperationEntity("3", 55);
+      createBatchOperationEntity("1", 2, BatchOperationState.COMPLETED);
+      createBatchOperationEntity("2", 2, BatchOperationState.ACTIVE);
+      createBatchOperationEntity("3", 100, BatchOperationState.ACTIVE);
+      createBatchOperationEntity("4", 55, BatchOperationState.ACTIVE);
 
       // when
       final var updated =
-          repository.bulkUpdate(List.of(new DocumentUpdate("1", 2), new DocumentUpdate("2", 50)));
+          repository.bulkUpdate(
+              List.of(
+                  new DocumentUpdate("1", 2, 0, 2, 2),
+                  new DocumentUpdate("2", 2, 0, 2, 2),
+                  new DocumentUpdate("3", 50, 0, 50, 50)));
 
       // then
       assertThat(updated)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.type(Integer.class))
-          .isEqualTo(2);
+          .isEqualTo(3);
 
       final BatchOperationEntity batchOperationEntity1 = getBatchOperationEntity("1");
       assertThat(batchOperationEntity1.getEndDate()).isNotNull();
@@ -283,17 +296,27 @@ abstract class BatchOperationUpdateRepositoryIT {
 
       final BatchOperationEntity batchOperationEntity2 = getBatchOperationEntity("2");
       assertThat(batchOperationEntity2.getEndDate()).isNull();
-      assertThat(batchOperationEntity2.getOperationsFinishedCount()).isEqualTo(50);
+      assertThat(batchOperationEntity2.getOperationsFinishedCount())
+          .isEqualTo(batchOperationEntity2.getOperationsTotalCount())
+          .isEqualTo(2);
 
       final BatchOperationEntity batchOperationEntity3 = getBatchOperationEntity("3");
       assertThat(batchOperationEntity3.getEndDate()).isNull();
-      assertThat(batchOperationEntity3.getOperationsFinishedCount()).isEqualTo(0);
+      assertThat(batchOperationEntity3.getOperationsFinishedCount()).isEqualTo(50);
+
+      final BatchOperationEntity batchOperationEntity4 = getBatchOperationEntity("4");
+      assertThat(batchOperationEntity4.getEndDate()).isNull();
+      assertThat(batchOperationEntity4.getOperationsFinishedCount()).isEqualTo(0);
     }
 
     private BatchOperationEntity createBatchOperationEntity(
-        final String id, final int operationsTotalCount) throws PersistenceException {
+        final String id, final int operationsTotalCount, final BatchOperationState state)
+        throws PersistenceException {
       final var batchOperationEntity =
-          new BatchOperationEntity().setId(id).setOperationsTotalCount(operationsTotalCount);
+          new BatchOperationEntity()
+              .setId(id)
+              .setOperationsTotalCount(operationsTotalCount)
+              .setState(state);
       indexBatchOperation(batchOperationEntity);
       return batchOperationEntity;
     }

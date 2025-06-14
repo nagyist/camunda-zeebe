@@ -43,8 +43,14 @@ public class IncidentControllerTest extends RestControllerTest {
   @Test
   void shouldResolveIncident() {
     // given
-    when(incidentServices.resolveIncident(anyLong()))
+    when(incidentServices.resolveIncident(anyLong(), any()))
         .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
+
+    final String request =
+        """
+            {
+              "operationReference": 12345678
+            }""";
 
     // when/then
     webClient
@@ -52,17 +58,18 @@ public class IncidentControllerTest extends RestControllerTest {
         .uri(INCIDENT_BASE_URL + "/1/resolution")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(incidentServices).resolveIncident(1L);
+    Mockito.verify(incidentServices).resolveIncident(1L, 12345678L);
   }
 
   @Test
   void shouldReturnNotFoundIfIncidentNotFound() {
     // given
-    Mockito.when(incidentServices.resolveIncident(anyLong()))
+    Mockito.when(incidentServices.resolveIncident(anyLong(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -97,6 +104,6 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody);
 
-    Mockito.verify(incidentServices).resolveIncident(1L);
+    Mockito.verify(incidentServices).resolveIncident(1L, null);
   }
 }

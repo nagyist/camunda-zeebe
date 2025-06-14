@@ -49,6 +49,12 @@ public final class ContainerRuntimePropertiesUtil {
 
   private static final String VERSION_FORMAT = "%d.%d.%d";
 
+  /**
+   * Format string for versions that include additional labels (e.g., alpha, rc). This is used to
+   * format semantic versions with non-SNAPSHOT labels.
+   */
+  private static final String LABELED_VERSION_FORMAT = "%d.%d.%d%s";
+
   private final String camundaVersion;
   private final String camundaDockerImageName;
   private final String camundaDockerImageVersion;
@@ -61,34 +67,34 @@ public final class ContainerRuntimePropertiesUtil {
         getLatestReleasedVersion(
             properties,
             PROPERTY_NAME_CAMUNDA_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
     elasticsearchVersion =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_ELASTICSEARCH_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_ELASTICSEARCH_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_VERSION);
 
     camundaDockerImageName =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME);
     camundaDockerImageVersion =
         getLatestReleasedVersion(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
 
     connectorsDockerImageName =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME);
     connectorsDockerImageVersion =
         getLatestReleasedVersion(
             properties,
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
   }
 
   private static String getLatestReleasedVersion(
@@ -123,11 +129,12 @@ public final class ContainerRuntimePropertiesUtil {
     if (label == null) {
       // release version
       return String.format(VERSION_FORMAT, major, minor, patch);
-
+    } else if (!label.contains(SNAPSHOT_VERSION)) {
+      // alpha, rc or other labeled version
+      return String.format(LABELED_VERSION_FORMAT, major, minor, patch, label);
     } else if (patch == 0) {
       // current dev version
       return SNAPSHOT_VERSION;
-
     } else {
       // maintenance dev version
       final int previousPatchVersion = patch - 1;

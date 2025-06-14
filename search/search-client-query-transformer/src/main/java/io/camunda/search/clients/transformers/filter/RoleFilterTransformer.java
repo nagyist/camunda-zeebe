@@ -28,7 +28,6 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
   @Override
   public SearchQuery toSearchQuery(final RoleFilter filter) {
     return and(
-        filter.roleKey() == null ? null : term(RoleIndex.KEY, filter.roleKey()),
         filter.roleId() == null ? null : term(RoleIndex.ROLE_ID, filter.roleId()),
         filter.name() == null ? null : term(RoleIndex.NAME, filter.name()),
         filter.description() == null ? null : term(RoleIndex.DESCRIPTION, filter.description()),
@@ -47,6 +46,11 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
                 : hasChildQuery(
                     IdentityJoinRelationshipType.MEMBER.getType(),
                     stringTerms(RoleIndex.MEMBER_ID, filter.memberIds())),
+        filter.childMemberType() == null
+            ? null
+            : hasChildQuery(
+                IdentityJoinRelationshipType.MEMBER.getType(),
+                term(RoleIndex.MEMBER_TYPE, filter.childMemberType().name())),
         filter.roleIds() == null
             ? null
             : filter.roleIds().isEmpty()

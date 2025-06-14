@@ -10,8 +10,6 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
-import io.camunda.exporter.rdbms.cache.CachedProcessEntity;
-import io.camunda.exporter.rdbms.cache.ExporterEntityCache;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
@@ -27,12 +25,12 @@ import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.RoleExportHandler;
+import io.camunda.exporter.rdbms.handlers.SequenceFlowExportHandler;
 import io.camunda.exporter.rdbms.handlers.TenantExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
-import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCompletedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
@@ -42,6 +40,9 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModifica
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
@@ -92,7 +93,7 @@ public class RdbmsExporterWrapper implements Exporter {
             .rdbmsWriter(rdbmsWriter);
 
     processCache =
-        new ExporterEntityCache<>(
+        new ExporterEntityCacheImpl<>(
             readMaxCacheSize(context),
             new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", context.getMeterRegistry()));
@@ -239,13 +240,17 @@ public class RdbmsExporterWrapper implements Exporter {
             processCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
-        new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter()));
+        new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter(), processCache));
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
     builder.withHandler(
-        ValueType.USER_TASK, new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter()));
+        ValueType.USER_TASK,
+        new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter(), processCache));
     builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriter.getFormWriter()));
     builder.withHandler(ValueType.JOB, new JobExportHandler(rdbmsWriter.getJobWriter()));
+    builder.withHandler(
+        ValueType.PROCESS_INSTANCE,
+        new SequenceFlowExportHandler(rdbmsWriter.getSequenceFlowWriter()));
   }
 
   private static void createBatchOperationHandlers(
@@ -256,9 +261,6 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
         new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
-    builder.withHandler(
-        ValueType.BATCH_OPERATION_EXECUTION,
-        new BatchOperationCompletedExportHandler(rdbmsWriter.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         new BatchOperationLifecycleManagementExportHandler(rdbmsWriter.getBatchOperationWriter()));

@@ -29,9 +29,10 @@ public class InstallRequestHandlingTest {
           3,
           3,
           config -> {
-            config.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(16));
-            config.getData().setLogSegmentSize(DataSize.ofKilobytes(16));
+            config.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
+            config.getData().setLogSegmentSize(DataSize.ofKilobytes(32));
             config.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
+            config.getExperimental().getFeatures().setEnableIdentitySetup(false);
           });
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 

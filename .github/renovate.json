@@ -11,8 +11,8 @@
     "main"
   ],
   "dependencyDashboard": true,
-  "prConcurrentLimit": 30,
-  "prHourlyLimit": 2,
+  "prConcurrentLimit": 50,
+  "prHourlyLimit": 10,
   "updateNotScheduled": false,
   "schedule": [
     "at any time"
@@ -35,7 +35,20 @@
       "automerge"
     ]
   },
+  "hostRules": [
+    {
+      "timeout": 10000
+    }
+  ],
   "packageRules": [
+    {
+      "matchDatasources": [
+        "maven"
+      ],
+      "registryUrls": [
+        "https://repo.maven.apache.org/maven2"
+      ]
+    },
     {
       "description": "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
       "separateMinorPatch": true,

@@ -11,7 +11,6 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {multiInstanceProcess} from 'modules/testUtils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {FlowNodeInstancesTree} from '.';
@@ -20,7 +19,6 @@ import {
   flowNodeInstances,
   mockFlowNodeInstance,
   multipleFlowNodeInstances,
-  processId,
   processInstanceId,
   multipleSubprocessesWithNoRunningScopeMock,
   multipleSubprocessesWithOneRunningScopeMock,
@@ -30,7 +28,6 @@ import {
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {
@@ -45,7 +42,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       multiInstanceProcessInstance,
     );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockFetchProcessXML().withSuccess(multiInstanceProcess);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
   });
 
@@ -59,10 +55,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       multipleSubprocessesWithNoRunningScopeMock.firstLevel,
     );
 
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
@@ -106,6 +99,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           parentScopeIds: generateParentScopeIds(
             mockNestedSubProcessBusinessObjects,
             'user_task',
+            'nested_sub_process',
           ),
         },
       });
@@ -120,6 +114,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           parentScopeIds: generateParentScopeIds(
             mockNestedSubProcessBusinessObjects,
             'user_task',
+            'nested_sub_process',
           ),
         },
       });
@@ -231,8 +226,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove two add modification flow nodes', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
-
     processInstanceDetailsStore.init({id: processInstanceId});
 
     mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1!);
@@ -315,11 +308,13 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
   });
 
-  it.skip('should show and remove one cancel modification flow nodes', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
+  it('should show and remove one cancel modification flow nodes', async () => {
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
     mockFetchFlowNodeInstances().withSuccess(multipleFlowNodeInstances);
 
     await waitFor(() => {
@@ -344,7 +339,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     act(() => {
       modificationsStore.enableModificationMode();
-      cancelAllTokens('peterJoin', 2, 2, {});
+      cancelAllTokens('peterJoin', 0, 0, {});
     });
 
     expect(
@@ -377,10 +372,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       multipleSubprocessesWithOneRunningScopeMock.firstLevel,
     );
 
-    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();

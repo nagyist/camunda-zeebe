@@ -8,24 +8,28 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.BatchOperationServices;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateEnum;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -70,22 +74,74 @@ class BatchOperationControllerTest extends RestControllerTest {
           }""");
   }
 
-  @Test
-  void shouldSearchBatchOperations() {
-    final var searchQueryResult = new BatchOperationSearchQueryResult();
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    basicStringOperationTestCases(
+        streamBuilder,
+        "batchOperationId",
+        ops ->
+            new io.camunda.search.filter.BatchOperationFilter.Builder()
+                .batchOperationIdOperations(ops)
+                .build());
+    customOperationTestCases(
+        streamBuilder,
+        "operationType",
+        ops ->
+            new io.camunda.search.filter.BatchOperationFilter.Builder()
+                .operationTypeOperations(ops)
+                .build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE))),
+            List.of(Operation.neq(String.valueOf(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE))),
+            List.of(
+                Operation.in(
+                    String.valueOf(BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE),
+                    String.valueOf(BatchOperationTypeEnum.CANCEL_PROCESS_INSTANCE)),
+                Operation.like("act"))),
+        true);
+    customOperationTestCases(
+        streamBuilder,
+        "state",
+        ops ->
+            new io.camunda.search.filter.BatchOperationFilter.Builder()
+                .stateOperations(ops)
+                .build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(BatchOperationStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(BatchOperationStateEnum.COMPLETED))),
+            List.of(
+                Operation.in(
+                    String.valueOf(BatchOperationStateEnum.COMPLETED),
+                    String.valueOf(BatchOperationStateEnum.ACTIVE)),
+                Operation.like("act"))),
+        true);
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchBatchOperationsWithAdvancedFilter(
+      final String filterString, final io.camunda.search.filter.BatchOperationFilter filter) {
+    // given
     final var entity = getBatchOperationEntity("1");
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+
+    // when / then
     when(batchOperationServices.search(any(BatchOperationQuery.class)))
         .thenReturn(new SearchQueryResult(1, List.of(entity), null, null));
-
-    final var searchQuery =
-        new BatchOperationSearchQuery()
-            .filter(new BatchOperationFilter().state(BatchOperationFilter.StateEnum.ACTIVE));
 
     webClient
         .post()
         .uri("/v2/batch-operations/search")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(searchQuery)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk()
@@ -105,6 +161,8 @@ class BatchOperationControllerTest extends RestControllerTest {
             }],
             "page":{"totalItems":1,"firstSortValues":[],"lastSortValues":[]}
            }""");
+
+    verify(batchOperationServices).search(new BatchOperationQuery.Builder().filter(filter).build());
   }
 
   @Test
@@ -115,24 +173,24 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/cancel", batchOperationId)
+        .uri("/v2/batch-operations/{key}/cancellation", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   @Test
-  void shouldPauseBatchOperation() {
+  void shouldSuspendBatchOperation() {
     final var batchOperationId = "1";
-    when(batchOperationServices.pause(batchOperationId))
+    when(batchOperationServices.suspend(batchOperationId))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/pause", batchOperationId)
+        .uri("/v2/batch-operations/{key}/suspension", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   @Test
@@ -143,48 +201,10 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/resume", batchOperationId)
+        .uri("/v2/batch-operations/{key}/resumption", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
-  }
-
-  @Test
-  void shouldReturnBatchOperationItems() {
-    final var batchOperationId = "1";
-
-    final var batchOperationItem =
-        new BatchOperationEntity.BatchOperationItemEntity(
-            batchOperationId,
-            11L,
-            12L,
-            BatchOperationItemState.FAILED,
-            OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
-            "error");
-    when(batchOperationServices.getItemsById(batchOperationId))
-        .thenReturn(List.of(batchOperationItem));
-
-    webClient
-        .get()
-        .uri("/v2/batch-operations/{batchOperationKey}/items", batchOperationId)
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-                        {"items":[
-                            {
-                                "batchOperationId":"1",
-                                "itemKey":"11",
-                                "processInstanceKey":"12",
-                                "state":"FAILED",
-                                "processedDate":"2025-03-18T10:57:44.000+01:00",
-                                "errorMessage": "error"
-                            }
-                        ]}
-                      """);
+        .isNoContent();
   }
 
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationId) {

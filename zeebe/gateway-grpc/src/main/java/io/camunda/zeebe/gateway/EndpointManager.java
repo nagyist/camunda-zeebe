@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway;
 import io.atomix.utils.net.Address;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.auth.Authorization;
-import io.camunda.zeebe.auth.ClaimTransformer;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -75,6 +74,7 @@ import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -494,9 +494,7 @@ public final class EndpointManager {
     // retrieve the user claims from the context and add them to the authorization if present
     final Map<String, Object> userClaims =
         Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);
-    if (userClaims != null) {
-      userClaims.forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
-    }
+    claims.put(Authorization.USER_TOKEN_CLAIMS, userClaims);
 
     // retrieve the username from the context and add it to the authorization if present
     final String username = Context.current().call(AuthenticationHandler.USERNAME::get);
@@ -504,10 +502,16 @@ public final class EndpointManager {
       claims.put(Authorization.AUTHORIZED_USERNAME, username);
     }
 
-    // retrieve the application id from the context and add it to the authorization if present
-    final String applicationId = Context.current().call(AuthenticationHandler.APPLICATION_ID::get);
-    if (applicationId != null) {
-      claims.put(Authorization.AUTHORIZED_APPLICATION_ID, applicationId);
+    // retrieve the client id from the context and add it to the authorization if present
+    final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
+    if (clientId != null) {
+      claims.put(Authorization.AUTHORIZED_CLIENT_ID, clientId);
+    }
+
+    final List<String> groupsClaims =
+        Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+    if (groupsClaims != null) {
+      claims.put(Authorization.USER_GROUPS_CLAIMS, groupsClaims);
     }
 
     brokerRequest.setAuthorization(claims);

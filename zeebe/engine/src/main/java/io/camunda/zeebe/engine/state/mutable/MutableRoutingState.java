@@ -21,12 +21,21 @@ public interface MutableRoutingState extends RoutingState {
   /**
    * Creates a new desired state by copying the current state and using the given partitions.
    * Message correlation is not modified and only copied from the current state.
+   *
+   * @param partitions the set of partition IDs to be used as the desired state. The set must
+   *     include current partitions and the new partitions.
+   * @param key the event key associated with this scaling operation, which will be stored for
+   *     tracking the scaling history via {@link RoutingState#bootstrappedAt(int)}
    */
-  void setDesiredPartitions(Set<Integer> partitions);
+  void setDesiredPartitions(Set<Integer> partitions, long key);
 
   /**
-   * Copies the desired state to the current state. The desired state must be set via {@link
-   * #setDesiredPartitions(Set)} before calling this method.
+   * Move {@param partitionId} from the desired set of partition to the current partitions. The
+   * partitions must be activated in order as the partitions must be contiguous.
+   *
+   * @param partitionId the partition to move
+   * @return true if the partition was the last remaining partition in order to arrive at desired
+   *     state, false otherwise
    */
-  void arriveAtDesiredState();
+  boolean activatePartition(int partitionId);
 }

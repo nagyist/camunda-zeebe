@@ -72,7 +72,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: `/identity/concepts/access-control/tenants`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignGroupsModal}
@@ -84,10 +84,10 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
       <EntityList
         data={groups?.items}
         headers={[
-          { header: t("groupId"), key: "groupKey" },
+          { header: t("groupId"), key: "groupId" },
           { header: t("groupName"), key: "name" },
         ]}
-        sortProperty="groupKey"
+        sortProperty="groupId"
         loading={loading}
         addEntityLabel={t("assignGroup")}
         onAddEntity={openAssignModal}

@@ -140,6 +140,9 @@ public class JobController {
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateJob(updateJobRequest.jobKey(), updateJobRequest.changeset()));
+                .updateJob(
+                    updateJobRequest.jobKey(),
+                    updateJobRequest.operationReference(),
+                    updateJobRequest.changeset()));
   }
 }

@@ -8,20 +8,34 @@
 
 import { getEnvBoolean } from "src/configuration/env";
 
-const baseUrl = "/identity";
+const identityPath = "/identity";
 
 const apiBaseUrl = "/v2";
 
-export const isOIDC = getEnvBoolean("IS_OIDC");
+const loginApiUrl = "/login";
+
+export const isOIDC = getEnvBoolean("IS_OIDC", false);
+export const isInternalGroupsEnabled = getEnvBoolean(
+  "INTERNAL_GROUPS_ENABLED",
+  true,
+);
 
 export const docsUrl = "https://docs.camunda.io";
 
 export function getApiBaseUrl() {
-  return getBaseUrl(apiBaseUrl);
+  return getBasePathBeforeIdentity() + apiBaseUrl;
 }
 
-export function getBaseUrl(path = baseUrl) {
+export function getLoginApiUrl() {
+  return getBasePathBeforeIdentity() + loginApiUrl;
+}
+
+export function getBaseUrl() {
+  return getBasePathBeforeIdentity() + identityPath;
+}
+
+export function getBasePathBeforeIdentity(): string {
   const uiPath = window.location.pathname;
-  const endIndex = uiPath.indexOf(baseUrl);
-  return uiPath.substring(0, endIndex) + path;
+  const endIndex = uiPath.indexOf(identityPath);
+  return uiPath.substring(0, endIndex);
 }

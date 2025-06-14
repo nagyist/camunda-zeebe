@@ -6,99 +6,45 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  GetProcessSequenceFlowsResponseBody,
-  GetProcessInstanceCallHierarchyResponseBody,
-  ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/operate';
-import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
-import {RequestHandler, RestRequest, rest} from 'msw';
+import {GetJobsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {RequestHandler, rest} from 'msw';
 
 const mockEndpoints = [
-  rest.get(
-    '/v2/process-instances/:processInstanceKey/sequence-flows',
-    async (req: RestRequest<GetProcessSequenceFlowsResponseBody>, res, ctx) => {
-      const mockResponse: GetProcessSequenceFlowsResponseBody = {
-        items: [
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'Flow_0z4mequ',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_0oxsuty',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_12gxvr0',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_1gvaaro',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_1j24jks',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_1ti40d3',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-        ],
-      };
+  rest.post('/v2/jobs/search', async (req, res, ctx) => {
+    const mockResponse: GetJobsResponseBody = {
+      items: [
+        {
+          jobKey: '2251799813916032',
+          type: 'task_start_el_1',
+          worker: 'worker',
+          state: 'CREATED',
+          kind: 'EXECUTION_LISTENER',
+          listenerEventType: 'START',
+          retries: 3,
+          isDenied: false,
+          deniedReason: 'deniedReason',
+          hasFailedWithRetriesLeft: false,
+          errorCode: 'errorCode',
+          errorMessage: 'errorMessage',
+          deadline: 'deadline',
+          endTime: '2024-05-27T07:42:43.705+0000',
+          processDefinitionId: 'processDefinitionId',
+          processDefinitionKey: 'processDefinitionKey',
+          processInstanceKey: 'processInstanceKey',
+          elementId: 'elementId',
+          elementInstanceKey: 'elementInstanceKey',
+          tenantId: 'tenantId',
+        },
+      ],
+      page: {
+        totalItems: 1,
+        firstSortValues: [0, 1],
+        lastSortValues: [0, 1],
+      },
+    };
 
-      return res(ctx.json(mockResponse));
-    },
-  ),
-  rest.get(
-    '/v2/process-instances/:processInstanceKey',
-    async (req, res, ctx) => {
-      const mockResponse: ProcessInstance = {
-        processDefinitionId: 'complexProcess',
-        processDefinitionName: 'complexProcess',
-        processDefinitionVersion: 156,
-        startDate: '2025-04-17T11:20:09.654Z',
-        state: ProcessInstanceState.ACTIVE,
-        hasIncident: true,
-        tenantId: '\u003Cdefault\u003E',
-        processInstanceKey: '2251799814752788',
-        processDefinitionKey: '2251799814751761',
-      };
-
-      return res(ctx.json(mockResponse));
-    },
-  ),
-  rest.get(
-    '/v2/process-instances/:processInstanceKey/call-hierarchy',
-    async (req, res, ctx) => {
-      const mockResponse: GetProcessInstanceCallHierarchyResponseBody = {
-        items: [
-          {
-            processInstanceKey: '2251799833223965',
-            processDefinitionName: 'Call Activity Process',
-          },
-          {
-            processInstanceKey: '2251799833223971',
-            processDefinitionName: 'called-process',
-          },
-        ],
-      };
-
-      return res(ctx.json(mockResponse));
-    },
-  ),
+    return res(ctx.json(mockResponse));
+  }),
 ];
 
 const handlers: RequestHandler[] = [...mockEndpoints];

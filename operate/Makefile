@@ -21,7 +21,7 @@ env-os-up:
 	&& 	CAMUNDA_OPERATE_TASKLIST_URL="http://localhost:8081" \
       CAMUNDA_OPERATE_DATABASE=opensearch \
       CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test \
-         mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
+         mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth -Dcamunda.operate.zeebe.compatibility.enabled=true
 
 # Look up for users (bender/bender etc) in: https://github.com/rroemhild/docker-test-openldap
 .PHONY: env-ldap-up
@@ -34,7 +34,7 @@ env-ldap-up:
        CAMUNDA_OPERATE_LDAP_MANAGERDN=cn=admin,dc=planetexpress,dc=com \
        CAMUNDA_OPERATE_LDAP_MANAGERPASSWORD=GoodNewsEveryone \
        CAMUNDA_OPERATE_LDAP_USERSEARCHFILTER=uid={0} \
-	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,ldap-auth
+	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,ldap-auth -Dcamunda.operate.zeebe.compatibility.enabled=true
 
 # Set the env var CAMUNDA_OPERATE_AUTH0_CLIENTSECRET in your shell please, eg: export CAMUNDA_OPERATE_AUTH0_CLIENTSECRET=<client-secret>
 .PHONY: env-sso-up
@@ -51,7 +51,7 @@ env-sso-up:
        CAMUNDA_OPERATE_AUTH0_ORGANIZATION=6ff582aa-a62e-4a28-aac7-4d2224d8c58a \
        CAMUNDA_OPERATE_AUTH0_ORGANIZATIONSKEY=https://camunda.com/orgs \
        CAMUNDA_OPERATE_CLOUD_CONSOLE_URL=https://console.cloud.ultrawombat.com/ \
-	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,sso-auth
+	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,sso-auth -Dcamunda.operate.zeebe.compatibility.enabled=true
 
 .PHONY: env-identity-up
 env-identity-up:
@@ -88,7 +88,7 @@ env-clean: env-down
 
 .PHONY: start-e2e
 start-e2e:
-	curl --request DELETE --url http://localhost:9200/e2e* \
+	curl --request DELETE --url http://localhost:9200/e2e* || true \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_OPERATE_IMPORTERENABLED=false \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
@@ -99,6 +99,8 @@ start-e2e:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX=e2eoperate \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false \
 	ZEEBE_BROKER_BACKPRESSURE_ENABLED=false \
+	ZEEBE_BROKER_NETWORK_COMMANDAPI_PORT=26505 \
+	ZEEBE_BROKER_NETWORK_INTERNALAPI_PORT=26504 \
 	ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503 \
 	CAMUNDA_DATABASE_INDEXPREFIX=e2eoperate \
 	CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=localhost:26503 \

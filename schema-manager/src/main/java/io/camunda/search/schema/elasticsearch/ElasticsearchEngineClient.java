@@ -43,6 +43,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
+import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
@@ -55,11 +56,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchEngineClient implements SearchEngineClient {
-  private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchEngineClient.class);
+  private static final SuppressLogger LOG =
+      new SuppressLogger(LoggerFactory.getLogger(ElasticsearchEngineClient.class));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
   private final ElasticsearchClient client;
@@ -194,7 +195,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final var errMsg =
           String.format(
               "settings PUT failed for the following indices [%s]",
-              utils.listIndices(indexDescriptors));
+              utils.listIndicesByAlias(indexDescriptors));
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
@@ -336,7 +337,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
                 deserializeJson(
                     co.elastic.clients.elasticsearch.indices.IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
-        .index(utils.listIndices(indexDescriptors))
+        .index(utils.listIndicesByAlias(indexDescriptors))
         .settings(settings)
         .build();
   }
@@ -427,7 +428,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     return new PutMappingRequest.Builder()
-        .index(indexDescriptor.getFullQualifiedName())
+        .index(indexDescriptor.getAlias())
         .properties(elsProperties)
         .build();
   }

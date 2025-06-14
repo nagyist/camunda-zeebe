@@ -238,8 +238,8 @@ describe('InstanceHeader', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should show spinner when operation is applied', async () => {
-    mockFetchCallHierarchy().withSuccess({items: []});
+  it('should show spinner when operation is applied', async () => {
+    mockFetchCallHierarchy().withSuccess([]);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withSuccess(mockOperationCreated);
@@ -263,6 +263,7 @@ describe('InstanceHeader', () => {
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
     await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
@@ -276,7 +277,7 @@ describe('InstanceHeader', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should show spinner when variables is added', async () => {
+  it('should show spinner when variables is added', async () => {
     jest.useFakeTimers();
     const mockVariable = createVariable();
 
@@ -329,8 +330,8 @@ describe('InstanceHeader', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should remove spinner when operation fails', async () => {
-    mockFetchCallHierarchy().withSuccess({items: []});
+  it('should remove spinner when operation fails', async () => {
+    mockFetchCallHierarchy().withSuccess([]);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withDelayedServerError();
@@ -344,6 +345,9 @@ describe('InstanceHeader', () => {
       />,
       {wrapper: Wrapper},
     );
+
+    jest.useFakeTimers();
+
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
@@ -359,6 +363,9 @@ describe('InstanceHeader', () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should display error notification when operation fails', async () => {
@@ -486,6 +493,54 @@ describe('InstanceHeader', () => {
     expect(
       screen.getByRole('button', {name: /Delete Instance/}),
     ).toBeInTheDocument();
+  });
+
+  it.only('should redirect and show notification when "Delete Instance" is clicked', async () => {
+    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    authenticationStore.setUser({
+      displayName: 'demo',
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+      tenants: [],
+    });
+
+    const {user} = render(
+      <ProcessInstanceHeader
+        processInstance={{...mockProcessInstance, state: 'TERMINATED'}}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    processInstanceDetailsStore.init({
+      id: mockCanceledInstance.id,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton'),
+    );
+
+    await user.click(screen.getByRole('button', {name: /Delete Instance/}));
+
+    mockApplyOperation().withSuccess(mockOperationCreated);
+
+    await user.click(screen.getByRole('button', {name: /danger delete/i}));
+
+    await waitFor(() =>
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Instance deleted',
+        isDismissable: true,
+      }),
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
   });
 
   it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {

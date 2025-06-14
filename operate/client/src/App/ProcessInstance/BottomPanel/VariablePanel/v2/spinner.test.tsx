@@ -6,10 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -39,11 +40,6 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -140,13 +136,15 @@ describe('VariablePanel spinner', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    init(statistics);
+    init('process-instance', statistics);
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -163,9 +161,14 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
@@ -190,9 +193,12 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
-    render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     mockFetchVariables().withDelay([createVariable()]);
 
     act(() => {
@@ -213,10 +219,14 @@ describe('VariablePanel spinner', () => {
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     act(() => {

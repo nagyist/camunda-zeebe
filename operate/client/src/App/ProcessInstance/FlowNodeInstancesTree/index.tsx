@@ -65,6 +65,8 @@ const getFilteredVisibleChildPlaceholders = ({
     id,
     flowNodeId,
     businessObjects,
+    processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
+    processInstanceDetailsStore.state.processInstance?.id,
     isPlaceholder,
   );
 };
@@ -153,6 +155,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         hasChildPlaceholders(
           flowNodeInstance.id,
           processInstanceXmlData.businessObjects,
+          processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
+          processInstanceDetailsStore.state.processInstance?.id,
         )
       : isFoldable;
 
@@ -171,6 +175,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         appendExpandedFlowNodeInstanceIds(
           flowNodeInstance.id,
           processInstanceXmlData.businessObjects,
+          processInstanceDetailsStore.state.processInstance?.bpmnProcessId,
+          processInstanceDetailsStore.state.processInstance?.id,
         );
       }
     };
@@ -227,13 +233,13 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         value={flowNodeInstance.id}
         aria-label={nodeName}
         renderIcon={() => {
-          return businessObject !== undefined ? (
+          return (
             <FlowNodeIcon
               flowNodeInstanceType={flowNodeInstance.type}
               diagramBusinessObject={businessObject}
               hasLeftMargin={!hasChildren}
             />
-          ) : undefined;
+          );
         }}
         onSelect={() => {
           if (

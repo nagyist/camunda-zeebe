@@ -6,9 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Page, Locator } from "@playwright/test";
+import { Page, Locator, expect } from "@playwright/test";
 import { Paths } from "../utils/paths";
 import { relativizePath } from "../utils/relativizePaths";
+import { waitForItemInList } from "../utils/waitForItemInList";
 
 export class UsersPage {
   private page: Page;
@@ -37,6 +38,7 @@ export class UsersPage {
   readonly closeDeleteUserModal: Locator;
   readonly deleteUserModalCancelButton: Locator;
   readonly deleteUserModalDeleteButton: Locator;
+  readonly emptyState: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -134,9 +136,51 @@ export class UsersPage {
         name: /delete user/i,
       },
     );
+    this.emptyState = page.getByText("No users created yet");
   }
 
   async navigateToUsers() {
     await this.page.goto(relativizePath(Paths.users()));
+  }
+
+  async createUser(user: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+  }) {
+    await this.createUserButton.click();
+    await expect(this.createUserModal).toBeVisible();
+    await this.createUsernameField.fill(user.username);
+    await this.createNameField.fill(user.name);
+    await this.createEmailField.fill(user.email);
+    await this.createPasswordField.fill(user.password);
+    await this.createRepeatPasswordField.fill(user.password);
+    await this.createUserModalCreateButton.click();
+    await expect(this.createUserModal).not.toBeVisible();
+
+    const item = this.usersList.getByRole("cell", {
+      name: user.email,
+    });
+
+    await waitForItemInList(this.page, item, {
+      emptyStateLocator: this.emptyState,
+    });
+  }
+
+  async deleteUser(name) {
+    await this.deleteUserButton(name).click();
+    await expect(this.deleteUserModal).toBeVisible();
+    await this.deleteUserModalDeleteButton.click();
+    await expect(this.deleteUserModal).not.toBeVisible();
+
+    const item = this.usersList.getByRole("cell", {
+      name,
+    });
+
+    await waitForItemInList(this.page, item, {
+      shouldBeVisible: false,
+      emptyStateLocator: this.emptyState,
+    });
   }
 }

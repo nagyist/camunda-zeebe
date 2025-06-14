@@ -7,7 +7,12 @@
  */
 
 import {Route} from '@playwright/test';
-import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {
+  GetProcessDefinitionStatisticsResponseBody,
+  GetProcessInstanceCallHierarchyResponseBody,
+  GetProcessSequenceFlowsResponseBody,
+  ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 import {
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
@@ -19,9 +24,12 @@ import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 type InstanceMock = {
   xml: string;
   detail: ProcessInstanceEntity;
+  detailV2: ProcessInstance;
+  callHierarchy: GetProcessInstanceCallHierarchyResponseBody;
   flowNodeInstances: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
+  sequenceFlowsV2: GetProcessSequenceFlowsResponseBody;
   variables: VariableEntity[];
   incidents?: ProcessInstanceIncidentsDto;
   metaData?: MetaDataDto;
@@ -29,18 +37,24 @@ type InstanceMock = {
 
 function mockResponses({
   processInstanceDetail,
+  processInstanceDetailV2,
+  callHierarchy,
   flowNodeInstances,
   statisticsV2,
   sequenceFlows,
+  sequenceFlowsV2,
   variables,
   xml,
   incidents,
   metaData,
 }: {
   processInstanceDetail?: ProcessInstanceEntity;
+  processInstanceDetailV2?: ProcessInstance;
+  callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
   flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
+  sequenceFlowsV2?: GetProcessSequenceFlowsResponseBody;
   variables?: VariableEntity[];
   xml?: string;
   incidents?: ProcessInstanceIncidentsDto;
@@ -86,6 +100,15 @@ function mockResponses({
     }
 
     if (route.request().url().includes('sequence-flows')) {
+      if (route.request().url().includes('v2')) {
+        return route.fulfill({
+          status: sequenceFlowsV2 === undefined ? 400 : 200,
+          body: JSON.stringify(sequenceFlowsV2),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
       return route.fulfill({
         status: sequenceFlows === undefined ? 400 : 200,
         body: JSON.stringify(sequenceFlows),
@@ -150,10 +173,30 @@ function mockResponses({
       });
     }
 
+    if (route.request().url().includes('call-hierarchy')) {
+      return route.fulfill({
+        status: callHierarchy === undefined ? 400 : 200,
+        body: JSON.stringify(callHierarchy),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
     if (route.request().url().includes('/api/process-instances/')) {
       return route.fulfill({
         status: processInstanceDetail === undefined ? 400 : 200,
         body: JSON.stringify(processInstanceDetail),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('/v2/process-instances/')) {
+      return route.fulfill({
+        status: processInstanceDetailV2 === undefined ? 400 : 200,
+        body: JSON.stringify(processInstanceDetailV2),
         headers: {
           'content-type': 'application/json',
         },

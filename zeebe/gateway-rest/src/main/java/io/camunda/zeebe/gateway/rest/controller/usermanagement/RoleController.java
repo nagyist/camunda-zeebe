@@ -9,23 +9,28 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.search.query.UserQuery;
+import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -49,14 +54,17 @@ public class RoleController {
   private final RoleServices roleServices;
   private final UserServices userServices;
   private final MappingServices mappingServices;
+  private final GroupServices groupServices;
 
   public RoleController(
       final RoleServices roleServices,
       final UserServices userServices,
-      final MappingServices mappingServices) {
+      final MappingServices mappingServices,
+      final GroupServices groupServices) {
     this.roleServices = roleServices;
     this.userServices = userServices;
     this.mappingServices = mappingServices;
+    this.groupServices = groupServices;
   }
 
   @CamundaPostMapping
@@ -132,32 +140,55 @@ public class RoleController {
   }
 
   @CamundaPostMapping(path = "/{roleId}/users/search")
-  public ResponseEntity<UserSearchResult> searchUsersByRole(
+  public ResponseEntity<RoleUserSearchResult> searchUsersByRole(
       @PathVariable final String roleId,
-      @RequestBody(required = false) final UserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserQuery(query)
+      @RequestBody(required = false) final RoleUserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             userQuery -> searchUsersInRole(roleId, userQuery));
   }
 
-  private ResponseEntity<UserSearchResult> searchUsersInRole(
-      final String roleId, final UserQuery userQuery) {
+  private ResponseEntity<RoleUserSearchResult> searchUsersInRole(
+      final String roleId, final RoleQuery query) {
     try {
-      final var composedUserQuery = buildUserQuery(roleId, userQuery);
       final var result =
-          userServices
+          roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .search(composedUserQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+              .searchMembers(buildRoleMemberQuery(roleId, EntityType.USER, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
   }
 
-  private UserQuery buildUserQuery(final String roleId, final UserQuery userQuery) {
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().roleId(roleId).build())
+  @CamundaPostMapping(path = "/{roleId}/clients/search")
+  public ResponseEntity<RoleClientSearchResult> searchClientsByRole(
+      @PathVariable final String roleId,
+      @RequestBody(required = false) final RoleClientSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            roleQuery -> searchClientsInRole(roleId, roleQuery));
+  }
+
+  private ResponseEntity<RoleClientSearchResult> searchClientsInRole(
+      final String tenantId, final RoleQuery query) {
+    try {
+      final var result =
+          roleServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildRoleMemberQuery(tenantId, EntityType.CLIENT, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleClientSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private RoleQuery buildRoleMemberQuery(
+      final String roleId, final EntityType memberType, final RoleQuery query) {
+    return query.toBuilder()
+        .filter(query.filter().toBuilder().joinParentId(roleId).memberType(memberType).build())
         .build();
   }
 
@@ -201,11 +232,11 @@ public class RoleController {
   }
 
   @CamundaPutMapping(
-      path = "/{roleId}/applications/{applicationId}",
+      path = "/{roleId}/clients/{clientId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> addApplicationToRole(
-      @PathVariable final String roleId, @PathVariable final String applicationId) {
-    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.APPLICATION)
+  public CompletableFuture<ResponseEntity<Object>> addClientToRole(
+      @PathVariable final String roleId, @PathVariable final String clientId) {
+    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
@@ -248,10 +279,10 @@ public class RoleController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
-  @CamundaDeleteMapping(path = "/{roleId}/applications/{applicationId}")
-  public CompletableFuture<ResponseEntity<Object>> removeApplicationFromRole(
-      @PathVariable final String roleId, @PathVariable final String applicationId) {
-    return RequestMapper.toRoleMemberRequest(roleId, applicationId, EntityType.USER)
+  @CamundaDeleteMapping(path = "/{roleId}/clients/{clientId}")
+  public CompletableFuture<ResponseEntity<Object>> removeClientFromRole(
+      @PathVariable final String roleId, @PathVariable final String clientId) {
+    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
@@ -260,6 +291,37 @@ public class RoleController {
       @PathVariable final String roleId, @PathVariable final String groupId) {
     return RequestMapper.toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
+  }
+
+  @CamundaPostMapping(path = "/{roleId}/groups/search")
+  public ResponseEntity<GroupSearchQueryResult> searchGroupsByRole(
+      @PathVariable final String roleId,
+      @RequestBody(required = false) final GroupSearchQueryRequest query) {
+
+    return SearchQueryRequestMapper.toGroupQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            groupQuery -> searchGroupsInRole(roleId, groupQuery));
+  }
+
+  private ResponseEntity<GroupSearchQueryResult> searchGroupsInRole(
+      final String roleId, final GroupQuery query) {
+    try {
+      final var composedGroupQuery = buildGroupQuery(roleId, query);
+      final var result =
+          groupServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .search(composedGroupQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private GroupQuery buildGroupQuery(final String roleId, final GroupQuery groupQuery) {
+    return groupQuery.toBuilder()
+        .filter(groupQuery.filter().toBuilder().roleId(roleId).build())
+        .build();
   }
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromRole(

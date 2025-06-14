@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
@@ -35,15 +35,11 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {init} from 'modules/utils/flowNodeMetadata';
+import {init as initFlowNodeMetadata} from 'modules/utils/flowNodeMetadata';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {cancelAllTokens} from 'modules/utils/modifications';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -101,6 +97,10 @@ describe('VariablePanel', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -135,13 +135,14 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    init(statistics);
+    initFlowNodeMetadata('process-instance', statistics);
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -181,6 +182,7 @@ describe('VariablePanel', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
+    mockFetchVariables().withSuccess([createVariable()]);
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -193,16 +195,21 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
       wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    expect(
+      await screen.findByTestId('edit-variable-value'),
+    ).toBeInTheDocument();
 
     act(() => {
       cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
@@ -249,7 +256,12 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -260,10 +272,13 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: '2251799813695856',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+          flowNodeInstanceId: '2251799813695856',
+        },
+      );
     });
 
     await waitFor(() =>
@@ -336,7 +351,12 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -348,10 +368,13 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: '2251799813695856',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+          flowNodeInstanceId: '2251799813695856',
+        },
+      );
     });
 
     await waitFor(() =>
@@ -433,7 +456,12 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -458,9 +486,12 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+        },
+      );
     });
 
     // initial state
@@ -490,7 +521,12 @@ describe('VariablePanel', () => {
   it('should be readonly if flow node has variables but no running instances', async () => {
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -514,9 +550,12 @@ describe('VariablePanel', () => {
     });
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'Activity_0qtp1k6',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'Activity_0qtp1k6',
+        },
+      );
     });
 
     expect(await screen.findByText('some-other-variable')).toBeInTheDocument();

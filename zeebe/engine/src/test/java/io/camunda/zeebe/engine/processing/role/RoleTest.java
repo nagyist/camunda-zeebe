@@ -289,6 +289,7 @@ public class RoleTest {
         .newMapping(mappingId)
         .withClaimName("claimName")
         .withClaimValue("claimValue")
+        .withName("name")
         .create();
     final var roleId = UUID.randomUUID().toString();
     engine.role().newRole(roleId).create();
@@ -412,9 +413,9 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldAddApplicationEntityToRole() {
+  public void shouldAddClientEntityToRole() {
     // given
-    final var applicationId = "application-" + UUID.randomUUID();
+    final var clientId = "application-" + UUID.randomUUID();
     final var roleId = Strings.newRandomValidIdentityId();
     engine.role().newRole(roleId).create().getValue().getRoleKey();
 
@@ -423,8 +424,8 @@ public class RoleTest {
         engine
             .role()
             .addEntity(roleId)
-            .withEntityId(applicationId)
-            .withEntityType(EntityType.APPLICATION)
+            .withEntityId(clientId)
+            .withEntityType(EntityType.CLIENT)
             .add()
             .getValue();
 
@@ -432,30 +433,25 @@ public class RoleTest {
     assertThat(updatedRole)
         .isNotNull()
         .hasRoleId(roleId)
-        .hasEntityId(applicationId)
-        .hasEntityType(EntityType.APPLICATION);
+        .hasEntityId(clientId)
+        .hasEntityType(EntityType.CLIENT);
   }
 
   @Test
-  public void shouldRejectIfApplicationEntityIsAlreadyAssigned() {
+  public void shouldRejectIfClientEntityIsAlreadyAssigned() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     engine.role().newRole(roleId).create();
-    final var applicationId = "application-" + UUID.randomUUID().toString();
-    engine
-        .role()
-        .addEntity(roleId)
-        .withEntityId(applicationId)
-        .withEntityType(EntityType.APPLICATION)
-        .add();
+    final var clientId = "application-" + UUID.randomUUID().toString();
+    engine.role().addEntity(roleId).withEntityId(clientId).withEntityType(EntityType.CLIENT).add();
 
     // when
     final var notPresentUpdateRecord =
         engine
             .role()
             .addEntity(roleId)
-            .withEntityId(applicationId)
-            .withEntityType(EntityType.APPLICATION)
+            .withEntityId(clientId)
+            .withEntityType(EntityType.CLIENT)
             .expectRejection()
             .add();
 
@@ -464,6 +460,6 @@ public class RoleTest {
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role."
-                .formatted(applicationId, roleId));
+                .formatted(clientId, roleId));
   }
 }

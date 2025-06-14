@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,15 +19,15 @@ import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -100,16 +100,17 @@ class RequestMapperTest {
     setJwtAuthenticationInContext(sub1, aud1);
 
     // when
-    final var claims = RequestMapper.getAuthentication().claims();
+    final var claims =
+        (Map<String, Object>) RequestMapper.getAuthentication().claims().get(USER_TOKEN_CLAIMS);
 
     // then
     assertNotNull(claims);
-    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
-    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
-    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
-    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "sub")).isEqualTo(sub1);
-    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo(aud1);
-    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "groups")).isEqualTo(List.of("g1", "g2"));
+    assertThat(claims).containsKey("sub");
+    assertThat(claims).containsKey("aud");
+    assertThat(claims).containsKey("groups");
+    assertThat(claims.get("sub")).isEqualTo(sub1);
+    assertThat(claims.get("aud")).isEqualTo(aud1);
+    assertThat(claims.get("groups")).isEqualTo(List.of("g1", "g2"));
   }
 
   @Test
@@ -174,15 +175,15 @@ class RequestMapperTest {
 
     // then
     assertThat(authentication.authenticatedUsername()).isEqualTo(username);
-    assertThat(authentication.authenticationApplicationId()).isNull();
+    assertThat(authentication.authenticatedClientId()).isNull();
   }
 
   @Test
-  void applicationIdIsSetInAuthenticationWhenOnAuthenticationContext() {
+  void clientIdIsSetInAuthenticationWhenOnAuthenticationContext() {
     // given
-    final var applicationId = "my-application";
+    final var clientId = "my-application";
     final var authenticationContext =
-        new AuthenticationContextBuilder().withApplicationId(applicationId).build();
+        new AuthenticationContextBuilder().withClientId(clientId).build();
 
     final var principal =
         new CamundaOidcUser(
@@ -192,7 +193,7 @@ class RequestMapperTest {
                     "tokenValue",
                     Instant.now(),
                     Instant.now().plusSeconds(3600),
-                    Map.of("sub", applicationId))),
+                    Map.of("sub", clientId))),
             Collections.emptySet(),
             authenticationContext);
 
@@ -204,26 +205,26 @@ class RequestMapperTest {
 
     // then
     assertThat(authContext.authenticatedUsername()).isNull();
-    assertThat(authContext.authenticationApplicationId()).isEqualTo(applicationId);
+    assertThat(authContext.authenticatedClientId()).isEqualTo(clientId);
   }
 
   @Test
   void shouldMapToProcessInstanceMigrationBatchOperationRequest() {
     // given
-    final var migrationInstruction = new ProcessInstanceMigrationInstruction();
-    migrationInstruction.setTargetProcessDefinitionKey("123");
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("123");
     final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
     mappingInstruction.setSourceElementId("source1");
     mappingInstruction.setTargetElementId("target1");
-    migrationInstruction.setMappingInstructions(List.of(mappingInstruction));
+    migrationPlan.setMappingInstructions(List.of(mappingInstruction));
 
-    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationInstruction();
-    batchOperationInstruction.setMigrationPlan(migrationInstruction);
+    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationRequest();
+    batchOperationInstruction.setMigrationPlan(migrationPlan);
     final var filter = new ProcessInstanceFilter();
     batchOperationInstruction.setFilter(filter);
 
     // when
-    final Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest> result =
+    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
         RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
 
     // then
@@ -243,21 +244,21 @@ class RequestMapperTest {
   @Test
   void shouldReturnProblemDetailForInvalidInput() {
     // given
-    final var migrationInstruction = new ProcessInstanceMigrationInstruction();
-    migrationInstruction.setTargetProcessDefinitionKey("123");
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("123");
     final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
     mappingInstruction.setSourceElementId(null);
     mappingInstruction.setTargetElementId(null);
-    migrationInstruction.setMappingInstructions(List.of(mappingInstruction));
+    migrationPlan.setMappingInstructions(List.of(mappingInstruction));
 
-    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationInstruction();
-    batchOperationInstruction.setMigrationPlan(migrationInstruction);
+    final var batchOperationRequest = new ProcessInstanceMigrationBatchOperationRequest();
+    batchOperationRequest.setMigrationPlan(migrationPlan);
     final var filter = new ProcessInstanceFilter();
-    batchOperationInstruction.setFilter(filter);
+    batchOperationRequest.setFilter(filter);
 
     // when
-    final Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
+    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationRequest);
 
     // then
     assertTrue(result.isLeft());
@@ -274,13 +275,13 @@ class RequestMapperTest {
             .sourceElementId("source1")
             .targetElementId("target1");
 
-    final var modificationInstruction =
-        new ProcessInstanceModificationBatchOperationInstruction()
+    final var modificationRequest =
+        new ProcessInstanceModificationBatchOperationRequest()
             .addMoveInstructionsItem(moveInstruction);
 
     // when
     final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
 
     // then
     assertTrue(result.isRight());
@@ -301,13 +302,13 @@ class RequestMapperTest {
     final var moveInstruction =
         new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
 
-    final var modificationInstruction =
-        new ProcessInstanceModificationBatchOperationInstruction()
+    final var modificationRequest =
+        new ProcessInstanceModificationBatchOperationRequest()
             .addMoveInstructionsItem(moveInstruction);
 
     // when
     final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
 
     // then
     assertTrue(result.isLeft());

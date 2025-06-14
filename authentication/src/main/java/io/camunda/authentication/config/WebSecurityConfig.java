@@ -10,6 +10,7 @@ package io.camunda.authentication.config;
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
@@ -17,11 +18,13 @@ import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.LinkedList;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +43,14 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -80,7 +88,17 @@ public class WebSecurityConfig {
           "/tasklist/**",
           "/",
           "/sso-callback/**",
-          "/oauth2/authorization/**");
+          "/oauth2/authorization/**",
+          // old Tasklist and Operate webapps routes
+          "/processes",
+          "/processes/*",
+          "/{regex:[\\d]+}", // user task id
+          "/processes/*/start",
+          "/new/*",
+          "/decisions",
+          "/decisions/*",
+          "/instances",
+          "/instances/*");
   private static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -185,13 +203,15 @@ public class WebSecurityConfig {
         final UserServices userServices,
         final AuthorizationServices authorizationServices,
         final RoleServices roleServices,
-        final TenantServices tenantServices) {
+        final TenantServices tenantServices,
+        final GroupServices groupServices) {
       return new CamundaUserDetailsService(
-          userServices, authorizationServices, roleServices, tenantServices);
+          userServices, authorizationServices, roleServices, tenantServices, groupServices);
     }
 
     @Bean
     @Order(ORDER_WEBAPP_API)
+    @ConditionalOnProtectedApi
     public SecurityFilterChain httpBasicApiAuthSecurityFilterChain(
         final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
         throws Exception {
@@ -279,6 +299,15 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
+        final SecurityConfiguration securityConfiguration) {
+      final var decoderFactory = new OidcIdTokenDecoderFactory();
+      decoderFactory.setJwtValidatorFactory(
+          registration -> getTokenValidator(securityConfiguration));
+      return decoderFactory;
+    }
+
+    @Bean
     public JwtDecoder jwtDecoder(
         final SecurityConfiguration securityConfiguration,
         final ClientRegistrationRepository clientRegistrationRepository) {
@@ -291,18 +320,31 @@ public class WebSecurityConfig {
               .getJwkSetUri();
 
       final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+      decoder.setJwtValidator(getTokenValidator(securityConfiguration));
+      return decoder;
+    }
 
-      final var validAudiences = securityConfiguration.getAuthentication().getOidc().getAudiences();
+    private static OAuth2TokenValidator<Jwt> getTokenValidator(
+        final SecurityConfiguration configuration) {
+      final var validAudiences = configuration.getAuthentication().getOidc().getAudiences();
+      final var validators = new LinkedList<OAuth2TokenValidator<Jwt>>();
       if (validAudiences != null) {
-        decoder.setJwtValidator(
-            JwtValidators.createDefaultWithValidators(new AudienceValidator(validAudiences)));
+        validators.add(new AudienceValidator(validAudiences));
+      }
+      if (configuration.getSaas().isConfigured()) {
+        validators.add(new OrganizationValidator(configuration.getSaas().getOrganizationId()));
+        validators.add(new ClusterValidator(configuration.getSaas().getClusterId()));
       }
 
-      return decoder;
+      if (!validators.isEmpty()) {
+        return JwtValidators.createDefaultWithValidators(validators);
+      }
+      return JwtValidators.createDefault();
     }
 
     @Bean
     @Order(ORDER_WEBAPP_API)
+    @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,

@@ -17,7 +17,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -45,8 +45,8 @@ class UserTaskAuthorizationIT {
   private static final String USER2 = "user2";
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           "password",
           List.of(
@@ -55,15 +55,15 @@ class UserTaskAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
-  private static final User USER1_USER =
-      new User(
+  private static final TestUser USER1_USER =
+      new TestUser(
           USER1,
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
 
   @UserDefinition
-  private static final User USER2_USER =
-      new User(
+  private static final TestUser USER2_USER =
+      new TestUser(
           USER2,
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));
@@ -77,7 +77,7 @@ class UserTaskAuthorizationIT {
     startProcessInstance(adminClient, PROCESS_ID_1);
     startProcessInstance(adminClient, PROCESS_ID_2);
 
-    waitForTasksBeingExported(adminClient, 3);
+    waitForProcessAndTasksBeingExported(adminClient);
   }
 
   @Test
@@ -201,14 +201,40 @@ class UserTaskAuthorizationIT {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
-  private static void waitForTasksBeingExported(
-      final CamundaClient camundaClient, final int expectedCount) {
+  private static void waitForProcessAndTasksBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
-            () ->
-                assertThat(camundaClient.newUserTaskSearchRequest().send().join().items())
-                    .hasSize(expectedCount));
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newProcessDefinitionSearchRequest()
+                          .filter(filter -> filter.processDefinitionId(PROCESS_ID_1))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(1);
+              assertThat(
+                      camundaClient
+                          .newProcessDefinitionSearchRequest()
+                          .filter(filter -> filter.processDefinitionId(PROCESS_ID_2))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(1);
+              assertThat(
+                      camundaClient
+                          .newProcessInstanceSearchRequest()
+                          .filter(
+                              filter ->
+                                  filter.processDefinitionId(
+                                      fn -> fn.in(PROCESS_ID_1, PROCESS_ID_2)))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(2);
+              assertThat(camundaClient.newUserTaskSearchRequest().send().join().items()).hasSize(3);
+            });
   }
 }

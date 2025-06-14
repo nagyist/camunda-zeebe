@@ -16,6 +16,7 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -64,14 +65,15 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -115,7 +117,6 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
-import io.camunda.zeebe.protocol.record.value.scaling.RedistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -273,9 +274,6 @@ public final class ValueTypeMapping {
     mapping.put(ValueType.ROLE, new Mapping<>(RoleRecordValue.class, RoleIntent.class));
     mapping.put(ValueType.TENANT, new Mapping<>(TenantRecordValue.class, TenantIntent.class));
     mapping.put(ValueType.SCALE, new Mapping<>(ScaleRecordValue.class, ScaleIntent.class));
-    mapping.put(
-        ValueType.REDISTRIBUTION,
-        new Mapping<>(RedistributionRecordValue.class, RedistributionIntent.class));
     mapping.put(ValueType.GROUP, new Mapping<>(GroupRecordValue.class, GroupIntent.class));
     mapping.put(ValueType.MAPPING, new Mapping<>(MappingRecordValue.class, MappingIntent.class));
     mapping.put(
@@ -295,6 +293,13 @@ public final class ValueTypeMapping {
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         new Mapping<>(
             BatchOperationLifecycleManagementRecordValue.class, BatchOperationIntent.class));
+    mapping.put(
+        ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+        new Mapping<>(
+            BatchOperationPartitionLifecycleRecordValue.class, BatchOperationIntent.class));
+    mapping.put(
+        ValueType.ASYNC_REQUEST,
+        new Mapping<>(AsyncRequestRecordValue.class, AsyncRequestIntent.class));
     return mapping;
   }
 

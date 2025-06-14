@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
@@ -35,11 +35,6 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -133,7 +128,7 @@ describe('VariablePanel', () => {
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    init(statistics);
+    init('process-instance', statistics);
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -163,7 +158,9 @@ describe('VariablePanel', () => {
         instanceMetadata: null,
       });
 
-      render(<VariablePanel />, {wrapper: getWrapper()});
+      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+        wrapper: getWrapper(),
+      });
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
@@ -196,7 +193,9 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel />, {wrapper: getWrapper()});
+      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+        wrapper: getWrapper(),
+      });
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
@@ -233,7 +232,9 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel />, {wrapper: getWrapper()});
+      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+        wrapper: getWrapper(),
+      });
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(

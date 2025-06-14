@@ -24,7 +24,10 @@ import {
   Button,
   InlineLoading,
 } from '../styled';
-import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+} from 'modules/utils/flowNodeSelection';
 import {
   useTotalRunningInstancesByFlowNode,
   useTotalRunningInstancesForFlowNode,
@@ -44,6 +47,11 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -63,13 +71,17 @@ const ModificationDropdown: React.FC<Props> = observer(
       useTotalRunningInstancesVisibleForFlowNode(flowNodeId);
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
-    const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
-      totalRunningInstances || 0,
-    );
+    const isRootNodeSelected = useIsRootNodeSelected();
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: totalRunningInstances || 0,
+      isRootNodeSelected,
+    });
     const availableModifications = useAvailableModifications(
       selectedRunningInstanceCount,
     );
     const canBeModified = useCanBeModified();
+    const rootNode = useRootNode();
+    const {data: processInstance} = useProcessInstance();
 
     const processDefinitionKey = useProcessDefinitionKeyContext();
     const {data: processDefinitionData} = useProcessInstanceXml({
@@ -162,12 +174,13 @@ const ModificationDropdown: React.FC<Props> = observer(
                                   parentScopeIds: generateParentScopeIds(
                                     businessObjects,
                                     flowNodeId,
+                                    processInstance?.processDefinitionId,
                                   ),
                                 },
                               });
                             }
 
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Add
@@ -193,7 +206,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                               flowNodeInstanceId,
                               businessObjects,
                             );
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Cancel instance
@@ -219,7 +232,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                               totalRunningInstancesVisible ?? 0,
                               businessObjects,
                             );
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Cancel all
@@ -239,7 +252,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                               flowNodeId,
                               flowNodeInstanceId,
                             );
-                            flowNodeSelectionStore.clearSelection();
+                            clearSelection(rootNode);
                           }}
                         >
                           Move instance
@@ -253,7 +266,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                         renderIcon={ArrowRight}
                         onClick={() => {
                           modificationsStore.startMovingToken(flowNodeId);
-                          flowNodeSelectionStore.clearSelection();
+                          clearSelection(rootNode);
                         }}
                       >
                         Move all

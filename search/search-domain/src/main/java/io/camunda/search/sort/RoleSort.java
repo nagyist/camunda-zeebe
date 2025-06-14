@@ -25,11 +25,6 @@ public record RoleSort(List<FieldSorting> orderings) implements SortOption {
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<RoleSort> {
 
-    public Builder roleKey() {
-      currentOrdering = new FieldSorting("roleKey", null);
-      return this;
-    }
-
     public Builder name() {
       currentOrdering = new FieldSorting("name", null);
       return this;
@@ -37,6 +32,11 @@ public record RoleSort(List<FieldSorting> orderings) implements SortOption {
 
     public Builder roleId() {
       currentOrdering = new FieldSorting("roleId", null);
+      return this;
+    }
+
+    public Builder memberId() {
+      currentOrdering = new FieldSorting("memberId", null);
       return this;
     }
 

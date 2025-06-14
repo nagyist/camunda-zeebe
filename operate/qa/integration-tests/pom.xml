@@ -51,6 +51,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-services</artifactId>
       <scope>test</scope>
     </dependency>
@@ -514,7 +520,7 @@
     <dependency>
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.5</version>
+      <version>11.0.8</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -539,7 +545,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.5.2</version>
+        <version>3.5.3</version>
         <configuration>
           <skipITs>false</skipITs>
           <includes>

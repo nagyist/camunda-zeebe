@@ -65,14 +65,14 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
       <>
         <C3EmptyState
           heading={t("assignMappingsToGroup")}
-          description={t("groupMemberAccessDisclaimer")}
+          description={t("membersAccessDisclaimer")}
           button={{
             label: t("assignMapping"),
             onClick: openAssignModal,
           }}
           link={{
             label: t("learnMoreAboutGroups"),
-            href: `/identity/concepts/access-control/groups`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignMappingsModal}

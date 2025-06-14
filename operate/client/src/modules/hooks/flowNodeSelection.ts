@@ -22,6 +22,7 @@ import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusiness
 const useHasPendingCancelOrMoveModification = () => {
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
   const modificationsByFlowNode = useModificationsByFlowNode();
+  const isRootNodeSelected = useIsRootNodeSelected();
   const currentSelection = flowNodeSelectionStore.state.selection;
 
   if (currentSelection === null) {
@@ -30,7 +31,7 @@ const useHasPendingCancelOrMoveModification = () => {
 
   const {flowNodeId, flowNodeInstanceId} = currentSelection;
 
-  if (flowNodeSelectionStore.isRootNodeSelected || flowNodeId === undefined) {
+  if (isRootNodeSelected || flowNodeId === undefined) {
     return willAllFlowNodesBeCanceled;
   }
 
@@ -98,9 +99,19 @@ const useIsPlaceholderSelected = () => {
   );
 };
 
+const useRootNode = () => {
+  const {data: processInstance} = useProcessInstance();
+
+  return {
+    flowNodeInstanceId: processInstance?.processInstanceKey,
+    isMultiInstance: false,
+  };
+};
+
 const useSelectedFlowNodeName = () => {
   const {data: processInstance} = useProcessInstance();
   const {data: businessObjects} = useBusinessObjects();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   if (
     processInstance === null ||
@@ -109,7 +120,7 @@ const useSelectedFlowNodeName = () => {
     return '';
   }
 
-  if (flowNodeSelectionStore.isRootNodeSelected) {
+  if (isRootNodeSelected) {
     return processInstance?.processDefinitionName;
   }
 
@@ -129,5 +140,6 @@ export {
   useIsPlaceholderSelected,
   useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
+  useRootNode,
   useSelectedFlowNodeName,
 };

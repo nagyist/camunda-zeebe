@@ -75,11 +75,13 @@ jobs:
       - name: Set temp GH envs
         id: temp-vars
         run: |
-          echo "AWS_REGION=$(echo $AWS_REGION)" >> "$GITHUB_ENV"
-          echo "AWS_DEFAULT_REGION=$(echo $AWS_DEFAULT_REGION)" >> "$GITHUB_ENV"
-          echo "AWS_ROLE_ARN=$(echo $AWS_ROLE_ARN)" >> "$GITHUB_ENV"
-          echo "AWS_WEB_IDENTITY_TOKEN_FILE=$(echo $AWS_WEB_IDENTITY_TOKEN_FILE)" >> "$GITHUB_ENV"
-          echo "AWS_STS_REGIONAL_ENDPOINTS=$(echo $AWS_STS_REGIONAL_ENDPOINTS)" >> "$GITHUB_ENV"
+          {
+            echo "AWS_REGION=$AWS_REGION"
+            echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+            echo "AWS_ROLE_ARN=$AWS_ROLE_ARN"
+            echo "AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE"
+            echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
+          } >> "$GITHUB_ENV"
 
           if [[ "${{ matrix.os_version }}" = "2.9" ]]
           then
@@ -115,7 +117,7 @@ jobs:
         with:
           maven-extra-args: -T1C -D skip.fe.build -D skip.yarn -D skip.docker
       - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
@@ -173,7 +175,7 @@ jobs:
         secrets: |
           secret/data/products/camunda/ci/github-actions DATA_ENGINE_CI_ALERT_WEBHOOK_URL;
     - name: Send notification
-      uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+      uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
       with:
         webhook: ${{ steps.secrets.outputs.DATA_ENGINE_CI_ALERT_WEBHOOK_URL }}
         webhook-type: webhook-trigger

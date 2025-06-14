@@ -178,6 +178,18 @@ const orderProcessInstance: {
       permissions: [],
       tenantId: '<default>',
     },
+    detailV2: {
+      processInstanceKey: '2251799813725328',
+      processDefinitionKey: '2251799813688192',
+      processDefinitionName: 'order-process',
+      processDefinitionVersion: 2,
+      startDate: '2023-08-14T05:47:07.376+0000',
+      state: 'ACTIVE',
+      processDefinitionId: 'order-process',
+      tenantId: '<default>',
+      hasIncident: true,
+    },
+    callHierarchy: [],
     flowNodeInstances: {
       '2251799813725328': {
         children: [
@@ -271,6 +283,34 @@ const orderProcessInstance: {
         activityId: 'Flow_1wtuk91',
       },
     ],
+    sequenceFlowsV2: {
+      items: [
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_09wy0mk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0biglsj',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1wtuk91',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+      ],
+    },
     variables: [
       {
         id: '2251799813725328-orderId',
@@ -367,6 +407,18 @@ const orderProcessInstance: {
       permissions: [],
       tenantId: '<default>',
     },
+    detailV2: {
+      processInstanceKey: '2251799813725328',
+      processDefinitionKey: '2251799813688192',
+      processDefinitionName: 'order-process',
+      processDefinitionVersion: 2,
+      startDate: '2023-08-14T05:47:07.376+0000',
+      state: 'ACTIVE',
+      processDefinitionId: 'order-process',
+      tenantId: '<default>',
+      hasIncident: false,
+    },
+    callHierarchy: [],
     flowNodeInstances: {
       '2251799813725328': {
         children: [
@@ -481,6 +533,42 @@ const orderProcessInstance: {
         activityId: 'Flow_1wtuk91',
       },
     ],
+    sequenceFlowsV2: {
+      items: [
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_09wy0mk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0biglsj',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1fosyfk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1wtuk91',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+      ],
+    },
     variables: [
       {
         id: '2251799813725328-orderId',
@@ -539,6 +627,19 @@ const orderProcessInstance: {
       permissions: [],
       tenantId: '<default>',
     },
+    detailV2: {
+      processInstanceKey: '2251799813725328',
+      processDefinitionKey: '2251799813737336',
+      processDefinitionName: 'order-process',
+      processDefinitionVersion: 2,
+      startDate: '2023-09-29T10:59:36.048+0000',
+      endDate: '2023-09-29T11:01:50.073+0000',
+      state: 'COMPLETED',
+      processDefinitionId: 'order-process',
+      tenantId: '<default>',
+      hasIncident: false,
+    },
+    callHierarchy: [],
     flowNodeInstances: {
       '2251799813725328': {
         children: [
@@ -695,6 +796,58 @@ const orderProcessInstance: {
         activityId: 'Flow_1wtuk91',
       },
     ],
+    sequenceFlowsV2: {
+      items: [
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_09wy0mk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0biglsj',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0vv7a45',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0yovrqa',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1fosyfk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1wtuk91',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+      ],
+    },
     variables: [
       {
         id: '2251799813725328-orderId',

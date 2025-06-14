@@ -9,11 +9,14 @@ package io.camunda.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Set;
@@ -27,8 +30,6 @@ public interface ExporterResourceProvider {
       final MeterRegistry meterRegistry,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper);
-
-  void close();
 
   /**
    * This should return descriptors describing the desired state of all indices provided.
@@ -64,4 +65,18 @@ public interface ExporterResourceProvider {
    * @return A {@link BiConsumer} of {@link String} and {@link Error} to handle custom errors
    */
   BiConsumer<String, Error> getCustomErrorHandlers();
+
+  /**
+   * Returns the reference to the Process Cache
+   *
+   * @return {@link ExporterEntityCacheImpl} of {@link CachedProcessEntity}
+   */
+  ExporterEntityCacheImpl<Long, CachedProcessEntity> getProcessCache();
+
+  /**
+   * Returns the reference to the Form Cache
+   *
+   * @return {@link ExporterEntityCacheImpl} of {@link CachedFormEntity}
+   */
+  ExporterEntityCacheImpl<String, CachedFormEntity> getFormCache();
 }

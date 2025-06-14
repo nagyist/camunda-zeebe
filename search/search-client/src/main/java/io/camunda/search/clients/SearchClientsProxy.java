@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.clients.impl.NoopSearchClientsProxy;
 import io.camunda.security.auth.SecurityContext;
 
 public interface SearchClientsProxy
@@ -27,8 +28,17 @@ public interface SearchClientsProxy
         MappingSearchClient,
         GroupSearchClient,
         UsageMetricsSearchClient,
-        BatchOperationSearchClient {
+        BatchOperationSearchClient,
+        SequenceFlowSearchClient {
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);
+
+  /**
+   * Creates a no-op search client proxy. For usage in test environments where search is not
+   * available.
+   */
+  static SearchClientsProxy noop() {
+    return new NoopSearchClientsProxy();
+  }
 }

@@ -287,9 +287,10 @@ public class FailOverReplicationTest {
     final var data = brokerCfg.getData();
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
 
-    final var maxSize = DataSize.ofKilobytes(16);
+    final var maxSize = DataSize.ofKilobytes(32);
     data.setLogSegmentSize(maxSize);
     data.setLogIndexDensity(1);
     brokerCfg.getNetwork().setMaxMessageSize(maxSize);
+    brokerCfg.getExperimental().getFeatures().setEnableIdentitySetup(false);
   }
 }

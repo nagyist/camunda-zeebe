@@ -22,7 +22,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,12 +40,14 @@ public class DeleteMappingMultiPartitionTest {
     // when
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var mappingId = UUID.randomUUID().toString();
     engine
         .mapping()
         .newMapping(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
+        .withName(name)
         .create();
     engine.mapping().deleteMapping(mappingId).delete();
 
@@ -96,12 +97,14 @@ public class DeleteMappingMultiPartitionTest {
     // when
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var mappingId = UUID.randomUUID().toString();
     engine
         .mapping()
         .newMapping(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
+        .withName(name)
         .create();
     engine.mapping().deleteMapping(mappingId).delete();
 
@@ -118,10 +121,11 @@ public class DeleteMappingMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptMappingCreateForPartition(partitionId);
+      engine.interceptInterPartitionIntent(partitionId, MappingIntent.CREATE);
     }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var mappingId = UUID.randomUUID().toString();
 
     engine
@@ -129,6 +133,7 @@ public class DeleteMappingMultiPartitionTest {
         .newMapping(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
+        .withName(name)
         .create();
     engine.mapping().deleteMapping(mappingId).delete();
 
@@ -143,17 +148,5 @@ public class DeleteMappingMultiPartitionTest {
         .containsExactly(
             tuple(ValueType.MAPPING, MappingIntent.CREATE),
             tuple(ValueType.MAPPING, MappingIntent.DELETE));
-  }
-
-  private void interceptMappingCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == MappingIntent.CREATE);
-        });
   }
 }

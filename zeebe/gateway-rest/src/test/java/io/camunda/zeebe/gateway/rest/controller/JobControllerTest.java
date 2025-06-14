@@ -661,7 +661,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldUpdateJob() {
     // given
-    when(jobServices.updateJob(anyLong(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -684,13 +684,13 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, 1000L));
+    Mockito.verify(jobServices).updateJob(1L, null, new UpdateJobChangeset(5, 1000L));
   }
 
   @Test
   void shouldUpdateJobWithOnlyRetries() {
     // given
-    when(jobServices.updateJob(anyLong(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -712,13 +712,13 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, null));
+    Mockito.verify(jobServices).updateJob(1L, null, new UpdateJobChangeset(5, null));
   }
 
   @Test
   void shouldUpdateJobWithOnlyTimeout() {
     // given
-    when(jobServices.updateJob(anyLong(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -739,7 +739,35 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(null, 1000L));
+    Mockito.verify(jobServices).updateJob(1L, null, new UpdateJobChangeset(null, 1000L));
+  }
+
+  @Test
+  void shouldUpdateJobWithOperationReference() {
+    // given
+    when(jobServices.updateJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+            {
+              "changeset": {
+                "timeout": 1000
+              },
+              "operationReference": 12345678
+            }""";
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).updateJob(1L, 12345678L, new UpdateJobChangeset(null, 1000L));
   }
 
   @Test

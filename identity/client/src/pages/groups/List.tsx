@@ -35,11 +35,9 @@ const List: FC = () => {
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
-  const showDetails = ({ groupKey }: Group) => navigate(`${groupKey}`);
+  const showDetails = ({ groupId }: Group) => navigate(groupId);
 
-  const pageHeader = (
-    <PageHeader title="Groups" linkText="groups" linkUrl="/concepts/groups/" />
-  );
+  const pageHeader = <PageHeader title="Groups" linkText="groups" linkUrl="" />;
 
   if (success && !groupSearchResults?.items.length) {
     return (
@@ -54,7 +52,7 @@ const List: FC = () => {
             icon: Add,
           }}
           link={{
-            href: documentationHref("/concepts/access-control/groups", ""),
+            href: documentationHref("https://docs.camunda.io/", ""),
             label: t("learnMoreAboutGroups"),
           }}
         />
@@ -68,7 +66,7 @@ const List: FC = () => {
       <EntityList
         data={groupSearchResults == null ? [] : groupSearchResults.items}
         headers={[
-          { header: t("groupId"), key: "groupKey" },
+          { header: t("groupId"), key: "groupId" },
           { header: t("groupName"), key: "name" },
         ]}
         sortProperty="name"

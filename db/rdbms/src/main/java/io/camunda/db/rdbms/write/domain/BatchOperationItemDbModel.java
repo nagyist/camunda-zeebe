@@ -10,4 +10,7 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.search.entities.BatchOperationEntity;
 
 public record BatchOperationItemDbModel(
-    long itemKey, long processInstanceKey, BatchOperationEntity.BatchOperationItemState state) {}
+    String batchOperationId,
+    long itemKey,
+    long processInstanceKey,
+    BatchOperationEntity.BatchOperationItemState state) {}

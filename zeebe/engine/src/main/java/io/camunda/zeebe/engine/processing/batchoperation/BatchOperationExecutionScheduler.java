@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
@@ -35,10 +37,9 @@ import org.slf4j.LoggerFactory;
 
 public class BatchOperationExecutionScheduler implements StreamProcessorLifecycleAware {
 
-  public static final int CHUNK_SIZE_IN_RECORD = 10;
-
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
   private final Duration pollingInterval;
+  private final int chunkSize;
 
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
@@ -56,6 +57,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     this.entityKeyProvider = entityKeyProvider;
     pollingInterval = engineConfiguration.getBatchOperationSchedulerInterval();
+    chunkSize = engineConfiguration.getBatchOperationChunkSize();
     this.partitionId = partitionId;
   }
 
@@ -95,8 +97,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   private void executeBatchOperation(
       final PersistedBatchOperation batchOperation, final TaskResultBuilder taskResultBuilder) {
-    if (batchOperation.isPaused()) {
-      LOG.trace("Batch operation {} is paused.", batchOperation.getKey());
+    if (batchOperation.isSuspended()) {
+      LOG.trace("Batch operation {} is suspended.", batchOperation.getKey());
       return;
     }
 
@@ -106,10 +108,22 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     try {
       // Then append the chunks
       final var keys = queryAllKeys(batchOperation);
-      for (int i = 0; i < keys.size(); i += CHUNK_SIZE_IN_RECORD) {
-        final Set<Item> chunkKeys =
-            keys.stream().skip(i).limit(CHUNK_SIZE_IN_RECORD).collect(Collectors.toSet());
-        appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+      if (!keys.isEmpty()) {
+        LOG.debug(
+            "Found {} items for batch operation with key {} on partition {}.",
+            keys.size(),
+            batchOperation.getKey(),
+            partitionId);
+        for (int i = 0; i < keys.size(); i += chunkSize) {
+          final Set<Item> chunkKeys =
+              keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
+          appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+        }
+      } else {
+        LOG.debug(
+            "No items found for batch operation with key {} on partition {}.",
+            batchOperation.getKey(),
+            partitionId);
       }
 
       appendExecution(batchOperation.getKey(), taskResultBuilder);
@@ -157,8 +171,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
                         .setProcessInstanceKey(i.processInstanceKey()))
             .collect(Collectors.toSet()));
 
-    LOG.debug(
-        "Appending batch operation {} subbatch with {} items.", batchOperationKey, items.size());
+    LOG.debug("Appending batch operation {} chunk with {} items.", batchOperationKey, items.size());
     taskResultBuilder.appendCommandRecord(
         batchOperationKey, BatchOperationChunkIntent.CREATE, command);
   }
@@ -178,15 +191,30 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         () -> !batchOperationState.exists(batchOperation.getKey());
 
     return switch (batchOperation.getBatchOperationType()) {
-      case CANCEL_PROCESS_INSTANCE, MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
+      case CANCEL_PROCESS_INSTANCE ->
           entityKeyProvider.fetchProcessInstanceItems(
               partitionId,
-              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
+                  .states(ProcessInstanceState.ACTIVE.name())
+                  .parentProcessInstanceKeyOperations(Operation.exists(false))
+                  .build(),
+              batchOperation.getAuthentication(),
+              abortCondition);
+      case MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
+          entityKeyProvider.fetchProcessInstanceItems(
+              partitionId,
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
+                  .states(ProcessInstanceState.ACTIVE.name())
+                  .build(),
+              batchOperation.getAuthentication(),
               abortCondition);
       case RESOLVE_INCIDENT ->
           entityKeyProvider.fetchIncidentItems(
               partitionId,
-              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
+                  .states(ProcessInstanceState.ACTIVE.name())
+                  .build(),
+              batchOperation.getAuthentication(),
               abortCondition);
       default ->
           throw new IllegalArgumentException(

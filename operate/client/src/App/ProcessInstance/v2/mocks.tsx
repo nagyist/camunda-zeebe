@@ -41,7 +41,6 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
@@ -51,6 +50,8 @@ import {
   SequenceFlow,
 } from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 const mockProcessInstance: ProcessInstance = {
@@ -67,27 +68,35 @@ const mockProcessInstance: ProcessInstance = {
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_0drux68',
+    sequenceFlowId: 'SequenceFlow_0drux68',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_0j6tsnn',
+    sequenceFlowId: 'SequenceFlow_0j6tsnn',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_1dwqvrt',
+    sequenceFlowId: 'SequenceFlow_1dwqvrt',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
   {
     processInstanceKey: '2251799813693731',
-    sequenceFlowKey: 'SequenceFlow_1fgekwd',
+    sequenceFlowId: 'SequenceFlow_1fgekwd',
     processDefinitionId: '123',
-    processDefinitionKey: 123,
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
   },
 ];
 
@@ -103,14 +112,39 @@ const mockRequests = (contextPath: string = '') => {
   );
   mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
   mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchCallHierarchy(contextPath).withSuccess({items: []});
-  mockFetchProcessXML(contextPath).withSuccess('');
+  mockFetchCallHierarchy(contextPath).withSuccess([]);
   mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
   mockFetchFlowNodeInstances(contextPath).withSuccess(
     processInstancesMock.level1,
   );
+  mockFetchFlowNodeInstances(contextPath).withSuccess(
+    processInstancesMock.level1,
+  );
+  mockFetchFlownodeInstancesStatistics().withSuccess({
+    items: [
+      {
+        elementId: 'service-task-1',
+        active: 0,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        elementId: 'service-task-7',
+        active: 5,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+    ],
+  });
   mockFetchVariables(contextPath).withSuccess([createVariable()]);
+  mockFetchVariables(contextPath).withSuccess([createVariable()]);
+  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+    ...mockIncidents,
+    count: 2,
+  });
   mockFetchProcessInstanceIncidents(contextPath).withSuccess({
     ...mockIncidents,
     count: 2,
@@ -128,7 +162,7 @@ const FlowNodeSelector: React.FC<FlowNodeSelectorProps> = ({
 }) => (
   <button
     onClick={() => {
-      flowNodeSelectionStore.selectFlowNode(selectableFlowNode);
+      selectFlowNode({}, selectableFlowNode);
     }}
   >
     {`Select flow node`}
@@ -192,6 +226,12 @@ const waitForPollingsToBeComplete = async () => {
   });
 };
 
-export {getWrapper, testData, waitForPollingsToBeComplete, mockProcessInstance};
+export {
+  getWrapper,
+  testData,
+  waitForPollingsToBeComplete,
+  mockProcessInstance,
+  processInstancesMock,
+};
 
 export {mockRequests};

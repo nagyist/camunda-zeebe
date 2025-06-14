@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {
   render,
   screen,
@@ -49,11 +49,6 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
-
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
-}));
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -148,7 +143,7 @@ describe('VariablePanel', () => {
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    init(statistics);
+    init('process-instance', statistics);
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -164,7 +159,12 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    mockFetchVariables().withSuccess([createVariable()]);
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -250,11 +250,15 @@ describe('VariablePanel', () => {
       },
     ];
 
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -326,7 +330,10 @@ describe('VariablePanel', () => {
   it('should display error notification if add variable operation fails', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {

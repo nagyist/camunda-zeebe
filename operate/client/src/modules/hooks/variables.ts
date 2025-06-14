@@ -12,6 +12,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {variablesStore} from 'modules/stores/variables';
 import {
   useHasRunningOrFinishedTokens,
+  useIsRootNodeSelected,
   useNewTokenCountForSelectedNode,
 } from './flowNodeSelection';
 import {useHasMultipleInstances} from './flowNodeMetadata';
@@ -19,9 +20,10 @@ import {useHasMultipleInstances} from './flowNodeMetadata';
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
   const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   return (
-    !flowNodeSelectionStore.isRootNodeSelected &&
+    !isRootNodeSelected &&
     !hasRunningOrFinishedTokens &&
     newTokenCountForSelectedNode === 0
   );

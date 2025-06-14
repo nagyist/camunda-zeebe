@@ -22,6 +22,7 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +41,12 @@ public class MappingCreateAuthorizationTest {
       EngineRule.singlePartition()
           .withIdentitySetup()
           .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
-          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)));
+          .withSecurityConfig(cfg -> cfg.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization()
+                      .getDefaultRoles()
+                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
@@ -50,6 +56,7 @@ public class MappingCreateAuthorizationTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
 
     // when
     engine
@@ -57,6 +64,7 @@ public class MappingCreateAuthorizationTest {
         .newMapping(mappingId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
+        .withName(name)
         .create(DEFAULT_USER.getUsername());
 
     // then
@@ -75,6 +83,7 @@ public class MappingCreateAuthorizationTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var user = createUser();
     addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
 
@@ -84,6 +93,7 @@ public class MappingCreateAuthorizationTest {
         .newMapping(mappingId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
+        .withName(name)
         .create(user.getUsername());
 
     // then

@@ -39,6 +39,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -151,13 +152,14 @@ public final class PartitionManagerImpl
               .get(localMemberId)
               .getPartition(partitionMetadata.id().id())
               .config();
-      bootstrapPartition(partitionMetadata, initialPartitionConfig);
+      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
     }
   }
 
   private ActorFuture<Void> bootstrapPartition(
       final PartitionMetadata partitionMetadata,
-      final DynamicPartitionConfig initialPartitionConfig) {
+      final DynamicPartitionConfig initialPartitionConfig,
+      final boolean initializeFromSnapshot) {
     final var result = concurrencyControl.<Void>createFuture();
     final var id = partitionMetadata.id().id();
     final var context =
@@ -173,12 +175,17 @@ public final class PartitionManagerImpl
             zeebePartitionFactory,
             brokerCfg,
             initialPartitionConfig,
+            initializeFromSnapshot,
             brokerMeterRegistry);
     final var partition = Partition.bootstrapping(context);
-    partitions.put(id, partition);
+    if (partitions.putIfAbsent(id, partition) != null) {
+      result.completeExceptionally(
+          new PartitionAlreadyExistsException(partitionMetadata.id().id()));
+    } else {
+      concurrencyControl.runOnCompletion(
+          partition.start(), (started, error) -> completePartitionStart(id, error, result));
+    }
 
-    concurrencyControl.runOnCompletion(
-        partition.start(), (started, error) -> completePartitionStart(id, error, result));
     return result;
   }
 
@@ -200,6 +207,7 @@ public final class PartitionManagerImpl
             zeebePartitionFactory,
             brokerCfg,
             initialPartitionConfig,
+            false,
             brokerMeterRegistry);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
@@ -276,7 +284,8 @@ public final class PartitionManagerImpl
 
   @Override
   public RaftPartition getRaftPartition(final int partitionId) {
-    return partitions.get(partitionId).raftPartition();
+    final var partition = partitions.get(partitionId);
+    return partition == null ? null : partition.raftPartition();
   }
 
   @Override
@@ -349,7 +358,10 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> bootstrap(
-      final int partitionId, final int priority, final DynamicPartitionConfig partitionConfig) {
+      final int partitionId,
+      final int priority,
+      final DynamicPartitionConfig partitionConfig,
+      final boolean initializeFromSnapshot) {
     final int targetPriority = priority;
 
     final MemberId localMember = managementService.getMembershipService().getLocalMember().id();
@@ -368,8 +380,31 @@ public final class PartitionManagerImpl
     final ActorFuture<Void> future = concurrencyControl.createFuture();
 
     concurrencyControl.run(
-        () -> bootstrapPartition(partitionMetadata, partitionConfig).onComplete(future));
-    return future;
+        () ->
+            bootstrapPartition(partitionMetadata, partitionConfig, initializeFromSnapshot)
+                .onComplete(future));
+    if (!initializeFromSnapshot) {
+      return future;
+    }
+    return future
+        .andThen(ignored -> notifyPartitionBootstrapped(partitionId), concurrencyControl)
+        .andThen(
+            (ignored, error) -> {
+              if (error != null) {
+                if (error instanceof PartitionAlreadyExistsException) {
+                  return CompletableActorFuture.completedExceptionally(error);
+                } else {
+                  // bootstrap has failed, let's stop and return the error.
+                  return stopPartition(partitionId)
+                      .andThen(
+                          none -> CompletableActorFuture.completedExceptionally(error),
+                          concurrencyControl);
+                }
+              } else {
+                return CompletableActorFuture.completed();
+              }
+            },
+            concurrencyControl);
   }
 
   @Override
@@ -535,5 +570,33 @@ public final class PartitionManagerImpl
       final Duration timeout) {
     return scalingExecutor.awaitRedistributionCompletion(
         desiredPartitionCount, redistributedPartitions, timeout);
+  }
+
+  @Override
+  public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
+    return scalingExecutor.notifyPartitionBootstrapped(partitionId);
+  }
+
+  private ActorFuture<Void> stopPartition(final int partitionId) {
+    final var partition = partitions.get(partitionId);
+    if (partition != null) {
+      return partition
+          .stop()
+          .thenApply(
+              ignored -> {
+                partitions.remove(partitionId);
+                return null;
+              },
+              concurrencyControl);
+    } else {
+      return CompletableActorFuture.completed();
+    }
+  }
+
+  public final class PartitionAlreadyExistsException extends RuntimeException {
+
+    PartitionAlreadyExistsException(final int partitionId) {
+      super("Partition with id %d already exists".formatted(partitionId));
+    }
   }
 }

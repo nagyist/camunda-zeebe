@@ -6,6 +6,7 @@
   "DECISION_REQUIREMENTS_DEFINITION": "Decision requirements definition",
   "RESOURCE": "Resource",
   "GROUP": "Group",
+  "CLIENT": "Client",
   "MAPPING_RULE": "Mapping rule",
   "MESSAGE": "Message",
   "PROCESS_DEFINITION": "Process definition",
@@ -60,5 +61,6 @@
   "deleteConfirmation": "Are you sure you want to delete the following authorization:",
   "permission": "Permission",
   "irreversibleAction": "This action cannot be undone.",
-  "selectPermission": "Select at least one permission. Visit <2>authorizations</2> for a full overview."
+  "selectPermission": "Select at least one permission. Visit <2>authorizations</2> for a full overview.",
+  "enterUsername": "Enter username"
 }

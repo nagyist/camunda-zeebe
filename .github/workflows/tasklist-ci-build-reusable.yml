@@ -48,7 +48,7 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@85e6279cec87321a52edac9c87bce653a07cf6c2
+        uses: actions/checkout@09d2acae674a48949e3602304ab46fd20ae0c42f
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
@@ -59,9 +59,11 @@ jobs:
         run: |
           GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
           BRANCH_SLUG=$(echo "${{ inputs.branch }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
-          echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo $GIT_COMMIT_HASH; else echo "branch-$BRANCH_SLUG"; fi)" >> $GITHUB_ENV
-          echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-          echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          {
+            echo "IMAGE_TAG=$(if [ "${{ inputs.branch }}" = "main" ]; then echo "$GIT_COMMIT_HASH"; else echo "branch-$BRANCH_SLUG"; fi)"
+            echo "CI_IMAGE_TAG=ci-$GIT_COMMIT_HASH"
+            echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH"
+          } >> "$GITHUB_ENV"
 
       #########################################################################
       # Setup and configure Maven, Docker, and settings

@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
-import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -320,6 +320,28 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
                 List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
         .isTrue();
     assertThat(authorizedTenantIds.isAuthorizedForTenantId("not-authorized")).isFalse();
+  }
+
+  @Test
+  void shouldBeAuthorizedForInternalData() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.GROUP;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
+    createAndAssignTenant(user.getUsername(), EntityType.USER);
+    final var command = mockCommand(user.getUsername());
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType, null, false, false)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
@@ -668,7 +690,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
-        .thenReturn(Map.of(USER_TOKEN_CLAIM_PREFIX + claimName, claimValue));
+        .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of(claimName, claimValue)));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
   }

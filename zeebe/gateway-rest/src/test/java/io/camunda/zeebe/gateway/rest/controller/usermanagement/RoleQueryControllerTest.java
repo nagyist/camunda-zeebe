@@ -12,37 +12,40 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.entities.UserEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = RoleController.class)
 public class RoleQueryControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
 
-  @MockBean private RoleServices roleServices;
-  @MockBean private UserServices userServices;
-  @MockBean private MappingServices mappingsServices;
+  @MockitoBean private RoleServices roleServices;
+  @MockitoBean private UserServices userServices;
+  @MockitoBean private MappingServices mappingsServices;
+  @MockitoBean private GroupServices groupServices;
 
   @BeforeEach
   void setup() {
@@ -50,6 +53,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
     when(mappingsServices.withAuthentication(any(Authentication.class)))
         .thenReturn(mappingsServices);
+    when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
   }
 
   @Test
@@ -71,7 +75,6 @@ public class RoleQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "Role Name",
-              "roleKey": "100",
               "roleId": "roleId",
               "description": "description"
             }""");
@@ -147,19 +150,16 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "roleKey": "100",
                  "name": "Role 1",
                  "roleId": "role1",
                  "description": "description 1"
                },
                {
-                 "roleKey": "200",
                  "name": "Role 2",
                  "roleId": "role2",
                  "description": "description 2"
                },
                {
-                 "roleKey": "300",
                  "name": "Role 12",
                  "roleId": "role12",
                  "description": "description 12"
@@ -218,15 +218,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchUsersByRole() {
     // given
     final var roleId = "roleId";
-    when(userServices.search(any(UserQuery.class)))
+    when(roleServices.searchMembers(any(RoleQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<UserEntity>()
+            new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new UserEntity(100L, "user1", "User 1", "user1@example.com", "password1"),
-                        new UserEntity(200L, "user2", "User 2", "user2@example.com", "password2"),
-                        new UserEntity(300L, "user3", "User 3", "user3@example.com", "password3")))
+                        new RoleMemberEntity("user1", EntityType.USER),
+                        new RoleMemberEntity("user2", EntityType.USER),
+                        new RoleMemberEntity("user3", EntityType.USER)))
                 .build());
 
     // when /then
@@ -247,22 +247,13 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "userKey": "100",
-                 "username": "user1",
-                 "name": "User 1",
-                 "email": "user1@example.com"
+                 "username": "user1"
                },
                {
-                 "userKey": "200",
-                 "username": "user2",
-                 "name": "User 2",
-                 "email": "user2@example.com"
+                 "username": "user2"
                },
                {
-                 "userKey": "300",
-                 "username": "user3",
-                 "name": "User 3",
-                 "email": "user3@example.com"
+                 "username": "user3"
                }
              ],
              "page": {
@@ -272,10 +263,10 @@ public class RoleQueryControllerTest extends RestControllerTest {
              }
            }""");
 
-    verify(userServices)
-        .search(
-            new UserQuery.Builder()
-                .filter(f -> f.roleId(roleId).usernames(Collections.emptySet()))
+    verify(roleServices)
+        .searchMembers(
+            new RoleQuery.Builder()
+                .filter(f -> f.memberType(EntityType.USER).joinParentId(roleId))
                 .build());
   }
 
@@ -340,5 +331,112 @@ public class RoleQueryControllerTest extends RestControllerTest {
     verify(mappingsServices)
         .search(
             new MappingQuery.Builder().filter(f -> f.roleId(roleId).claimNames(List.of())).build());
+  }
+
+  @Test
+  public void shouldSearchClientsByRole() {
+    // given
+    final var roleId = "roleId";
+    when(roleServices.searchMembers(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleMemberEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new RoleMemberEntity("client1", EntityType.CLIENT),
+                        new RoleMemberEntity("client2", EntityType.CLIENT),
+                        new RoleMemberEntity("client3", EntityType.CLIENT)))
+                .build());
+
+    // when /then
+    webClient
+        .post()
+        .uri("%s/%s/clients/search".formatted(ROLE_BASE_URL, roleId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "clientId": "client1"
+               },
+               {
+                 "clientId": "client2"
+               },
+               {
+                 "clientId": "client3"
+               }
+             ],
+             "page": {
+               "totalItems": 3,
+               "firstSortValues": [],
+               "lastSortValues": []
+             }
+           }""");
+
+    verify(roleServices)
+        .searchMembers(
+            new RoleQuery.Builder()
+                .filter(f -> f.joinParentId(roleId).memberType(EntityType.CLIENT))
+                .build());
+  }
+
+  @Test
+  void shouldSearchGroupsByRole() {
+    // given
+    final var roleId = "roleId";
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(2)
+                .items(
+                    List.of(
+                        new GroupEntity(1L, "group1", "Group 1", "desc 1"),
+                        new GroupEntity(2L, "group2", "Group 2", "desc 2")))
+                .build());
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/groups/search".formatted(ROLE_BASE_URL, roleId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "items": [
+                {
+                  "groupId": "group1",
+                  "name": "Group 1",
+                  "description": "desc 1"
+                },
+                {
+                  "groupId": "group2",
+                  "name": "Group 2",
+                  "description": "desc 2"
+                }
+              ],
+              "page": {
+                "totalItems": 2,
+                "firstSortValues": [],
+                "lastSortValues": []
+              }
+            }""");
+
+    verify(groupServices).search(new GroupQuery.Builder().filter(f -> f.roleId(roleId)).build());
   }
 }

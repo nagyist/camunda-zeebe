@@ -9,14 +9,21 @@ package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 
+import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
+import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.service.exception.ForbiddenException;
@@ -57,20 +64,31 @@ public final class ProcessInstanceServices
         ProcessInstanceServices, ProcessInstanceQuery, ProcessInstanceEntity> {
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
+  private final SequenceFlowSearchClient sequenceFlowSearchClient;
+  private final IncidentSearchClient incidentSearchClient;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentSearchClient incidentSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processInstanceSearchClient = processInstanceSearchClient;
+    this.sequenceFlowSearchClient = sequenceFlowSearchClient;
+    this.incidentSearchClient = incidentSearchClient;
   }
 
   @Override
   public ProcessInstanceServices withAuthentication(final Authentication authentication) {
     return new ProcessInstanceServices(
-        brokerClient, securityContextProvider, processInstanceSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        processInstanceSearchClient,
+        sequenceFlowSearchClient,
+        incidentSearchClient,
+        authentication);
   }
 
   @Override
@@ -122,6 +140,15 @@ public final class ProcessInstanceServices
                 Collectors.toMap(ProcessInstanceEntity::processInstanceKey, Function.identity()));
 
     return orderedKeys.stream().map(resultsByKey::get).filter(Objects::nonNull).toList();
+  }
+
+  public List<SequenceFlowEntity> sequenceFlows(final long processInstanceKey) {
+    return sequenceFlowSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .findAllSequenceFlows(
+            SequenceFlowQuery.of(b -> b.filter(f -> f.processInstanceKey(processInstanceKey))));
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
@@ -190,18 +217,11 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord>
       cancelProcessInstanceBatchOperationWithResult(final ProcessInstanceFilter filter) {
-    final var rootInstanceFilter =
-        filter.toBuilder()
-            // It is only possible to cancel root processes in zeebe,
-            // whereby zeebe then automatically cancels the sub-processes.
-            .parentProcessInstanceKeyOperations(Operation.exists(false))
-            .states(ProcessInstanceState.ACTIVE.name())
-            .build();
-
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
-            .setFilter(rootInstanceFilter)
-            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -211,13 +231,14 @@ public final class ProcessInstanceServices
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
-            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
   }
 
   public CompletableFuture<BatchOperationCreationRecord> migrateProcessInstancesBatchOperation(
-      final ProcessInstanceMigrationBatchOperationRequest request) {
+      final ProcessInstanceMigrateBatchOperationRequest request) {
     final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
     migrationPlan.setTargetProcessDefinitionKey(request.targetProcessDefinitionKey);
     request.mappingInstructions.forEach(migrationPlan::addMappingInstruction);
@@ -226,7 +247,8 @@ public final class ProcessInstanceServices
         new BrokerCreateBatchOperationRequest()
             .setFilter(request.filter)
             .setMigrationPlan(migrationPlan)
-            .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+            .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -273,9 +295,27 @@ public final class ProcessInstanceServices
         new BrokerCreateBatchOperationRequest()
             .setModificationPlan(modificationPlan)
             .setFilter(rootInstanceFilter)
-            .setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+            .setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
+  }
+
+  public SearchQueryResult<IncidentEntity> searchIncidents(
+      final long processInstanceKey, final IncidentQuery query) {
+    final var processInstance = getByKey(processInstanceKey);
+    final var treePath = processInstance.treePath();
+
+    return incidentSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .searchIncidents(
+            new IncidentQuery.Builder()
+                .filter(new IncidentFilter.Builder().treePath(treePath).build())
+                .page(query.page())
+                .sort(query.sort())
+                .build());
   }
 
   public record ProcessInstanceCreateRequest(
@@ -304,7 +344,7 @@ public final class ProcessInstanceServices
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
       Long operationReference) {}
 
-  public record ProcessInstanceMigrationBatchOperationRequest(
+  public record ProcessInstanceMigrateBatchOperationRequest(
       ProcessInstanceFilter filter,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions) {}

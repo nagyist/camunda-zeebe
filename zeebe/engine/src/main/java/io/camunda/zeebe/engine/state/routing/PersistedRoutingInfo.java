@@ -15,7 +15,9 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
-import java.util.Set;
+import java.util.Collections;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 final class PersistedRoutingInfo extends UnpackedObject implements DbValue {
@@ -36,11 +38,15 @@ final class PersistedRoutingInfo extends UnpackedObject implements DbValue {
         .declareProperty(hashModPartitionCount);
   }
 
-  public Set<Integer> getPartitions() {
-    return partitions.stream().map(IntegerValue::getValue).collect(Collectors.toUnmodifiableSet());
+  public SortedSet<Integer> getPartitions() {
+    return partitions.stream()
+        .map(IntegerValue::getValue)
+        .collect(
+            Collectors.collectingAndThen(
+                Collectors.toCollection(TreeSet::new), Collections::unmodifiableSortedSet));
   }
 
-  public void setPartitions(final Set<Integer> partitions) {
+  public void setPartitions(final SortedSet<Integer> partitions) {
     this.partitions.reset();
     for (final var partition : partitions) {
       this.partitions.add().setValue(partition);

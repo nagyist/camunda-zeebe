@@ -16,7 +16,7 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {Section} from '../styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {Diagram} from 'modules/components/Diagram';
+import {Diagram} from 'modules/components/Diagram/v2';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -28,7 +28,11 @@ import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesSt
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
 import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
-import {getFlowNode} from 'modules/utils/flowNodes';
+import {
+  getFlowNode,
+  getSubprocessOverlayFromIncidentFlowNodes,
+} from 'modules/utils/flowNodes';
+import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -54,7 +58,9 @@ function setSearchParam(
 const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {version, flowNodeId} = getProcessInstanceFilters(location.search);
+  const {version, flowNodeId, tenant} = getProcessInstanceFilters(
+    location.search,
+  );
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
@@ -90,7 +96,12 @@ const DiagramPanel: React.FC = observer(() => {
       `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
   });
 
-  const {data: overlayData} = useProcessInstancesOverlayData({}, processId);
+  const {data: businessObjects} = useBusinessObjects();
+
+  const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
+    {},
+    processId,
+  );
 
   const {data: batchOverlayData} = useBatchModificationOverlayData(
     {},
@@ -100,6 +111,19 @@ const DiagramPanel: React.FC = observer(() => {
     },
     processId,
     batchModificationStore.state.isEnabled,
+  );
+
+  const flowNodeIdsWithIncidents = processInstanceOverlayData
+    ?.filter(({type}) => type === 'statistics-incidents')
+    ?.map((overlay) => overlay.flowNodeId);
+
+  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
+    (flowNodeId) => businessObjects?.[flowNodeId],
+  );
+
+  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+    selectableFlowNodesWithIncidents,
+    'statistics-incidents',
   );
 
   const isDiagramLoading =
@@ -128,6 +152,7 @@ const DiagramPanel: React.FC = observer(() => {
         processDefinitionId={processId}
         isVersionSelected={isVersionSelected}
         panelHeaderRef={panelHeaderRef}
+        tenant={tenant}
       />
       <DiagramShell
         status={getStatus()}
@@ -163,7 +188,7 @@ const DiagramPanel: React.FC = observer(() => {
                     );
                   },
                   overlaysData: [
-                    ...(overlayData ?? []),
+                    ...(processInstanceOverlayData ?? []),
                     ...(batchOverlayData ?? []),
                   ],
                   // All flow nodes that can be a move modification target,
@@ -193,7 +218,10 @@ const DiagramPanel: React.FC = observer(() => {
                       );
                     }
                   },
-                  overlaysData: overlayData,
+                  overlaysData: [
+                    ...(processInstanceOverlayData ?? []),
+                    ...(subprocessOverlays ?? []),
+                  ],
                   selectableFlowNodes: selectableIds,
                 })}
           >

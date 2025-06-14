@@ -106,6 +106,7 @@ public class ElasticsearchExporterConfiguration {
       case COMPENSATION_SUBSCRIPTION -> index.compensationSubscription;
       case MESSAGE_CORRELATION -> index.messageCorrelation;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION -> index.adHocSubProcessActivityActivation;
+      case ASYNC_REQUEST -> index.asyncRequest;
       default -> false;
     };
   }
@@ -214,6 +215,9 @@ public class ElasticsearchExporterConfiguration {
     public boolean batchOperationChunk = false;
     public boolean batchOperationExecution = false;
     public boolean batchOperationLifecycleManagement = false;
+    public boolean batchOperationPartitionLifecycle = false;
+
+    public boolean asyncRequest = false;
 
     // index settings
     private Integer numberOfShards = null;
@@ -323,6 +327,8 @@ public class ElasticsearchExporterConfiguration {
           + user
           + ", authorization="
           + authorization
+          + ", asyncRequest="
+          + asyncRequest
           + '}';
     }
   }

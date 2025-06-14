@@ -17,18 +17,20 @@ import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -154,15 +156,17 @@ public class TaskListenerBlockedTransitionTest {
         listenerType + "_2",
         listenerType + "_3");
 
-    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
-    // `COMPLETING` and `COMPLETED` events
-    helper.assertUserTaskIntentsSequence(
+    // verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task completing transition
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.COMPLETED);
+        UserTaskIntent.COMPLETED,
+        AsyncRequestIntent.PROCESSED);
 
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
@@ -305,15 +309,17 @@ public class TaskListenerBlockedTransitionTest {
         listenerType + "_2",
         listenerType + "_3");
 
-    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
-    // `ASSIGNING` and `ASSIGNED` events
-    helper.assertUserTaskIntentsSequence(
+    // verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task assigning transition
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.ASSIGNED);
+        UserTaskIntent.ASSIGNED,
+        AsyncRequestIntent.PROCESSED);
 
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
@@ -399,15 +405,17 @@ public class TaskListenerBlockedTransitionTest {
         listenerType + "_2",
         listenerType + "_3");
 
-    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
-    // `UPDATING` and `UPDATED` events
-    helper.assertUserTaskIntentsSequence(
+    // verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task updating transition
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.UPDATING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.UPDATED);
+        UserTaskIntent.UPDATED,
+        AsyncRequestIntent.PROCESSED);
 
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
@@ -425,8 +433,19 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
-  public void
-      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdate() {
+  public void shouldUpdateUserTaskAfterAllUpdatingListenersOnVariableUpdateWithLocalSemantic() {
+    verifyUserTaskUpdateAfterAllUpdatingListenersTriggeredByVariableUpdate(
+        VariableDocumentUpdateSemantic.LOCAL);
+  }
+
+  @Test
+  public void shouldUpdateUserTaskAfterAllUpdatingListenersOnVariableUpdateWithPropagateSemantic() {
+    verifyUserTaskUpdateAfterAllUpdatingListenersTriggeredByVariableUpdate(
+        VariableDocumentUpdateSemantic.PROPAGATE);
+  }
+
+  private void verifyUserTaskUpdateAfterAllUpdatingListenersTriggeredByVariableUpdate(
+      final VariableDocumentUpdateSemantic semantic) {
     // given
     final long processInstanceKey =
         helper.createProcessInstance(
@@ -447,7 +466,7 @@ public class TaskListenerBlockedTransitionTest {
         .variables()
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("status", "APPROVED"))
-        .withLocalSemantic()
+        .withUpdateSemantic(semantic)
         .expectUpdating()
         .update();
     helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
@@ -460,51 +479,51 @@ public class TaskListenerBlockedTransitionTest {
         listenerType + "_2",
         listenerType + "_3");
 
-    final Predicate<Record<?>> isUserTaskOrVariableDocumentWithElementInstanceKey =
-        r ->
-            switch (r.getValue()) {
-              case final UserTaskRecord u ->
-                  u.getElementInstanceKey() == userTaskElementInstanceKey;
-              case final VariableDocumentRecord v -> v.getScopeKey() == userTaskElementInstanceKey;
-              default -> false;
-            };
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
+        processInstanceKey,
+        VariableDocumentIntent.UPDATE,
+        AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.UPDATED,
+        VariableDocumentIntent.UPDATED,
+        AsyncRequestIntent.PROCESSED);
 
-    assertThat(
-            RecordingExporter.records()
-                .filter(isUserTaskOrVariableDocumentWithElementInstanceKey)
-                .skipUntil(r -> r.getIntent() == VariableDocumentIntent.UPDATE)
-                .limit(r -> r.getIntent() == VariableDocumentIntent.UPDATED))
-        .extracting(Record::getValueType, Record::getIntent)
-        .describedAs("Verify the expected sequence of UserTask and VariableDocument intents")
-        .containsExactly(
-            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
-            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
-            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
-            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED));
+    if (semantic == VariableDocumentUpdateSemantic.LOCAL) {
+      verifyVariableCreated(
+          processInstanceKey, userTaskElementInstanceKey, "status", "\"APPROVED\"");
+    } else {
+      verifyVariableCreated(processInstanceKey, processInstanceKey, "status", "\"APPROVED\"");
+    }
 
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.UPDATED,
         userTask ->
             Assertions.assertThat(userTask)
-                .hasAssignee(createdUserTask.getAssignee())
-                .hasCandidateGroupsList(createdUserTask.getCandidateGroupsList())
-                .hasCandidateUsersList(createdUserTask.getCandidateUsersList())
-                .hasDueDate(createdUserTask.getDueDate())
-                .hasFollowUpDate(createdUserTask.getFollowUpDate())
-                .hasPriority(createdUserTask.getPriority())
                 .hasVariables(Map.of("status", "APPROVED"))
-                .hasAction("")
-                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES)
+                .hasAction(""));
+  }
+
+  private static void verifyVariableCreated(
+      final long processInstanceKey, final long scopeKey, final String name, final String value) {
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasScopeKey(scopeKey)
+        .hasName(name)
+        .hasValue(value);
   }
 
   @Test
   public void
-      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithEmptyDocument() {
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithLocalSemanticAndEmptyDocument() {
     // given
     final long processInstanceKey =
         helper.createProcessInstance(
@@ -699,10 +718,18 @@ public class TaskListenerBlockedTransitionTest {
         .extracting(Record::getKey)
         .isEqualTo(listenerJob.getKey());
 
-    helper.assertUserTaskIntentsSequence(
+    // verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // canceling ongoing assigning transition
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
+        // In case the user task is canceled during the ongoing transition,
+        // we should write a rejection for the original async request
+        // and write `AsyncRequestIntent.PROCESSED` event to cleanup the state.
+        // This will be implemented in the scope of a separate issue:
+        //  - https://github.com/camunda/camunda/issues/33024
         UserTaskIntent.CANCELING,
         UserTaskIntent.CANCELED);
   }
@@ -736,8 +763,11 @@ public class TaskListenerBlockedTransitionTest {
         .extracting(Record::getKey)
         .isEqualTo(incident.getKey());
 
-    helper.assertUserTaskIntentsSequence(
+    // verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // canceling ongoing assigning transition
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.CANCELING,
@@ -765,14 +795,16 @@ public class TaskListenerBlockedTransitionTest {
     helper.assertTaskListenerJobsCompletionSequence(
         processInstanceKey, JobListenerEventType.ASSIGNING, listenerType, listenerType + "_2");
 
-    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
-    // `CLAIMING` and `ASSIGNED` events
-    helper.assertUserTaskIntentsSequence(
+    // verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task updating transition
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.CLAIMING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.ASSIGNED);
+        UserTaskIntent.ASSIGNED,
+        AsyncRequestIntent.PROCESSED);
 
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
