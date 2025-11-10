@@ -234,7 +234,6 @@ public class BrokerBasedPropertiesOverride {
     final var batchOperationsCfg = override.getExperimental().getEngine().getBatchOperations();
     batchOperationsCfg.setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
     batchOperationsCfg.setChunkSize(engineBatchOperation.getChunkSize());
-    batchOperationsCfg.setDbChunkSize(engineBatchOperation.getDbChunkSize());
     batchOperationsCfg.setQueryPageSize(engineBatchOperation.getQueryPageSize());
     batchOperationsCfg.setQueryInClauseSize(engineBatchOperation.getQueryInClauseSize());
     batchOperationsCfg.setQueryRetryMax(engineBatchOperation.getQueryRetryMax());
