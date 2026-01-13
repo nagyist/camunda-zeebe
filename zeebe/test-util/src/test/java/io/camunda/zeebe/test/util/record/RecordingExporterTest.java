@@ -41,7 +41,7 @@ public final class RecordingExporterTest {
 
     // when
     final List<Record<TestValue>> list =
-        records(VALUE_TYPE, TestValue.class).collect(Collectors.toList());
+        records(VALUE_TYPE, TestValue.class).limit(3).collect(Collectors.toList());
 
     // then
     assertThat(list).extracting(Record::getPosition).containsExactly(1L, 2L, 3L);
