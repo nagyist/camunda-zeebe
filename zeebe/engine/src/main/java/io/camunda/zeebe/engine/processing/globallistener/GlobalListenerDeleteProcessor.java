@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -29,14 +28,13 @@ import io.camunda.zeebe.util.Either;
 
 public final class GlobalListenerDeleteProcessor
     implements DistributedTypedRecordProcessor<GlobalListenerRecord> {
-  private static final String LISTENER_NOT_EXISTS_ERROR_MESSAGE =
-      "Expected to delete a global %s listener with id '%s', but it was not found";
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final GlobalListenersState globalListenersState;
+  private final GlobalListenerValidator globalListenerValidator;
 
   public GlobalListenerDeleteProcessor(
       final KeyGenerator keyGenerator,
@@ -49,6 +47,7 @@ public final class GlobalListenerDeleteProcessor
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     globalListenersState = processingState.getGlobalListenersState();
+    globalListenerValidator = new GlobalListenerValidator();
   }
 
   @Override
@@ -80,15 +79,13 @@ public final class GlobalListenerDeleteProcessor
   public void processDistributedCommand(final TypedRecord<GlobalListenerRecord> command) {
     final var record = command.getValue();
 
-    final var listener =
-        globalListenersState.getGlobalListener(record.getListenerType(), record.getId());
-    if (listener != null) {
-      emitChangeEvents(record);
-    } else {
-      final var message =
-          LISTENER_NOT_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
-      writers.rejection().appendRejection(command, RejectionType.NOT_FOUND, message);
-    }
+    globalListenerValidator
+        .resolveExistingListener(record, globalListenersState)
+        .ifRightOrLeft(
+            this::emitChangeEvents,
+            rejection ->
+                writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
+
     distributionBehavior.acknowledgeCommand(command);
   }
 
@@ -102,13 +99,11 @@ public final class GlobalListenerDeleteProcessor
             .build();
     return authCheckBehavior
         .isAuthorizedOrInternalCommand(authRequest)
-        .map(unused -> {
-          final var record = command.getValue();
-          final var resolvedRecord =
-              globalListenersState.getGlobalListener(record.getListenerType(), record.getId());
-          record.setGlobalListenerKey(resolvedRecord.getGlobalListenerKey());
-          return record;
-        });
+        .map(unused -> command.getValue())
+        .flatMap(globalListenerValidator::idProvided)
+        .flatMap(
+            record ->
+                globalListenerValidator.resolveExistingListener(record, globalListenersState));
   }
 
   private void emitChangeEvents(final GlobalListenerRecord record) {
