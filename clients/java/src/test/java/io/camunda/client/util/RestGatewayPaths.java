@@ -118,6 +118,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/process-definitions/statistics/process-instances-by-version";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION =
       REST_API_PATH + "/incidents/statistics/process-instances-by-definition";
+  private static final String URL_RESOURCE = REST_API_PATH + "/resources/%s";
+  private static final String URL_RESOURCE_CONTENT = URL_RESOURCE + "/content";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
       REST_API_PATH + "/incidents/statistics/process-instances-by-error";
   private static final String URL_GLOBAL_JOB_STATISTICS = REST_API_PATH + "/jobs/statistics/global";
@@ -447,6 +449,14 @@ public class RestGatewayPaths {
 
   public static String getGlobalJobStatisticsUrl() {
     return URL_GLOBAL_JOB_STATISTICS;
+  }
+
+  public static String getResourceUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE, resourceKey);
+  }
+
+  public static String getResourceContentUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE_CONTENT, resourceKey);
   }
 
   public static String getResourceDeletionUrl(final long resourceKey) {
