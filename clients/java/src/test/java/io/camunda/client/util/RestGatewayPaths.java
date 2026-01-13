@@ -447,6 +447,14 @@ public class RestGatewayPaths {
     return URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION;
   }
 
+  public static String getResourceUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE, resourceKey);
+  }
+
+  public static String getResourceContentUrl(final String resourceKey) {
+    return String.format(URL_RESOURCE_CONTENT, resourceKey);
+  }
+
   public static String getGlobalJobStatisticsUrl() {
     return URL_GLOBAL_JOB_STATISTICS;
   }

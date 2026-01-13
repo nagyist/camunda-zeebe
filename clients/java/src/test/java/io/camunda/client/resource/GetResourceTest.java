@@ -18,18 +18,28 @@ package io.camunda.client.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
+<<<<<<< HEAD
 import io.camunda.client.api.response.Resource;
 import io.camunda.client.protocol.rest.ResourceResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
 import io.camunda.client.util.assertions.LoggedRequestAssert;
+=======
+import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.protocol.rest.ResourceResult;
+import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayPaths;
+>>>>>>> 570afd0fb7a (test: added tests to assert that the endpoints are called by the client)
 import org.junit.jupiter.api.Test;
 
 public class GetResourceTest extends ClientRestTest {
   @Test
   void shouldGetResource() {
+<<<<<<< HEAD
     // given
+=======
+>>>>>>> 570afd0fb7a (test: added tests to assert that the endpoints are called by the client)
     gatewayService.onResourceGetRequest(
         123L,
         new ResourceResult()
@@ -37,6 +47,7 @@ public class GetResourceTest extends ClientRestTest {
             .resourceId("test.bpmn")
             .resourceName("Test process")
             .version(1));
+<<<<<<< HEAD
 
     // when
     final Resource response = client.newResourceGetRequest(123L).execute();
@@ -50,5 +61,12 @@ public class GetResourceTest extends ClientRestTest {
     assertThat(response.getResourceId()).isEqualTo("test.bpmn");
     assertThat(response.getResourceName()).isEqualTo("Test process");
     assertThat(response.getVersion()).isEqualTo(1);
+=======
+    client.newResourceGetRequest(123L).execute();
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getResourceUrl("123"));
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+>>>>>>> 570afd0fb7a (test: added tests to assert that the endpoints are called by the client)
   }
 }
