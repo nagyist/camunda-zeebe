@@ -88,9 +88,11 @@ public final class GlobalListenerBatchConfigureProcessor
             .collect(Collectors.toMap(GlobalListenerRecordValue::getId, Function.identity()));
 
     // The new configuration should completely replace the old one.
-    // This means that any existing listener which is no longer present in the new configuration
-    // should be deleted.
+    // This means that any existing configuration-defined listener which is no longer present in the
+    // new configuration should be deleted.
     existingListeners.values().stream()
+        // only consider configuration-defined listeners
+        .filter(l -> l.getSource() == GlobalListenerSource.CONFIGURATION)
         // filter out listeners which are still present in the new configuration
         .filter(l -> !newListeners.containsKey(l.getId()))
         .forEach(listener -> writers.state().appendFollowUpEvent(listener.getGlobalListenerKey(), GlobalListenerIntent.DELETED, listener));
@@ -99,6 +101,7 @@ public final class GlobalListenerBatchConfigureProcessor
         .values()
         .forEach(
             listener -> {
+              // Note: the old listener is replaced even if it was API-defined
               if (existingListeners.containsKey(listener.getId())) {
                 // Ensure the old key is kept for updated listeners to correlate with existing state
                 listener.setGlobalListenerKey(
