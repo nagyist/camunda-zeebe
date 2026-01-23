@@ -11,6 +11,7 @@ import static io.camunda.security.configuration.headers.ContentSecurityPolicyCon
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 import static java.util.stream.Collectors.toMap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
@@ -152,6 +153,8 @@ public class WebSecurityConfig {
           "/ready",
           "/health",
           "/startup",
+          // post logout decision endpoint
+          "/post-logout",
           // swagger-ui endpoint
           "/swagger/**",
           "/swagger-ui/**",
@@ -872,6 +875,23 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public WebappRedirectStrategy webappRedirectStrategy(final ObjectMapper objectMapper) {
+      return new WebappRedirectStrategy(objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public CamundaOidcLogoutSuccessHandler logoutSuccessHandler(
+        final WebappRedirectStrategy redirectStrategy,
+        final ClientRegistrationRepository repository) {
+      final var handler = new CamundaOidcLogoutSuccessHandler(repository);
+      handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
+      handler.setRedirectStrategy(redirectStrategy);
+      return handler;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
@@ -887,6 +907,7 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
+        final CamundaOidcLogoutSuccessHandler logoutSuccessHandler,
         final OidcUserService oidcUserService)
         throws Exception {
       final var filterChainBuilder =
@@ -940,8 +961,9 @@ public class WebSecurityConfig {
                   (logout) ->
                       logout
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(new NoContentResponseHandler())
-                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                          .invalidateHttpSession(true)
+                          .logoutSuccessHandler(logoutSuccessHandler))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
