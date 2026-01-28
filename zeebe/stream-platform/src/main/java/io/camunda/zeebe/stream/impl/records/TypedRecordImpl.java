@@ -158,6 +158,11 @@ public final class TypedRecordImpl implements TypedRecord {
     return metadata.getLength() + value.getLength();
   }
 
+  @JsonIgnore
+  public int getRawLength() {
+    return rawEvent.getLength();
+  }
+
   @Override
   public String toJson() {
     return MsgPackConverter.convertJsonSerializableObjectToJson(this);
