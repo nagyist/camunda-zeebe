@@ -143,7 +143,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    final int initialOffset = offset;
     headerEncoder.wrap(buffer, offset);
 
     headerEncoder
