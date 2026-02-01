@@ -884,7 +884,8 @@ public class WebSecurityConfig {
     @Bean
     @ConditionalOnSecondaryStorageEnabled
     @ConditionalOnProperty(
-        value = "camunda.security.authentication.oidc.idpLogoutEnabled",
+        prefix = OidcAuthenticationConfiguration.PREFIX,
+        name = "idp-logout-enabled",
         havingValue = "true",
         matchIfMissing = true)
     public LogoutSuccessHandler oidcLogoutSuccessHandler(
@@ -900,7 +901,8 @@ public class WebSecurityConfig {
     @Bean
     @ConditionalOnSecondaryStorageEnabled
     @ConditionalOnProperty(
-        value = "camunda.security.authentication.oidc.idpLogoutEnabled",
+        prefix = OidcAuthenticationConfiguration.PREFIX,
+        name = "idp-logout-enabled",
         havingValue = "false")
     public LogoutSuccessHandler noContentLogoutSuccessHandler() {
       return new NoContentResponseHandler();
