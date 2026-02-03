@@ -59,9 +59,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   private final BooleanProperty afterNonGlobalProp = new BooleanProperty("afterNonGlobal", false);
   private final IntegerProperty priorityProp = new IntegerProperty("priority", DEFAULT_PRIORITY);
   private final EnumProperty<GlobalListenerSource> sourceProp =
-      new EnumProperty<>("source", GlobalListenerSource.class, GlobalListenerSource.CONFIGURATION);
+      new EnumProperty<>("source", GlobalListenerSource.class, DEFAULT_SOURCE);
   private final EnumProperty<GlobalListenerType> listenerTypeProp =
-      new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
+      new EnumProperty<>("listenerType", GlobalListenerType.class, DEFAULT_LISTENER_TYPE);
 
   private final LongProperty configKeyProp = new LongProperty("configKey", -1L);
 
