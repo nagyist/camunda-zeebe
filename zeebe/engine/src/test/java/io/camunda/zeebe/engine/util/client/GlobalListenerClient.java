@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.function.BiFunction;
 
 public final class GlobalListenerClient {
@@ -58,7 +59,12 @@ public final class GlobalListenerClient {
     return this;
   }
 
-  public GlobalListenerClient withEventType(final String eventType) {
+  public GlobalListenerClient withEventTypes(final String... eventTypes) {
+    globalListenerRecord.setEventTypes(List.of(eventTypes));
+    return this;
+  }
+
+  public GlobalListenerClient addEventType(final String eventType) {
     globalListenerRecord.addEventType(eventType);
     return this;
   }

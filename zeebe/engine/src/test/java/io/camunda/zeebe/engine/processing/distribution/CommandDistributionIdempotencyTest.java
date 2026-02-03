@@ -778,7 +778,7 @@ public class CommandDistributionIdempotencyTest {
                         .globalListener()
                         .withId("my-listener-to-create")
                         .withType("job1")
-                        .withEventType("all")
+                        .withEventTypes("all")
                         .create()),
             GlobalListenerCreateProcessor.class
           },
@@ -792,15 +792,14 @@ public class CommandDistributionIdempotencyTest {
                       .globalListener()
                       .withId("my-listener-to-update")
                       .withType("job1")
-                      .withEventType("all")
+                      .withEventTypes("all")
                       .create();
 
                   return ENGINE
                       .globalListener()
                       .withId("my-listener-to-update")
                       .withType("job2")
-                      .withEventType("creating")
-                      .withEventType("updating")
+                      .withEventTypes("creating", "updating")
                       .update();
                 }),
             GlobalListenerUpdateProcessor.class
@@ -815,7 +814,7 @@ public class CommandDistributionIdempotencyTest {
                       .globalListener()
                       .withId("my-listener-to-delete")
                       .withType("job1")
-                      .withEventType("all")
+                      .withEventTypes("all")
                       .create();
                   return ENGINE.globalListener().withId("my-listener-to-delete").delete();
                 }),
