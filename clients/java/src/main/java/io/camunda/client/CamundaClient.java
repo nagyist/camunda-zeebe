@@ -167,6 +167,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
@@ -977,6 +978,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   UsageMetricsStatisticsRequest newUsageMetricsRequest(
       final OffsetDateTime startTime, final OffsetDateTime endTime);
+
+  /**
+   * Executes a request to query global job statistics.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGlobalJobStatisticsRequest()
+   *  .from(OffsetDateTime.now().minusDays(1))
+   *  .to(OffsetDateTime.now())
+   *  .jobType("myJobType")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the global job statistics request
+   */
+  GlobalJobStatisticsRequest newGlobalJobStatisticsRequest();
 
   /**
    * Executes a search request to query process instance sequence flows.
