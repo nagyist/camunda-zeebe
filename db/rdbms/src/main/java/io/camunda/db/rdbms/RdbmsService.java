@@ -25,6 +25,7 @@ import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
+import io.camunda.db.rdbms.read.service.JobMetricsBatchDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
@@ -77,6 +78,7 @@ public class RdbmsService {
   private final SequenceFlowDbReader sequenceFlowReader;
   private final BatchOperationItemDbReader batchOperationItemReader;
   private final JobDbReader jobReader;
+  private final JobMetricsBatchDbReader jobMetricsBatchDbReader;
   private final UsageMetricsDbReader usageMetricReader;
   private final UsageMetricTUDbReader usageMetricTUDbReader;
   private final MessageSubscriptionDbReader messageSubscriptionReader;
@@ -120,6 +122,7 @@ public class RdbmsService {
       final SequenceFlowDbReader sequenceFlowReader,
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
+      final JobMetricsBatchDbReader jobMetricsBatchDbReader,
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
@@ -160,6 +163,7 @@ public class RdbmsService {
     this.sequenceFlowReader = sequenceFlowReader;
     this.batchOperationItemReader = batchOperationItemReader;
     this.jobReader = jobReader;
+    this.jobMetricsBatchDbReader = jobMetricsBatchDbReader;
     this.usageMetricReader = usageMetricReader;
     this.usageMetricTUDbReader = usageMetricTUDbReader;
     this.messageSubscriptionReader = messageSubscriptionReader;
@@ -282,6 +286,10 @@ public class RdbmsService {
 
   public JobDbReader getJobReader() {
     return jobReader;
+  }
+
+  public JobMetricsBatchDbReader getJobMetricsBatchDbReader() {
+    return jobMetricsBatchDbReader;
   }
 
   public MessageSubscriptionDbReader getMessageSubscriptionReader() {

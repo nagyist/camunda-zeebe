@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableDecisionEvaluationRecordV
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
@@ -66,6 +68,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -400,6 +403,34 @@ public class RecordFixtures {
                 .from((UserRecordValue) recordValueRecord.getValue())
                 .withUserKey(userKey)
                 .withUsername(username)
+                .build())
+        .build();
+  }
+
+  public ImmutableRecord<RecordValue> getJobMetricsBatchRecord(
+      final JobMetricsBatchIntent intent,
+      final long startTime,
+      final long endTime,
+      final List<String> encodedStrings,
+      final List<? extends JobMetricsValue> metrics,
+      final boolean recordSizeLimitExceeded) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.JOB_METRICS_BATCH);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withKey(nextPosition())
+        .withPosition(nextPosition())
+        .withPartitionId(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableJobMetricsBatchRecordValue.builder()
+                .withBatchStartTime(startTime)
+                .withBatchEndTime(endTime)
+                .withJobMetrics(metrics)
+                .withEncodedStrings(encodedStrings)
+                .withRecordSizeLimitExceeded(recordSizeLimitExceeded)
                 .build())
         .build();
   }
