@@ -140,6 +140,9 @@ final class ProcessInstanceElementActivatingV3Applier
         elementInstance.setProcessDepth(parentProcessInstance.getProcessDepth() + 1);
         elementInstanceState.updateInstance(elementInstance);
       }
+    } else {
+      // insert business id index for root process instances
+      insertBusinessIdIndex(value);
     }
   }
 
@@ -314,6 +317,21 @@ final class ProcessInstanceElementActivatingV3Applier
       // executable elements without events
       eventScopeInstanceState.createInstance(
           elementInstanceKey, Collections.emptySet(), Collections.emptySet());
+    }
+  }
+
+  /**
+   * Inserts the business id index for root process instances. This maps the business id to the
+   * process instance key, scoped by process definition key and tenant id.
+   */
+  private void insertBusinessIdIndex(final ProcessInstanceRecord value) {
+    final var businessId = value.getBusinessId();
+    if (!businessId.isEmpty()) {
+      elementInstanceState.insertProcessInstanceKeyByBusinessId(
+          businessId,
+          value.getProcessDefinitionKey(),
+          value.getTenantId(),
+          value.getProcessInstanceKey());
     }
   }
 }
