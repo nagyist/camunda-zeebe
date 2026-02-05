@@ -883,28 +883,19 @@ public class WebSecurityConfig {
 
     @Bean
     @ConditionalOnSecondaryStorageEnabled
-    @ConditionalOnProperty(
-        prefix = OidcAuthenticationConfiguration.PREFIX,
-        name = "idp-logout-enabled",
-        havingValue = "true",
-        matchIfMissing = true)
     public LogoutSuccessHandler oidcLogoutSuccessHandler(
         final WebappRedirectStrategy redirectStrategy,
-        final ClientRegistrationRepository repository) {
+        final ClientRegistrationRepository repository,
+        final SecurityConfiguration config) {
+      final var oidcConfig = config.getAuthentication().getOidc();
+      if (!oidcConfig.isIdpLogoutEnabled()) {
+        return new NoContentResponseHandler();
+      }
+
       final var handler = new CamundaOidcLogoutSuccessHandler(repository);
       handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
       handler.setRedirectStrategy(redirectStrategy);
       return handler;
-    }
-
-    @Bean
-    @ConditionalOnSecondaryStorageEnabled
-    @ConditionalOnProperty(
-        prefix = OidcAuthenticationConfiguration.PREFIX,
-        name = "idp-logout-enabled",
-        havingValue = "false")
-    public LogoutSuccessHandler noContentLogoutSuccessHandler() {
-      return new NoContentResponseHandler();
     }
 
     @Bean
