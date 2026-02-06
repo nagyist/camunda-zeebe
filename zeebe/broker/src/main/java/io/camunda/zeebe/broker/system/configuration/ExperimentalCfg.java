@@ -23,6 +23,9 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
   public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
+  private static final boolean DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED = false;
+  private static final boolean DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED = false;
+  private static final String DEFAULT_DEFAULT_ENGINE_NAME = "default";
 
   private boolean continuousBackups = false;
 
@@ -35,6 +38,9 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
+  private boolean legacySenderSubjectsDisabled = DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED;
+  private boolean legacyReceiverSubjectsDisabled = DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED;
+  private String defaultEngineName = DEFAULT_DEFAULT_ENGINE_NAME;
   private RocksdbCfg rocksdb = new RocksdbCfg();
   private ExperimentalRaftCfg raft = new ExperimentalRaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();
@@ -161,6 +167,30 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.features = features;
   }
 
+  public boolean isLegacySenderSubjectsDisabled() {
+    return legacySenderSubjectsDisabled;
+  }
+
+  public void setLegacySenderSubjectsDisabled(final boolean legacySenderSubjectsDisabled) {
+    this.legacySenderSubjectsDisabled = legacySenderSubjectsDisabled;
+  }
+
+  public boolean isLegacyReceiverSubjectsDisabled() {
+    return legacyReceiverSubjectsDisabled;
+  }
+
+  public void setLegacyReceiverSubjectsDisabled(final boolean legacyReceiverSubjectsDisabled) {
+    this.legacyReceiverSubjectsDisabled = legacyReceiverSubjectsDisabled;
+  }
+
+  public String getDefaultEngineName() {
+    return defaultEngineName;
+  }
+
+  public void setDefaultEngineName(final String defaultEngineName) {
+    this.defaultEngineName = defaultEngineName;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -182,6 +212,12 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + engine
         + ", features="
         + features
+        + ", legacySenderSubjectsDisabled="
+        + legacySenderSubjectsDisabled
+        + ", legacyReceiverSubjectsDisabled="
+        + legacyReceiverSubjectsDisabled
+        + ", defaultEngineName="
+        + defaultEngineName
         + '}';
   }
 }

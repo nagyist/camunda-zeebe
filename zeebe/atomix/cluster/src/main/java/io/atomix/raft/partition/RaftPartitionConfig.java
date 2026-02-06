@@ -31,8 +31,8 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final String DEFAULT_ENGINE_NAME = "default";
-  private static final boolean DEFAULT_LEGACY_RAFT_SERVER_RECEIVER_DISABLED = false;
-  private static final boolean DEFAULT_LEGACY_RAFT_SERVER_SENDER_DISABLED = false;
+  private static final boolean DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED = false;
+  private static final boolean DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED = false;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -49,8 +49,8 @@ public class RaftPartitionConfig {
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
   private String engineName = DEFAULT_ENGINE_NAME;
-  private boolean legacyRaftServerReceiverDisabled = DEFAULT_LEGACY_RAFT_SERVER_RECEIVER_DISABLED;
-  private boolean legacyRaftServerSenderDisabled = DEFAULT_LEGACY_RAFT_SERVER_SENDER_DISABLED;
+  private boolean legacyReceiverSubjectsDisabled = DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED;
+  private boolean legacySenderSubjectsDisabled = DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED;
 
   /**
    * Returns the Raft leader election timeout.
@@ -223,20 +223,20 @@ public class RaftPartitionConfig {
     this.engineName = engineName;
   }
 
-  public boolean isLegacyRaftServerReceiverDisabled() {
-    return legacyRaftServerReceiverDisabled;
+  public boolean isLegacyReceiverSubjectsDisabled() {
+    return legacyReceiverSubjectsDisabled;
   }
 
-  public void setLegacyRaftServerReceiverDisabled(final boolean legacyRaftServerReceiverDisabled) {
-    this.legacyRaftServerReceiverDisabled = legacyRaftServerReceiverDisabled;
+  public void setLegacyReceiverSubjectsDisabled(final boolean legacyReceiverSubjectsDisabled) {
+    this.legacyReceiverSubjectsDisabled = legacyReceiverSubjectsDisabled;
   }
 
-  public boolean isLegacyRaftServerSenderDisabled() {
-    return legacyRaftServerSenderDisabled;
+  public boolean isLegacySenderSubjectsDisabled() {
+    return legacySenderSubjectsDisabled;
   }
 
-  public void setLegacyRaftServerSenderDisabled(final boolean legacyRaftServerSenderDisabled) {
-    this.legacyRaftServerSenderDisabled = legacyRaftServerSenderDisabled;
+  public void setLegacySenderSubjectsDisabled(final boolean legacySenderSubjectsDisabled) {
+    this.legacySenderSubjectsDisabled = legacySenderSubjectsDisabled;
   }
 
   @Override
@@ -269,10 +269,10 @@ public class RaftPartitionConfig {
         + minStepDownFailureCount
         + ", engineName="
         + engineName
-        + ", legacyRaftServerReceiverDisabled="
-        + legacyRaftServerReceiverDisabled
-        + ", enableLegacyRaftServerSender="
-        + legacyRaftServerSenderDisabled
+        + ", legacyReceiverSubjectsDisabled="
+        + legacyReceiverSubjectsDisabled
+        + ", legacySenderSubjectsDisabled="
+        + legacySenderSubjectsDisabled
         + '}';
   }
 }

@@ -424,6 +424,13 @@ public class BrokerBasedPropertiesOverride {
     populateFromGlobalListeners(override);
 
     populateFromPartitioning(override);
+
+    override
+        .getExperimental()
+        .setLegacySenderSubjectsDisabled(cluster.isLegacySenderSubjectsDisabled());
+    override
+        .getExperimental()
+        .setLegacyReceiverSubjectsDisabled(cluster.isLegacyReceiverSubjectsDisabled());
   }
 
   private void populateFromPartitioning(final BrokerBasedProperties override) {

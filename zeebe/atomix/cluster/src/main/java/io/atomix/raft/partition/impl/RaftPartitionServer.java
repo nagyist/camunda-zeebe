@@ -322,10 +322,10 @@ public class RaftPartitionServer implements HealthMonitorable {
     final var engineSubjects = createEngineSubjects();
 
     final var sendingSubject =
-        config.isLegacyRaftServerSenderDisabled() ? engineSubjects : legacySubjects;
+        config.isLegacySenderSubjectsDisabled() ? engineSubjects : legacySubjects;
 
     final var receivingSubjects =
-        config.isLegacyRaftServerReceiverDisabled()
+        config.isLegacyReceiverSubjectsDisabled()
             ? List.of(engineSubjects)
             : List.of(legacySubjects, engineSubjects);
 
@@ -345,8 +345,7 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   private RaftMessageContext createEngineSubjects() {
-    final var engineName = config.getEngineName();
-    final var enginePrefix = PARTITION_NAME_FORMAT.formatted(engineName, partition.id().id());
+    final var enginePrefix = getPartitionNameWithEnginePrefix();
     return new RaftMessageContext(enginePrefix);
   }
 
