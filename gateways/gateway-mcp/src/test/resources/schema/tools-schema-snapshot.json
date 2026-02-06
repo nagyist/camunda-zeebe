@@ -367,40 +367,42 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "processDefinitionKey": {
-            "type": "string",
-            "description": "The assigned key of the process definition, which acts as a unique identifier for this process definition."
+          "awaitCompletion": {
+            "type": "boolean",
+            "description": "Wait for the process instance to complete. If the process instance does not complete within request timeout limits, the waiting will time out and the tool will return a 504 response status. Use the unique tag you added to query process instance status. Disabled by default."
+          },
+          "fetchVariables": {
+            "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned."
+            }
           },
           "processDefinitionId": {
             "type": "string",
             "description": "The BPMN process id of the process definition to start an instance of."
+          },
+          "processDefinitionKey": {
+            "type": "string",
+            "description": "The assigned key of the process definition, which acts as a unique identifier for this process definition."
           },
           "processDefinitionVersion": {
             "type": "integer",
             "format": "int32",
             "description": "The version of the process. By default, the latest version of the process is used. Can only be used in combination with processDefinitionId."
           },
+          "tags": {
+            "description": "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100."
+            }
+          },
           "variables": {
             "type": "object",
             "description": "Set of variables to instantiate in the root variable scope of the process instance. Can include nested/complex objects. Which variables to set depends on the process definition."
-          },
-          "awaitCompletion": {
-            "type": "boolean",
-            "description": "Wait for the process instance to complete. If the process instance does not complete within request timeout limits, the waiting will time out and the tool will return a 504 response status. Use the unique tag you added to query process instance status. Disabled by default."
-          },
-          "fetchVariables": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned."
-          },
-          "tags": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100."
           }
         },
         "required": []
