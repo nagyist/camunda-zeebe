@@ -1756,7 +1756,8 @@ final class JsonSerializableToJsonTest {
                   "runtimeInstructions": [],
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 3,
-                  "businessId": "business-id-456"
+                  "businessId": "business-id-456",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1781,7 +1782,8 @@ final class JsonSerializableToJsonTest {
                   "runtimeInstructions": [],
                   "tags": [],
                   "rootProcessInstanceKey": -1,
-                  "businessId": ""
+                  "businessId": "",
+                  "elementInstanceKey": -1
                 }
                 """
       },
