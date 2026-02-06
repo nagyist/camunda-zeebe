@@ -9,7 +9,9 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSet;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -18,8 +20,20 @@ import java.util.Set;
 public record StoredRestoreStatus(RestoreStatus restoreStatus, String etag) {
   public record RestoreStatus(long restoreId, Set<Integer> restoredNodes) {
 
+    public RestoreStatus(final long restoreId, final Set<Integer> restoredNodes) {
+      this.restoreId = restoreId;
+      this.restoredNodes =
+          restoredNodes == null ? ImmutableSet.of() : ImmutableSet.copyOf(restoredNodes);
+    }
+
     public boolean isNodeRestored(final int nodeId) {
       return restoredNodes != null && restoredNodes.contains(nodeId);
+    }
+
+    public RestoreStatus markNodeRestored(final int nodeId) {
+      final var updatedCompletedNodes = new HashSet<>(restoredNodes());
+      updatedCompletedNodes.add(nodeId);
+      return new RestoreStatus(restoreId, updatedCompletedNodes);
     }
 
     public byte[] toJsonBytes(final ObjectMapper objectMapper) {

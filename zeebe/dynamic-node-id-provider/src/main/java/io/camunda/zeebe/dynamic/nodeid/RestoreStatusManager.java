@@ -11,7 +11,6 @@ package io.camunda.zeebe.dynamic.nodeid;
 import io.camunda.zeebe.dynamic.nodeid.StoredRestoreStatus.RestoreStatus;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -92,10 +91,7 @@ public class RestoreStatusManager {
           return;
         }
 
-        final var updatedCompletedNodes = new HashSet<>(currentStatus.restoredNodes());
-        updatedCompletedNodes.add(nodeId);
-
-        final var updatedStatus = new RestoreStatus(restoreId, updatedCompletedNodes);
+        final var updatedStatus = currentStatus.markNodeRestored(nodeId);
 
         repository.updateRestoreStatus(updatedStatus, storedStatus.etag());
         LOG.info("Marked node {} as restored", nodeId);
