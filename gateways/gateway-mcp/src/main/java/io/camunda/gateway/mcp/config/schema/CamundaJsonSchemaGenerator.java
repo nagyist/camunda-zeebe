@@ -23,6 +23,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import io.camunda.gateway.mcp.config.tool.McpToolParams;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -49,8 +50,8 @@ import org.springaicommunity.mcp.method.tool.utils.SpringAiSchemaModule;
 import org.springframework.lang.Nullable;
 
 /**
- * This is an adapted variant of {@link JsonSchemaGenerator}, configured to inline defs and made
- * non-static.
+ * This is an adapted variant of {@link JsonSchemaGenerator}, configured to inline defs and with
+ * support for {@link McpToolParams} expansion.
  */
 public class CamundaJsonSchemaGenerator {
 
@@ -152,15 +153,31 @@ public class CamundaJsonSchemaGenerator {
               final ObjectNode parameterNode =
                   subtypeSchemaGenerator.generateSchema(parameter.getParameterizedType());
 
-              final String parameterDescription = getMethodParameterDescription(parameter);
-              if (Utils.hasText(parameterDescription)) {
-                parameterNode.put("description", parameterDescription);
-              }
+              // handle @McpToolParams - unwrap DTO fields to root level
+              if (parameter.isAnnotationPresent(McpToolParams.class)) {
+                if (parameterNode.has("properties") && parameterNode.get("properties").isObject()) {
+                  parameterNode
+                      .withObject("properties")
+                      .properties()
+                      .forEach(entry -> properties.set(entry.getKey(), entry.getValue()));
+                }
 
-              properties.set(parameterName, parameterNode);
+                if (parameterNode.has("required") && parameterNode.get("required").isArray()) {
+                  parameterNode
+                      .withArray("required")
+                      .forEach(requiredField -> required.add(requiredField.asText()));
+                }
+              } else {
+                final String parameterDescription = getMethodParameterDescription(parameter);
+                if (Utils.hasText(parameterDescription)) {
+                  parameterNode.put("description", parameterDescription);
+                }
 
-              if (isMethodParameterRequired(parameter)) {
-                required.add(parameterName);
+                properties.set(parameterName, parameterNode);
+
+                if (isMethodParameterRequired(parameter)) {
+                  required.add(parameterName);
+                }
               }
             });
 

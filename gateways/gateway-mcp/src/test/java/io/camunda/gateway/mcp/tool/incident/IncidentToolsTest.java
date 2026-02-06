@@ -190,7 +190,7 @@ class IncidentToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("Incident key must be a positive number."));
+                      .isEqualTo("incidentKey: Incident key must be a positive number."));
     }
   }
 
@@ -440,7 +440,7 @@ class IncidentToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("Incident key must be a positive number."));
+                      .isEqualTo("incidentKey: Incident key must be a positive number."));
     }
   }
 }
