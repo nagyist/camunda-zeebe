@@ -7,8 +7,10 @@
  */
 package io.camunda.operate.webapp.rest.dto.operation;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CreateOperationRequestDto {
 
   private OperationType operationType;

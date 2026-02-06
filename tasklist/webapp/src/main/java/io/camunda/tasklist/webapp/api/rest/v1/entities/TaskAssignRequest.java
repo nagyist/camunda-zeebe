@@ -7,10 +7,12 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.StringJoiner;
 
 @Schema(description = "Request params used to assign the task to assignee or current user.")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskAssignRequest {
   @Schema(
       description =
@@ -30,7 +32,7 @@ public class TaskAssignRequest {
     return assignee;
   }
 
-  public TaskAssignRequest setAssignee(String assignee) {
+  public TaskAssignRequest setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -39,7 +41,7 @@ public class TaskAssignRequest {
     return allowOverrideAssignment;
   }
 
-  public TaskAssignRequest setAllowOverrideAssignment(boolean allowOverrideAssignment) {
+  public TaskAssignRequest setAllowOverrideAssignment(final boolean allowOverrideAssignment) {
     this.allowOverrideAssignment = allowOverrideAssignment;
     return this;
   }

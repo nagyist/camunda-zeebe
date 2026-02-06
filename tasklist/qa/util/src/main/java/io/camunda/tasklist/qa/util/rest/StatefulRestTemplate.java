@@ -9,6 +9,7 @@ package io.camunda.tasklist.qa.util.rest;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,6 +27,7 @@ import org.springframework.http.*;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -64,6 +66,29 @@ public class StatefulRestTemplate extends RestTemplate {
     final var interceptors = new ArrayList<>(super.getInterceptors());
     interceptors.add(new BasicAuthenticationInterceptor(USERNAME, PASSWORD));
     super.setInterceptors(interceptors);
+  }
+
+  @Override
+  public RequestCallback httpEntityCallback(final Object requestBody) {
+    return httpEntityCallback(getHttpEntity(requestBody));
+  }
+
+  @Override
+  public RequestCallback httpEntityCallback(final Object requestBody, final Type responseType) {
+    return super.httpEntityCallback(getHttpEntity(requestBody), responseType);
+  }
+
+  private static HttpEntity<?> getHttpEntity(final Object requestBody) {
+    final HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    if (requestBody != null) {
+      if (requestBody instanceof HttpEntity<?>) {
+        return new HttpEntity<>(((HttpEntity<?>) requestBody).getBody(), headers);
+      } else {
+        return new HttpEntity<>(requestBody, headers);
+      }
+    }
+    return new HttpEntity<>(headers);
   }
 
   public HttpClient getHttpClient() {
