@@ -32,6 +32,7 @@ public class RaftPartitionConfig {
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final String DEFAULT_ENGINE_NAME = "default";
   private static final boolean DEFAULT_LEGACY_RAFT_SERVER_RECEIVER_DISABLED = false;
+  private static final boolean DEFAULT_LEGACY_RAFT_SERVER_SENDER_DISABLED = false;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -49,6 +50,7 @@ public class RaftPartitionConfig {
   private int snapshotChunkSize;
   private String engineName = DEFAULT_ENGINE_NAME;
   private boolean legacyRaftServerReceiverDisabled = DEFAULT_LEGACY_RAFT_SERVER_RECEIVER_DISABLED;
+  private boolean legacyRaftServerSenderDisabled = DEFAULT_LEGACY_RAFT_SERVER_SENDER_DISABLED;
 
   /**
    * Returns the Raft leader election timeout.
@@ -229,6 +231,14 @@ public class RaftPartitionConfig {
     this.legacyRaftServerReceiverDisabled = legacyRaftServerReceiverDisabled;
   }
 
+  public boolean isLegacyRaftServerSenderDisabled() {
+    return legacyRaftServerSenderDisabled;
+  }
+
+  public void setLegacyRaftServerSenderDisabled(final boolean legacyRaftServerSenderDisabled) {
+    this.legacyRaftServerSenderDisabled = legacyRaftServerSenderDisabled;
+  }
+
   @Override
   public String toString() {
     return "RaftPartitionConfig{"
@@ -261,6 +271,8 @@ public class RaftPartitionConfig {
         + engineName
         + ", legacyRaftServerReceiverDisabled="
         + legacyRaftServerReceiverDisabled
+        + ", enableLegacyRaftServerSender="
+        + legacyRaftServerSenderDisabled
         + '}';
   }
 }
