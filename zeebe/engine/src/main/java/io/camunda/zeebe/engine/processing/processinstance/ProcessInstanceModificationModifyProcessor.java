@@ -233,7 +233,6 @@ public final class ProcessInstanceModificationModifyProcessor
 
     if (processInstance == null) {
       final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      // No enrichment possible - process instance doesn't exist in state
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
       return;
