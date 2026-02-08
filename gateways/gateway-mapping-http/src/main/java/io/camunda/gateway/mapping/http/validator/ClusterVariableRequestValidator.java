@@ -27,7 +27,7 @@ public class ClusterVariableRequestValidator {
       final CreateClusterVariableRequest request, final String tenantId) {
     return validate(
         () ->
-            clusterVariableValidator.validateTenantClusterVariableCreateRequest(
+            clusterVariableValidator.validateTenantClusterVariableRequestWithValue(
                 request.getName(), request.getValue(), tenantId));
   }
 
@@ -35,7 +35,7 @@ public class ClusterVariableRequestValidator {
       final CreateClusterVariableRequest request) {
     return validate(
         () ->
-            clusterVariableValidator.validateGlobalClusterVariableCreateRequest(
+            clusterVariableValidator.validateGlobalClusterVariableRequestWithValue(
                 request.getName(), request.getValue()));
   }
 
@@ -53,7 +53,7 @@ public class ClusterVariableRequestValidator {
       final String name, final UpdateClusterVariableRequest request) {
     return validate(
         () ->
-            clusterVariableValidator.validateGlobalClusterVariableCreateRequest(
+            clusterVariableValidator.validateGlobalClusterVariableRequestWithValue(
                 name, request.getValue()));
   }
 
@@ -61,7 +61,7 @@ public class ClusterVariableRequestValidator {
       final String name, final UpdateClusterVariableRequest request, final String tenantId) {
     return validate(
         () ->
-            clusterVariableValidator.validateTenantClusterVariableCreateRequest(
+            clusterVariableValidator.validateTenantClusterVariableRequestWithValue(
                 name, request.getValue(), tenantId));
   }
 }
