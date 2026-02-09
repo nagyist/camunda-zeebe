@@ -121,7 +121,7 @@ test.describe('decision instance page', () => {
     });
 
     // wait for monaco-editor to be fully rendered
-    await page.waitForTimeout(500);
+    await expect(page.getByText('"$1000"')).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
