@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionBatch;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -57,7 +58,7 @@ public class HistoryDeletionService {
 
   public Duration deleteHistory(final int partitionId) {
     final var batch = historyDeletionDbReader.getNextBatch(partitionId, config.queueBatchSize());
-    LOG.trace("Deleting historic data for entities: {}", batch);
+    LOG.trace("Deleting historic data for entities: {}", batch.historyDeletionModels());
 
     final List<Long> deletedProcessInstances = deleteProcessInstances(batch);
     final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
@@ -72,16 +73,9 @@ public class HistoryDeletionService {
     return nextDelay(deletedResourceCount);
   }
 
-  private List<Long> deleteProcessInstances(final List<HistoryDeletionDbModel> batch) {
+  private List<Long> deleteProcessInstances(final HistoryDeletionBatch batch) {
     final var processInstanceKeys =
-        batch.stream()
-            .filter(
-                deletionModel ->
-                    deletionModel
-                        .resourceType()
-                        .equals(HistoryDeletionTypeDbModel.PROCESS_INSTANCE))
-            .map(HistoryDeletionDbModel::resourceKey)
-            .toList();
+        batch.getResourceKeys(HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
 
     if (processInstanceKeys.isEmpty()) {
       return List.of();
@@ -106,17 +100,10 @@ public class HistoryDeletionService {
     return List.of();
   }
 
-  private List<Long> deleteProcessDefinitions(final List<HistoryDeletionDbModel> batch) {
+  private List<Long> deleteProcessDefinitions(final HistoryDeletionBatch batch) {
     final var processDefinitionKeys =
-        batch.stream()
-            .filter(
-                deletionModel ->
-                    deletionModel
-                        .resourceType()
-                        .equals(HistoryDeletionTypeDbModel.PROCESS_DEFINITION))
-            .filter(this::hasDeletedAllProcessInstances)
-            .map(HistoryDeletionDbModel::resourceKey)
-            .toList();
+        batch.getResourceKeys(
+            HistoryDeletionTypeDbModel.PROCESS_DEFINITION, this::hasDeletedAllProcessInstances);
 
     if (processDefinitionKeys.isEmpty()) {
       return List.of();
@@ -127,16 +114,9 @@ public class HistoryDeletionService {
     return processDefinitionKeys;
   }
 
-  private List<Long> deleteDecisionInstances(final List<HistoryDeletionDbModel> batch) {
+  private List<Long> deleteDecisionInstances(final HistoryDeletionBatch batch) {
     final var decisionInstanceKeys =
-        batch.stream()
-            .filter(
-                deletionModel ->
-                    deletionModel
-                        .resourceType()
-                        .equals(HistoryDeletionTypeDbModel.DECISION_INSTANCE))
-            .map(HistoryDeletionDbModel::resourceKey)
-            .toList();
+        batch.getResourceKeys(HistoryDeletionTypeDbModel.DECISION_INSTANCE);
 
     if (decisionInstanceKeys.isEmpty()) {
       return List.of();
