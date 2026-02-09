@@ -113,6 +113,7 @@ class RdbmsExporterIT {
               setProperty("variableValue.previewSize", "100");
               setProperty("userCharColumn.size", "50");
               setProperty("errorMessage.size", "500");
+              setProperty("treePath.size", "500");
               setProperty("disableFkBeforeTruncate", "true");
             }
           });

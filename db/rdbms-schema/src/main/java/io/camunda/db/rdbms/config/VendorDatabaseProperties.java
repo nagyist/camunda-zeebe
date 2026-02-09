@@ -24,6 +24,12 @@ public class VendorDatabaseProperties {
   private static final String ERROR_MESSAGE_SIZE = "errorMessage.size";
 
   /**
+   * Required property to specify the size of the tree path column in characters. Longer tree paths
+   * will be truncated to this size.
+   */
+  private static final String TREE_PATH_SIZE = "treePath.size";
+
+  /**
    * Optional property to limit the maximum size of string column in bytes, if required by the
    * database vendor. If not set, no limit is applied.
    */
@@ -44,6 +50,7 @@ public class VendorDatabaseProperties {
   private final Integer charColumnMaxBytes;
   private final int userCharColumnSize;
   private final int errorMessageSize;
+  private final int treePathSize;
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
@@ -58,12 +65,17 @@ public class VendorDatabaseProperties {
     if (!properties.containsKey(USER_CHAR_COLUMN_SIZE)) {
       throw new IllegalArgumentException("Property '" + USER_CHAR_COLUMN_SIZE + "' is missing");
     }
-    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
+    userCharColumnSize = Integer.parseInt(properties.getProperty(USER_CHAR_COLUMN_SIZE));
 
     if (!properties.containsKey(ERROR_MESSAGE_SIZE)) {
       throw new IllegalArgumentException("Property '" + ERROR_MESSAGE_SIZE + "' is missing");
     }
-    userCharColumnSize = Integer.parseInt(properties.getProperty(USER_CHAR_COLUMN_SIZE));
+    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
+
+    if (!properties.containsKey(TREE_PATH_SIZE)) {
+      throw new IllegalArgumentException("Property '" + TREE_PATH_SIZE + "' is missing");
+    }
+    treePathSize = Integer.parseInt(properties.getProperty(TREE_PATH_SIZE));
 
     if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
       charColumnMaxBytes = null;
@@ -101,5 +113,9 @@ public class VendorDatabaseProperties {
 
   public Properties properties() {
     return properties;
+  }
+
+  public int treePathSize() {
+    return treePathSize;
   }
 }

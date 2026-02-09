@@ -92,7 +92,11 @@ public class MyBatisConfiguration {
             "prefix",
             trimmedPrefix,
             "userCharColumnSize",
-            Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
+            Integer.toString(vendorDatabaseProperties.userCharColumnSize()),
+            "errorMessageSize",
+            Integer.toString(vendorDatabaseProperties.errorMessageSize()),
+            "treePathSize",
+            Integer.toString(vendorDatabaseProperties.treePathSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
