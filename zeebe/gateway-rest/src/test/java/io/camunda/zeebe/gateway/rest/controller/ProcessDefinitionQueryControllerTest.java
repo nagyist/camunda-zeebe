@@ -630,6 +630,54 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithNoRequestBody() {
+    // given
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(0L)
+            .items(List.of())
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var response =
+        """
+        {
+          "items": [],
+          "page": {
+            "totalItems": 0,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices)
+        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture());
+    final var capturedQuery = instanceStatsQueryCaptor.getValue();
+    assertThat(capturedQuery).isNotNull();
+    final var filter = capturedQuery.filter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.stateOperations()).isNotEmpty();
+    assertThat(filter.stateOperations().getFirst().values()).containsExactly("ACTIVE");
+  }
+
+  @Test
   public void shouldGetProcessDefinitionInstanceVersionStatistics() {
     // given
     final String processDefinitionId = "process_definition_id";
