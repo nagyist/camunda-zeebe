@@ -606,6 +606,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_DATABASENAME
         
+        # What default refresh interval we will use for all indices
+        refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVAL
+        # Per-index refresh interval overrides.
+        refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVALBYINDEXNAME
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SECURITY_DATABASENAME
         
@@ -613,8 +617,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_SOCKETTIMEOUT
         # Template priority for index templates.
         template-priority: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_TEMPLATEPRIORITY
-        # Endpoint for the database configured as secondary storage.
+        # Endpoint for the database configured as secondary storage. Mutually exclusive with {@link #urls} -
+        # configure only one.
         url: "http://localhost:9200" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL
+        # List of endpoints for the database configured as secondary storage. Use for multi-node cluster
+        # connectivity. Mutually exclusive with {@link #url} - configure only one.
+        urls: null # Type: List<String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URLS
         # Username for the database configured as secondary storage.
         username: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_USERNAME
         # Variable size threshold for the database configured as secondary storage.
@@ -677,6 +685,10 @@ camunda: # Type: io.camunda.configuration.Camunda
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_DATABASENAME
         
+        # What default refresh interval we will use for all indices
+        refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVAL
+        # Per-index refresh interval overrides.
+        refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVALBYINDEXNAME
         security: # Type: io.camunda.configuration.SecondaryStorageSecurity  
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SECURITY_DATABASENAME
         
@@ -684,14 +696,20 @@ camunda: # Type: io.camunda.configuration.Camunda
         socket-timeout: null # Type: Duration, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_SOCKETTIMEOUT
         # Template priority for index templates.
         template-priority: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_TEMPLATEPRIORITY
-        # Endpoint for the database configured as secondary storage.
+        # Endpoint for the database configured as secondary storage. Mutually exclusive with {@link #urls} -
+        # configure only one.
         url: "http://localhost:9200" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL
+        # List of endpoints for the database configured as secondary storage. Use for multi-node cluster
+        # connectivity. Mutually exclusive with {@link #url} - configure only one.
+        urls: null # Type: List<String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URLS
         # Username for the database configured as secondary storage.
         username: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_USERNAME
         # Variable size threshold for the database configured as secondary storage.
         variable-size-threshold: 8191 # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_VARIABLESIZETHRESHOLD
       
       rdbms: # Type: io.camunda.configuration.Rdbms  
+        # If true, the database schema is automatically created and updated on application startup.
+        auto-ddl: true # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_AUTODDL
         # Batch operation cache configuration. Defines the size of the batch operation cache.
         batch-operation-cache: null # Type: io.camunda.configuration.RdbmsCache, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_BATCHOPERATIONCACHE
         # The number of batch operation items to insert in a single batched SQL when creating the items for a
@@ -741,6 +759,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         
         insert-batching: # Type: io.camunda.configuration.RdbmsInsertBatching  
           max-audit-log-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXAUDITLOGINSERTBATCHSIZE
+          max-flow-node-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXFLOWNODEINSERTBATCHSIZE
+          max-job-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXJOBINSERTBATCHSIZE
           max-variable-insert-batch-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_INSERTBATCHING_MAXVARIABLEINSERTBATCHSIZE
         
         metrics: # Type: io.camunda.configuration.RdbmsMetrics  
@@ -759,8 +779,12 @@ camunda: # Type: io.camunda.configuration.Camunda
         queue-memory-limit: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUEMEMORYLIMIT
         # The maximum size of the exporters execution queue before it is flushed to the database.
         queue-size: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_QUEUESIZE
-        # Endpoint for the database configured as secondary storage.
+        # Endpoint for the database configured as secondary storage. Mutually exclusive with {@link #urls} -
+        # configure only one.
         url: "http://localhost:9200" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL
+        # List of endpoints for the database configured as secondary storage. Use for multi-node cluster
+        # connectivity. Mutually exclusive with {@link #url} - configure only one.
+        urls: null # Type: List<String>, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URLS
         # Username for the database configured as secondary storage.
         username: "" # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME
       
@@ -781,6 +805,8 @@ camunda: # Type: io.camunda.configuration.Camunda
     index: # Type: io.camunda.configuration.beans.LegacySearchEngineIndexProperties  
       number-of-replicas: null # Type: Integer, Env: CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS
       number-of-shards: null # Type: Integer, Env: CAMUNDA_DATABASE_INDEX_NUMBEROFSHARDS
+      refresh-interval: null # Type: String, Env: CAMUNDA_DATABASE_INDEX_REFRESHINTERVAL
+      refresh-interval-by-index-name: null # Type: Map<String,String>, Env: CAMUNDA_DATABASE_INDEX_REFRESHINTERVALBYINDEXNAME
       replicas-by-index-name: null # Type: Map<String,Integer>, Env: CAMUNDA_DATABASE_INDEX_REPLICASBYINDEXNAME
       shards-by-index-name: null # Type: Map<String,Integer>, Env: CAMUNDA_DATABASE_INDEX_SHARDSBYINDEXNAME
       template-priority: null # Type: Integer, Env: CAMUNDA_DATABASE_INDEX_TEMPLATEPRIORITY
@@ -800,6 +826,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     security: null # Type: io.camunda.search.connect.configuration.SecurityConfiguration, Env: CAMUNDA_DATABASE_SECURITY
     socket-timeout: null # Type: Integer, Env: CAMUNDA_DATABASE_SOCKETTIMEOUT
     url: null # Type: String, Env: CAMUNDA_DATABASE_URL
+    urls: null # Type: List<String>, Env: CAMUNDA_DATABASE_URLS
     username: null # Type: String, Env: CAMUNDA_DATABASE_USERNAME
   
   expression: # Type: io.camunda.configuration.Expression  
@@ -853,6 +880,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         verify-hostname: null # Type: Boolean, Env: CAMUNDA_OPERATE_ELASTICSEARCH_SSL_VERIFYHOSTNAME
       
       url: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_URL
+      urls: null # Type: List<String>, Env: CAMUNDA_OPERATE_ELASTICSEARCH_URLS
       username: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_USERNAME
     
     enterprise: null # Type: Boolean, Env: CAMUNDA_OPERATE_ENTERPRISE
@@ -890,16 +918,8 @@ camunda: # Type: io.camunda.configuration.Camunda
         verify-hostname: null # Type: Boolean, Env: CAMUNDA_OPERATE_OPENSEARCH_SSL_VERIFYHOSTNAME
       
       url: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_URL
+      urls: null # Type: List<String>, Env: CAMUNDA_OPERATE_OPENSEARCH_URLS
       username: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_USERNAME
-    
-    operation-executor: # Type: io.camunda.operate.property.OperationExecutorProperties  
-      batch-size: null # Type: Integer, Env: CAMUNDA_OPERATE_OPERATIONEXECUTOR_BATCHSIZE
-      deletion-batch-size: null # Type: Integer, Env: CAMUNDA_OPERATE_OPERATIONEXECUTOR_DELETIONBATCHSIZE
-      executor-enabled: null # Type: Boolean, Env: CAMUNDA_OPERATE_OPERATIONEXECUTOR_EXECUTORENABLED
-      lock-timeout: null # Type: Long, Env: CAMUNDA_OPERATE_OPERATIONEXECUTOR_LOCKTIMEOUT
-      queue-size: null # Type: Integer, Env: CAMUNDA_OPERATE_OPERATIONEXECUTOR_QUEUESIZE
-      threads-count: null # Type: Integer, Env: CAMUNDA_OPERATE_OPERATIONEXECUTOR_THREADSCOUNT
-      worker-id: null # Type: String, Env: CAMUNDA_OPERATE_OPERATIONEXECUTOR_WORKERID
     
     password: null # Type: String, Env: CAMUNDA_OPERATE_PASSWORD
     rfc3339-api-date-format: null # Type: Boolean, Env: CAMUNDA_OPERATE_RFC3339APIDATEFORMAT
@@ -953,17 +973,41 @@ camunda: # Type: io.camunda.configuration.Camunda
     # check preconditions, for example that a key does not already exist when inserting.
     enable-preconditions-check: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEPRECONDITIONSCHECK
     enable-straightthrough-processing-loop-detector: true # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLESTRAIGHTTHROUGHPROCESSINGLOOPDETECTOR
-    # Changes the DueDateTimerCheckScheduler to give yield to other processing steps in situations where it has
-    # many (i.e. millions of) timers to process. If set to false (default) the DueDateTimerCheckScheduler will
-    # activate all due timers. In the worst case, this can lead to the node being blocked for indefinite
-    # amount of time, being subsequently flagged as unhealthy. Currently, there is no known way to recover
-    # from this situation If set to true, the DueDateTimerCheckScheduler will give yield to other processing
-    # steps. This avoids the worst case described above. However, under consistent high load it may happen
-    # that the activated timers will fall behind real time, if more timers become due than can be
-    # activated during a certain time period.
+    # Changes the DueDateTimerCheckScheduler to give yield to other processing steps in situations where
+    # it has many (i.e. millions of) timers to process. If set to false (default) the
+    # DueDateTimerCheckScheduler will activate all due timers. In the worst case, this can lead to the
+    # node being blocked for indefinite amount of time, being subsequently flagged as unhealthy.
+    # Currently, there is no known way to recover from this situation If set to true, the
+    # DueDateTimerCheckScheduler will give yield to other processing steps. This avoids the worst case
+    # described above. However, under consistent high load it may happen that the activated timers will
+    # fall behind real time, if more timers become due than can be activated during a certain time period.
     enable-yielding-due-date-checker: true # Type: Boolean, Env: CAMUNDA_PROCESSING_ENABLEYIELDINGDUEDATECHECKER
     engine: # Type: io.camunda.configuration.Engine  
       batch-operations: # Type: io.camunda.configuration.EngineBatchOperation  
+        # Number of itemKeys in one BatchOperationChunkRecord. Must be below 4MB total record size. Defaults
+        # to {@link EngineConfiguration#DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
+        chunk-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_CHUNKSIZE
+        # Number of itemKeys in one PersistedBatchOperationChunk. Must be below 32KB total record size.
+        # Defaults to {@link EngineConfiguration#DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
+        db-chunk-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_DBCHUNKSIZE
+        # The size of the IN clause for batch operation queries. Defaults to {@link
+        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE}.
+        query-in-clause-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYINCLAUSESIZE
+        # The page size for batch operation queries. Defaults to {@link
+        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE}.
+        query-page-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYPAGESIZE
+        # The backoff factor for retrying batch operation queries. Defaults to {@link
+        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR}.
+        query-retry-backoff-factor: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYBACKOFFFACTOR
+        # The initial delay for retrying batch operation queries. Defaults to {@link
+        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY}.
+        query-retry-initial-delay: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYINITIALDELAY
+        # The maximum number of retries for batch operation queries. Defaults to {@link
+        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX}.
+        query-retry-max: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYMAX
+        # The maximum delay for retrying batch operation queries. Defaults to {@link
+        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY}.
+        query-retry-max-delay: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYMAXDELAY
         # The interval at which the batch operation scheduler runs. Defaults to {@link
         # EngineConfiguration#DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
         scheduler-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_SCHEDULERINTERVAL
@@ -1118,7 +1162,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     # to disk. While writing, these threads are blocked which means that they yield the CPU.
     io-thread-count: 2 # Type: Integer, Env: CAMUNDA_SYSTEM_IOTHREADCOUNT
     restore: # Type: io.camunda.configuration.Restore  
-      ignore-files-in-target: "lost+found" # Type: List<String>, Env: CAMUNDA_SYSTEM_RESTORE_IGNOREFILESINTARGET
+      ignore-files-in-target: null # Type: List<String>, Env: CAMUNDA_SYSTEM_RESTORE_IGNOREFILESINTARGET
       validate-config: true # Type: Boolean, Env: CAMUNDA_SYSTEM_RESTORE_VALIDATECONFIG
     
     upgrade: # Type: io.camunda.configuration.Upgrade  
@@ -1174,6 +1218,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         verify-hostname: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_VERIFYHOSTNAME
       
       url: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_URL
+      urls: null # Type: List<String>, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_URLS
       username: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_USERNAME
     
     enterprise: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ENTERPRISE
@@ -1207,6 +1252,7 @@ camunda: # Type: io.camunda.configuration.Camunda
         verify-hostname: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_VERIFYHOSTNAME
       
       url: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_URL
+      urls: null # Type: List<String>, Env: CAMUNDA_TASKLIST_OPENSEARCH_URLS
       username: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_USERNAME
     
     version: null # Type: String, Env: CAMUNDA_TASKLIST_VERSION
