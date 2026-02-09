@@ -369,17 +369,130 @@
       "groupName": "react-router monorepo"
     },
     {
+      "description": "Group patch updates per project (Operate).",
       "matchManagers": [
         "npm"
       ],
-      "matchPackageNames": [
-        "*"
+      "matchFileNames": [
+        "operate/**"
       ],
       "matchUpdateTypes": [
         "patch"
       ],
-      "groupName": "all non-major dependencies",
-      "groupSlug": "all-minor-patch"
+      "groupName": "operate patch dependencies",
+      "groupSlug": "operate-patch"
+    },
+    {
+      "description": "Group patch updates per project (Tasklist).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "tasklist/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "tasklist patch dependencies",
+      "groupSlug": "tasklist-patch"
+    },
+    {
+      "description": "Group patch updates per project (Identity).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "identity/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "identity patch dependencies",
+      "groupSlug": "identity-patch"
+    },
+    {
+      "description": "Group patch updates per project (Optimize).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "optimize/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "optimize patch dependencies",
+      "groupSlug": "optimize-patch"
+    },
+    {
+      "description": "Group patch updates per project (Client components).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "client-components/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "client-components patch dependencies",
+      "groupSlug": "client-components-patch"
+    },
+    {
+      "description": "Group patch updates per project (Docs site).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "monorepo-docs-site/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "docs-site patch dependencies",
+      "groupSlug": "docs-site-patch"
+    },
+    {
+      "description": "Group patch updates per project (Process test coverage frontend).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "testing/camunda-process-test-coverage-frontend/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "process-test-coverage patch dependencies",
+      "groupSlug": "process-test-coverage-patch"
+    },
+    {
+      "description": "Group patch updates per project (QA).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "qa/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "qa patch dependencies",
+      "groupSlug": "qa-patch"
+    },
+    {
+      "description": "Group patch updates per project (c8run e2e tests).",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "c8run/e2e_tests/**"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "groupName": "c8run e2e patch dependencies",
+      "groupSlug": "c8run-e2e-patch"
     },
     {
       "description": "For known GitHub repositories that use GitHub tags/releases of format/ 'v1.2.3' and where we ignore the 'v' prefix, we also tell Renovate to ignore it via extractVersion when updating .tool-version file",
