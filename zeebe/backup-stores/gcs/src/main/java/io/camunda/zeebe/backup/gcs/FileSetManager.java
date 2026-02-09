@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -17,10 +18,12 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.agrona.LangUtil;
 
 final class FileSetManager {
   /**
@@ -48,15 +51,30 @@ final class FileSetManager {
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
-    for (final var namedFile : fileSet.namedFiles().entrySet()) {
-      final var fileName = namedFile.getKey();
-      final var filePath = namedFile.getValue();
-      try {
-        client.createFrom(
-            blobInfo(id, fileSetName, fileName), filePath, BlobWriteOption.doesNotExist());
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
+    try (final var executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("gcs-file-set-manager", 0).factory())) {
+      final var tasks =
+          fileSet.namedFiles().entrySet().stream()
+              .map(
+                  entry ->
+                      (Callable<Blob>)
+                          () -> {
+                            client.createFrom(
+                                blobInfo(id, fileSetName, entry.getKey()),
+                                entry.getValue(),
+                                BlobWriteOption.doesNotExist());
+                            return null;
+                          })
+              .toList();
+      for (final var future : executor.invokeAll(tasks)) {
+        future.get();
       }
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while saving backup", e);
+    } catch (final ExecutionException e) {
+      LangUtil.rethrowUnchecked(e.getCause());
     }
   }
 
@@ -76,12 +94,33 @@ final class FileSetManager {
       final Path targetFolder) {
     final var pathByName =
         fileSet.files().stream()
-            .collect(Collectors.toMap(NamedFile::name, (f) -> targetFolder.resolve(f.name())));
+            .collect(Collectors.toMap(NamedFile::name, f -> targetFolder.resolve(f.name())));
 
-    for (final var entry : pathByName.entrySet()) {
-      final var fileName = entry.getKey();
-      final var filePath = entry.getValue();
-      client.downloadTo(blobInfo(id, filesetName, fileName).getBlobId(), filePath);
+    try (final var executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("gcs-file-set-manager", 0).factory())) {
+
+      final var tasks =
+          pathByName.entrySet().stream()
+              .map(
+                  entry ->
+                      (Callable<Void>)
+                          () -> {
+                            client.downloadTo(
+                                blobInfo(id, filesetName, entry.getKey()).getBlobId(),
+                                entry.getValue());
+                            return null;
+                          })
+              .toList();
+      for (final var future : executor.invokeAll(tasks)) {
+        future.get();
+      }
+
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException("Interrupted while restoring backup", e);
+    } catch (final ExecutionException e) {
+      LangUtil.rethrowUnchecked(e.getCause());
     }
 
     return new NamedFileSetImpl(pathByName);
