@@ -98,9 +98,11 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                         colSpan={headers.length + 1}
                         {...getExpandedRowProps({row})}
                       >
-                        {React.cloneElement(expandedContent, {
-                          tabIndex: row.isExpanded ? 0 : -1,
-                        })}
+                        {row.isExpanded
+                          ? React.cloneElement(expandedContent, {
+                              tabIndex: 0,
+                            })
+                          : null}
                       </TableExpandedRow>
                     )}
                   </React.Fragment>

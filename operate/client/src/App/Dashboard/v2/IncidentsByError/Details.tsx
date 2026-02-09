@@ -37,7 +37,7 @@ const Details: React.FC<Props> = ({
     payload: {
       filter: {
         errorHashCode: incidentErrorHashCode,
-      }
+      },
     },
   });
 
