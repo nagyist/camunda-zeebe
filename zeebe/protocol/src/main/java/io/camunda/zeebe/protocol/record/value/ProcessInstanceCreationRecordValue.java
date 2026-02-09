@@ -73,6 +73,7 @@ public interface ProcessInstanceCreationRecordValue
    * with the same business id already exists, the creation will be rejected.
    *
    * @return the business id, or an empty string if not set
+   * @since 8.9
    */
   String getBusinessId();
 
