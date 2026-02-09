@@ -15,17 +15,21 @@ import io.camunda.webapps.schema.entities.clustervariable.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import java.util.List;
+import java.util.Set;
 
-public class ClusterVariableUpdatedHandler
+public class ClusterVariableCreatedUpdatedHandler
     implements ExportHandler<ClusterVariableEntity, ClusterVariableRecordValue> {
 
-  private static final ClusterVariableIntent SUPPORTED_INTENT = ClusterVariableIntent.UPDATED;
+  private static final Set<Intent> SUPPORTED_INTENTS =
+      Set.of(ClusterVariableIntent.CREATED, ClusterVariableIntent.UPDATED);
   private final String indexName;
   private final int variableSizeThreshold;
 
-  public ClusterVariableUpdatedHandler(final String indexName, final int variableSizeThreshold) {
+  public ClusterVariableCreatedUpdatedHandler(
+      final String indexName, final int variableSizeThreshold) {
     this.indexName = indexName;
     this.variableSizeThreshold = variableSizeThreshold;
   }
@@ -43,7 +47,7 @@ public class ClusterVariableUpdatedHandler
   @Override
   public boolean handlesRecord(final Record<ClusterVariableRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
-        && SUPPORTED_INTENT.equals(record.getIntent());
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
@@ -88,7 +92,7 @@ public class ClusterVariableUpdatedHandler
   @Override
   public void flush(final ClusterVariableEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.update(indexName, entity.getId(), entity);
+    batchRequest.add(indexName, entity);
   }
 
   @Override
