@@ -46,6 +46,7 @@ import io.camunda.zeebe.journal.SegmentInfo;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -369,5 +370,10 @@ public class RaftPartitionServer implements HealthMonitorable {
     final var engineName = config.getEngineName();
     final var partitionId = partition.id().id();
     return PARTITION_NAME_FORMAT.formatted(engineName, partitionId);
+  }
+
+  @VisibleForTesting
+  public RaftServer getServer() {
+    return server;
   }
 }
