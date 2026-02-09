@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Objects;
 import java.util.StringJoiner;
 
 @Schema(description = "Request object to search tasks variables by provided variable names.")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class VariablesSearchRequest {
   @ArraySchema(arraySchema = @Schema(description = "Names of variables to find."))
   private List<String> variableNames = new ArrayList<>();
@@ -29,7 +31,7 @@ public class VariablesSearchRequest {
     return variableNames;
   }
 
-  public VariablesSearchRequest setVariableNames(List<String> variableNames) {
+  public VariablesSearchRequest setVariableNames(final List<String> variableNames) {
     this.variableNames = variableNames;
     return this;
   }
@@ -38,13 +40,18 @@ public class VariablesSearchRequest {
     return includeVariables;
   }
 
-  public VariablesSearchRequest setIncludeVariables(List<IncludeVariable> includeVariables) {
+  public VariablesSearchRequest setIncludeVariables(final List<IncludeVariable> includeVariables) {
     this.includeVariables = includeVariables;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(variableNames, includeVariables);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -54,11 +61,6 @@ public class VariablesSearchRequest {
     final VariablesSearchRequest that = (VariablesSearchRequest) o;
     return Objects.equals(variableNames, that.variableNames)
         && Objects.equals(includeVariables, that.includeVariables);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(variableNames, includeVariables);
   }
 
   @Override

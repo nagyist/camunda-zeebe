@@ -117,21 +117,28 @@ public class StatefulRestTemplate extends RestTemplate {
   }
 
   @Override
+  public RequestCallback httpEntityCallback(final Object requestBody) {
+    return super.httpEntityCallback(getHttpEntity(requestBody));
+  }
+
+  @Override
   public <T> RequestCallback httpEntityCallback(final Object requestBody, final Type responseType) {
-    final HttpEntity httpEntity;
+    return super.httpEntityCallback(getHttpEntity(requestBody), responseType);
+  }
+
+  private HttpEntity<?> getHttpEntity(final Object requestBody) {
+    final HttpHeaders headers = new HttpHeaders();
+    headers.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+    headers.add(HttpHeaders.AUTHORIZATION, "Basic " + getEncodedUsernameAndPassword());
+    headers.setContentType(MediaType.APPLICATION_JSON);
     if (requestBody != null) {
-      final HttpHeaders headers = new HttpHeaders();
-      headers.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
-      headers.add(HttpHeaders.AUTHORIZATION, "Basic " + getEncodedUsernameAndPassword());
       if (requestBody instanceof HttpEntity<?>) {
-        httpEntity = new HttpEntity(((HttpEntity<?>) requestBody).getBody(), headers);
+        return new HttpEntity<>(((HttpEntity<?>) requestBody).getBody(), headers);
       } else {
-        httpEntity = new HttpEntity(requestBody, headers);
+        return new HttpEntity<>(requestBody, headers);
       }
-    } else {
-      httpEntity = null;
     }
-    return super.httpEntityCallback(httpEntity, responseType);
+    return new HttpEntity<>(headers);
   }
 
   private ResponseEntity<?> saveCSRFTokenWhenAvailable(final ResponseEntity<?> response) {

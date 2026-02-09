@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class SaveVariablesRequest {
 
   @ArraySchema(arraySchema = @Schema(description = "Variables to update or add to the task."))

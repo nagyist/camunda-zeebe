@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.StringJoiner;
 @Schema(
     description =
         "Request object with variables to update or add to task during the task completion.")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskCompleteRequest {
 
   @Schema(description = "Variables to update or add to task during the task completion")
