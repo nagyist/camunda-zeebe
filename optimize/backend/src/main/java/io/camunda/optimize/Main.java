@@ -18,8 +18,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.freemarker.autoconfigure.FreeMarkerAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 
-@ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
 @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
+@ComponentScan(excludeFilters = @ComponentScan.Filter(IgnoreDuringScan.class))
 public class Main {
 
   public static void main(final String[] args) {
