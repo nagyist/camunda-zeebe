@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -89,6 +90,13 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
       final TypedRecord<HistoryDeletionRecord> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
+    // If the command is part of a batch operation, the authorizations will be checked upon batch
+    // operation creation. We cannot check the authorizations here.
+    if (command.getBatchOperationReference()
+        != RecordMetadataDecoder.batchOperationReferenceNullValue()) {
+      return Either.right(command.getValue());
+    }
+
     final var request =
         AuthorizationRequest.builder()
             .command(command)
