@@ -187,8 +187,7 @@ final class AppIntegrationsExporterBatchIT {
                     .withStatus(500)));
 
     assertThatThrownBy(() -> export(generateRecords().limit(1)))
-        .isInstanceOf(TransportException.class)
-        .hasCauseInstanceOf(TimeoutExceededException.class);
+        .isInstanceOf(TimeoutExceededException.class);
 
     wireMock.verify(exactly(1), postRequestedFor(urlEqualTo("/")));
   }
