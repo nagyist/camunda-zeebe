@@ -58,6 +58,11 @@ public interface DecisionInstance {
   Long getProcessInstanceKey();
 
   /**
+   * @return the root process instance key (the top-level ancestor) of the decision instance
+   */
+  Long getRootProcessInstanceKey();
+
+  /**
    * @return the element instance key of the decision instance
    */
   Long getElementInstanceKey();

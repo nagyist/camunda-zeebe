@@ -35,6 +35,8 @@ public interface ProcessInstance {
 
   Long getParentProcessInstanceKey();
 
+  Long getRootProcessInstanceKey();
+
   Long getParentElementInstanceKey();
 
   OffsetDateTime getStartDate();

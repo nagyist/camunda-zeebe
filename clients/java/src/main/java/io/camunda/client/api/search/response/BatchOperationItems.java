@@ -33,6 +33,8 @@ public interface BatchOperationItems {
 
     Long getProcessInstanceKey();
 
+    Long getRootProcessInstanceKey();
+
     OffsetDateTime getProcessedDate();
 
     String getErrorMessage();

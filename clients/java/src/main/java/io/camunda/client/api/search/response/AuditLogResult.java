@@ -55,6 +55,8 @@ public interface AuditLogResult {
 
   String getProcessInstanceKey();
 
+  String getRootProcessInstanceKey();
+
   String getElementInstanceKey();
 
   String getJobKey();

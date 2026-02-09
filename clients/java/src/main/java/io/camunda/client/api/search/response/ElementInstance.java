@@ -33,6 +33,9 @@ public interface ElementInstance {
   /** process instance key for element instance */
   Long getProcessInstanceKey();
 
+  /** root process instance key (the top-level ancestor) for element instance */
+  Long getRootProcessInstanceKey();
+
   /** element id for element instance */
   String getElementId();
 

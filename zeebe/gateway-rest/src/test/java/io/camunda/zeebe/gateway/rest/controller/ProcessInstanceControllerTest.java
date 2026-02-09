@@ -1933,6 +1933,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               {
                 "sequenceFlowId": "pi1_sequenceFlow1",
                 "processInstanceKey": "1",
+                "rootProcessInstanceKey": "37",
                 "processDefinitionKey": "1",
                 "processDefinitionId": "pd1",
                 "elementId": "node1",
@@ -2000,6 +2001,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "incidentKey": "2251799814751259",
                 "processDefinitionKey": "2251799814751221",
                 "processInstanceKey": "2251799814751255",
+                "rootProcessInstanceKey": "3751799814751237",
                 "elementInstanceKey": "2251799814751258",
                 "jobKey": "1"
             }

@@ -39,6 +39,8 @@ public interface CorrelatedMessageSubscription {
 
   Long getProcessInstanceKey();
 
+  Long getRootProcessInstanceKey();
+
   Long getSubscriptionKey();
 
   String getTenantId();

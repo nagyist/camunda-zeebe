@@ -59,6 +59,8 @@ public interface Job {
 
   Long getProcessInstanceKey();
 
+  Long getRootProcessInstanceKey();
+
   String getElementId();
 
   Long getElementInstanceKey();

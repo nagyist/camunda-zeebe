@@ -23,6 +23,13 @@ public interface ProcessInstanceSequenceFlow {
   /** process instance key for the sequence flow instance */
   String getProcessInstanceKey();
 
+  /**
+   * The key of the root process instance. The root process instance is the top-level ancestor in
+   * the process instance hierarchy. This field is only present for data belonging to process
+   * instance hierarchies created after 8.9 and null otherwise.
+   */
+  String getRootProcessInstanceKey();
+
   /** process definition key for the sequence flow instance */
   String getProcessDefinitionKey();
 

@@ -54,6 +54,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "value": "v",
               "scopeKey": "2",
               "processInstanceKey": "3",
+              "rootProcessInstanceKey": "4",
               "tenantId": "<default>"
           }""";
   private static final String EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE =
@@ -64,6 +65,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "value": "ve",
               "scopeKey": "2",
               "processInstanceKey": "3",
+              "rootProcessInstanceKey": "4",
               "tenantId": "<default>"
           }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -76,6 +78,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "v",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -85,6 +88,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "v",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": true
                   }
@@ -107,6 +111,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "v",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -116,6 +121,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "ve",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": false
                   }

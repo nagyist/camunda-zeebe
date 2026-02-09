@@ -29,6 +29,8 @@ public interface Incident {
 
   Long getProcessInstanceKey();
 
+  Long getRootProcessInstanceKey();
+
   IncidentErrorType getErrorType();
 
   String getErrorMessage();

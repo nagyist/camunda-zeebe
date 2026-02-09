@@ -28,6 +28,8 @@ public interface MessageSubscription {
 
   Long getProcessInstanceKey();
 
+  Long getRootProcessInstanceKey();
+
   String getElementId();
 
   Long getElementInstanceKey();

@@ -64,6 +64,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   {
                    "elementInstanceKey":"1",
                    "processInstanceKey":"2",
+                   "rootProcessInstanceKey":"37",
                    "processDefinitionKey":"3",
                    "processDefinitionId":"bpmnProcessId",
                    "startDate": "2023-05-17T00:00:00.000Z",
@@ -115,6 +116,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                  {
                    "elementInstanceKey":"23",
                    "processInstanceKey":"5",
+                   "rootProcessInstanceKey":"37",
                    "processDefinitionKey":"17",
                    "processDefinitionId":"complexProcess",
                    "startDate": "2023-05-17T10:10:10.000Z",
@@ -173,6 +175,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionKey": "3",
             "processDefinitionId": "processDefId",
             "processInstanceKey": "2",
+            "rootProcessInstanceKey": "37",
             "errorType": "JOB_NO_RETRIES",
             "errorMessage": "error",
             "elementId": "elementId",
@@ -204,6 +207,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionId": "Test_Process",
                   "errorMessage": "Process crashed",
                   "processInstanceKey": "789",
+                  "rootProcessInstanceKey": "37",
                   "errorType": "CALLED_DECISION_ERROR",
                   "elementId": "elementId",
                   "elementInstanceKey": "123",

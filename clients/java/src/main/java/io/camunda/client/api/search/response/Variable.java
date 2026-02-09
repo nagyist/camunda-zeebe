@@ -31,6 +31,9 @@ public interface Variable {
   /* The process instance key of the variable */
   Long getProcessInstanceKey();
 
+  /* The root process instance key (the top-level ancestor) */
+  Long getRootProcessInstanceKey();
+
   /* The tenant id of the variable */
   String getTenantId();
 

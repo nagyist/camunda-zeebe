@@ -58,6 +58,9 @@ public interface UserTask {
   /** Key of the process instance */
   Long getProcessInstanceKey();
 
+  /** Key of the root process instance (the top-level ancestor) */
+  Long getRootProcessInstanceKey();
+
   /** Key of the form */
   Long getFormKey();
 
