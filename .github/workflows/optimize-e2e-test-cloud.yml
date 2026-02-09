@@ -76,12 +76,8 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./optimize/client
-      - uses: ./.github/actions/build-zeebe
-        id: build-camunda
-        with:
-          maven-extra-args: -PskipFrontendBuild
       - name: 'build backend & frontend'
-        run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
+        run: ./mvnw -T1C clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
       - name: Create backend logs file
         run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
       - name: 'start backend'
