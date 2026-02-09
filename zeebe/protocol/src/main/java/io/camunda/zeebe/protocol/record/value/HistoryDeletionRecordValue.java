@@ -21,7 +21,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableHistoryDeletionRecordValue.Builder.class)
-public interface HistoryDeletionRecordValue extends RecordValue {
+public interface HistoryDeletionRecordValue extends RecordValue, TenantOwned {
 
   /**
    * The key of the resource to delete. Depending on the {@link HistoryDeletionType} this can be one
@@ -40,4 +40,6 @@ public interface HistoryDeletionRecordValue extends RecordValue {
 
   /** Returns the type of resource to delete. */
   HistoryDeletionType getResourceType();
+
+  String getProcessId();
 }
