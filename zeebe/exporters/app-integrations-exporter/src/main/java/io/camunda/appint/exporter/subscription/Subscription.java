@@ -62,39 +62,17 @@ public class Subscription<T> {
   }
 
   private Long verifyAndAddToBatch(final Record<?> record) {
-    final var spaceLeft = batch.spaceLeft();
-    switch (spaceLeft) {
-      case 0:
-        {
-          // We flush the batch as it is full
-          final var logPositionFlushed = flush();
-          batch.addRecord(record, this::mapForBatch);
-          // We return the last log position that was flushed
-          return logPositionFlushed;
-        }
-      case 1:
-        {
-          // We add to the batch if it has only one space left
-          if (batch.addRecord(record, this::mapForBatch)) {
-            // Flush if the record was added successfully as its full now
-            return flush();
-          } else {
-            // The record was not added, likely because it has an older log position
-            return null;
-          }
-        }
-      default:
-        {
-          // We have space left in the batch, we can add the record
-          if (batch.addRecord(record, this::mapForBatch) && batch.shouldFlush()) {
-            // If the record was added successfully and the batch should flush, we flush it
-            return flush();
-          } else {
-            // We return null to indicate no flush was performed
-            return null;
-          }
-        }
+    Long lastPosition = null;
+    if (batch.isFull()) {
+      lastPosition = flush();
     }
+
+    if (batch.addRecord(record, this::mapForBatch) && batch.shouldFlush()) {
+      // If the record was added successfully and the batch should flush, we flush it
+      return flush();
+    }
+
+    return lastPosition;
   }
 
   private T mapForBatch(final Record<?> record) {
