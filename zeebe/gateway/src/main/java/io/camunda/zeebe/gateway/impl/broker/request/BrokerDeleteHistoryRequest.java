@@ -17,7 +17,7 @@ import org.agrona.DirectBuffer;
 
 public class BrokerDeleteHistoryRequest extends BrokerExecuteCommand<HistoryDeletionRecord> {
 
-  HistoryDeletionRecord requestDto = new HistoryDeletionRecord();
+  private final HistoryDeletionRecord requestDto = new HistoryDeletionRecord();
 
   public BrokerDeleteHistoryRequest() {
     super(ValueType.HISTORY_DELETION, HistoryDeletionIntent.DELETE);
