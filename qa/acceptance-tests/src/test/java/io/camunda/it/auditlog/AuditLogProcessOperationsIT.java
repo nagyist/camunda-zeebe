@@ -192,7 +192,7 @@ public class AuditLogProcessOperationsIT {
         AuditLogOperationTypeEnum.MIGRATE,
         processInstanceKey,
         targetProcess.getProcessDefinitionKey(),
-        null);
+        PROCESS_V1_ID);
   }
 
   @Test

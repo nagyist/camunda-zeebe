@@ -2961,7 +2961,8 @@ final class JsonSerializableToJsonTest {
                         new ProcessInstanceMigrationMappingInstruction()
                             .setTargetElementId("targetId3"))
                     .setRootProcessInstanceKey(321L)
-                    .setProcessDefinitionKey(234L),
+                    .setProcessDefinitionKey(234L)
+                    .setBpmnProcessId("bpmnProcessId"),
         """
                 {
                   "tenantId": "tenantId",
@@ -2978,7 +2979,9 @@ final class JsonSerializableToJsonTest {
                     "targetElementId": "targetId3"
                   }],
                   "rootProcessInstanceKey": 321,
-                  "processDefinitionKey": 234
+                  "processDefinitionKey": 234,
+                  "bpmnProcessId": "bpmnProcessId",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -3002,7 +3005,9 @@ final class JsonSerializableToJsonTest {
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": [],
                   "rootProcessInstanceKey": -1,
-                  "processDefinitionKey": -1
+                  "processDefinitionKey": -1,
+                  "bpmnProcessId": "",
+                  "elementInstanceKey": -1
                 }
                 """
       },
