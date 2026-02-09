@@ -101,7 +101,10 @@ public class CamundaJsonSchemaGenerator {
   }
 
   private static SchemaGeneratorConfigBuilder createSchemaGeneratorConfig() {
-    final Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+    final Module jacksonModule =
+        new JacksonModule(
+            JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
+            JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE);
     final Module openApiModule = new Swagger2Module();
     final Module springAiSchemaModule =
         CamundaJsonSchemaGenerator.PROPERTY_REQUIRED_BY_DEFAULT

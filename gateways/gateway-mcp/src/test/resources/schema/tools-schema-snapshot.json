@@ -167,18 +167,18 @@
                 "field": {
                   "type": "string",
                   "enum": [
-                    "INCIDENT_KEY",
-                    "PROCESS_DEFINITION_KEY",
-                    "PROCESS_DEFINITION_ID",
-                    "PROCESS_INSTANCE_KEY",
-                    "ERROR_TYPE",
-                    "ERROR_MESSAGE",
-                    "ELEMENT_ID",
-                    "ELEMENT_INSTANCE_KEY",
-                    "CREATION_TIME",
-                    "STATE",
-                    "JOB_KEY",
-                    "TENANT_ID"
+                    "incidentKey",
+                    "processDefinitionKey",
+                    "processDefinitionId",
+                    "processInstanceKey",
+                    "errorType",
+                    "errorMessage",
+                    "elementId",
+                    "elementInstanceKey",
+                    "creationTime",
+                    "state",
+                    "jobKey",
+                    "tenantId"
                   ],
                   "description": "The field to sort by."
                 },
@@ -335,13 +335,13 @@
                 "field": {
                   "type": "string",
                   "enum": [
-                    "PROCESS_DEFINITION_KEY",
-                    "NAME",
-                    "RESOURCE_NAME",
-                    "VERSION",
-                    "VERSION_TAG",
-                    "PROCESS_DEFINITION_ID",
-                    "TENANT_ID"
+                    "processDefinitionKey",
+                    "name",
+                    "resourceName",
+                    "version",
+                    "versionTag",
+                    "processDefinitionId",
+                    "tenantId"
                   ],
                   "description": "The field to sort by."
                 },
@@ -583,19 +583,19 @@
                 "field": {
                   "type": "string",
                   "enum": [
-                    "PROCESS_INSTANCE_KEY",
-                    "PROCESS_DEFINITION_ID",
-                    "PROCESS_DEFINITION_NAME",
-                    "PROCESS_DEFINITION_VERSION",
-                    "PROCESS_DEFINITION_VERSION_TAG",
-                    "PROCESS_DEFINITION_KEY",
-                    "PARENT_PROCESS_INSTANCE_KEY",
-                    "PARENT_ELEMENT_INSTANCE_KEY",
-                    "START_DATE",
-                    "END_DATE",
-                    "STATE",
-                    "HAS_INCIDENT",
-                    "TENANT_ID"
+                    "processInstanceKey",
+                    "processDefinitionId",
+                    "processDefinitionName",
+                    "processDefinitionVersion",
+                    "processDefinitionVersionTag",
+                    "processDefinitionKey",
+                    "parentProcessInstanceKey",
+                    "parentElementInstanceKey",
+                    "startDate",
+                    "endDate",
+                    "state",
+                    "hasIncident",
+                    "tenantId"
                   ],
                   "description": "The field to sort by."
                 },
@@ -746,12 +746,12 @@
                 "field": {
                   "type": "string",
                   "enum": [
-                    "VALUE",
-                    "NAME",
-                    "TENANT_ID",
-                    "VARIABLE_KEY",
-                    "SCOPE_KEY",
-                    "PROCESS_INSTANCE_KEY"
+                    "value",
+                    "name",
+                    "tenantId",
+                    "variableKey",
+                    "scopeKey",
+                    "processInstanceKey"
                   ],
                   "description": "The field to sort by."
                 },
@@ -986,12 +986,12 @@
                 "field": {
                   "type": "string",
                   "enum": [
-                    "CREATION_DATE",
-                    "COMPLETION_DATE",
-                    "FOLLOW_UP_DATE",
-                    "DUE_DATE",
-                    "PRIORITY",
-                    "NAME"
+                    "creationDate",
+                    "completionDate",
+                    "followUpDate",
+                    "dueDate",
+                    "priority",
+                    "name"
                   ],
                   "description": "The field to sort by."
                 },
@@ -1113,12 +1113,12 @@
                 "field": {
                   "type": "string",
                   "enum": [
-                    "VALUE",
-                    "NAME",
-                    "TENANT_ID",
-                    "VARIABLE_KEY",
-                    "SCOPE_KEY",
-                    "PROCESS_INSTANCE_KEY"
+                    "value",
+                    "name",
+                    "tenantId",
+                    "variableKey",
+                    "scopeKey",
+                    "processInstanceKey"
                   ],
                   "description": "The field to sort by."
                 },
