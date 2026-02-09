@@ -1963,7 +1963,8 @@ final class JsonSerializableToJsonTest {
                   "callingElementPath": [12345, 67890],
                   "tags": ["tag1", "tag2"],
                   "rootProcessInstanceKey": 9999,
-                  "businessId": "business-id-123"
+                  "businessId": "business-id-123",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1994,7 +1995,8 @@ final class JsonSerializableToJsonTest {
                   "callingElementPath": [],
                   "tags": [],
                   "rootProcessInstanceKey": -1,
-                  "businessId": ""
+                  "businessId": "",
+                  "elementInstanceKey": -1
                 }
                 """
       },
