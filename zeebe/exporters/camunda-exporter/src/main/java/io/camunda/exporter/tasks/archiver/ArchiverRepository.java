@@ -37,6 +37,8 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<BasicArchiveBatch> getUsageMetricNextBatch();
 
+  CompletableFuture<BasicArchiveBatch> getJobBatchMetricsNextBatch();
+
   CompletableFuture<BasicArchiveBatch> getStandaloneDecisionNextBatch();
 
   CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
