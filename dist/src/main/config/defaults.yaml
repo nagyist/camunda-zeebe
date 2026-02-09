@@ -985,32 +985,32 @@ camunda: # Type: io.camunda.configuration.Camunda
     engine: # Type: io.camunda.configuration.Engine  
       batch-operations: # Type: io.camunda.configuration.EngineBatchOperation  
         # Number of itemKeys in one BatchOperationChunkRecord. Must be below 4MB total record size. Defaults
-        # to {@link EngineConfiguration#DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
-        chunk-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_CHUNKSIZE
+        # to {@link #DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
+        chunk-size: 100 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_CHUNKSIZE
         # Number of itemKeys in one PersistedBatchOperationChunk. Must be below 32KB total record size.
-        # Defaults to {@link EngineConfiguration#DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
-        db-chunk-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_DBCHUNKSIZE
+        # Defaults to {@link #DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
+        db-chunk-size: 3500 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_DBCHUNKSIZE
         # The size of the IN clause for batch operation queries. Defaults to {@link
-        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE}.
-        query-in-clause-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYINCLAUSESIZE
+        # #DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE}.
+        query-in-clause-size: 1000 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYINCLAUSESIZE
         # The page size for batch operation queries. Defaults to {@link
-        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE}.
-        query-page-size: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYPAGESIZE
+        # #DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE}.
+        query-page-size: 10000 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYPAGESIZE
         # The backoff factor for retrying batch operation queries. Defaults to {@link
-        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR}.
-        query-retry-backoff-factor: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYBACKOFFFACTOR
+        # #DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR}.
+        query-retry-backoff-factor: 2 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYBACKOFFFACTOR
         # The initial delay for retrying batch operation queries. Defaults to {@link
-        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY}.
-        query-retry-initial-delay: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYINITIALDELAY
+        # #DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY}.
+        query-retry-initial-delay: "1s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYINITIALDELAY
         # The maximum number of retries for batch operation queries. Defaults to {@link
-        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX}.
-        query-retry-max: null # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYMAX
+        # #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX}.
+        query-retry-max: 0 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYMAX
         # The maximum delay for retrying batch operation queries. Defaults to {@link
-        # EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY}.
-        query-retry-max-delay: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYMAXDELAY
+        # #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY}.
+        query-retry-max-delay: "60s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_QUERYRETRYMAXDELAY
         # The interval at which the batch operation scheduler runs. Defaults to {@link
-        # EngineConfiguration#DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
-        scheduler-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_SCHEDULERINTERVAL
+        # #DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
+        scheduler-interval: "1s" # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_SCHEDULERINTERVAL
       
       distribution: # Type: io.camunda.configuration.Distribution  
         # Allows configuring the maximum backoff duration for command redistribution retries. The retry

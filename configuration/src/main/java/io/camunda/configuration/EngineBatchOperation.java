@@ -7,13 +7,27 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
 import java.util.Set;
 
 public class EngineBatchOperation {
 
   private static final String PREFIX = "camunda.processing.engine.batch-operations";
+  private static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
+  // reasonable size of a chunk record to avoid too many or too large records
+  private static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 100;
+  // key has 8 bytes, stay below 32KB block size
+  private static final int DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE = 3500;
+  // ES/OS have max 10000 entities per query
+  private static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
+  // Oracle can only have 1000 elements in `IN` clause
+  private static final int DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE = 1000;
+  private static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX = 0;
+  private static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY =
+      Duration.ofSeconds(1);
+  private static final Duration DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY =
+      Duration.ofSeconds(60);
+  private static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
 
   private static final Set<String> LEGACY_SCHEDULER_INTERVAL_PROPERTIES =
       Set.of("zeebe.broker.experimental.engine.batchOperations.schedulerInterval");
@@ -44,61 +58,57 @@ public class EngineBatchOperation {
 
   /**
    * The interval at which the batch operation scheduler runs. Defaults to {@link
-   * EngineConfiguration#DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
+   * #DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
    */
-  private Duration schedulerInterval =
-      EngineConfiguration.DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
+  private Duration schedulerInterval = DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
 
   /**
    * Number of itemKeys in one BatchOperationChunkRecord. Must be below 4MB total record size.
-   * Defaults to {@link EngineConfiguration#DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
+   * Defaults to {@link #DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
    */
-  private int chunkSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
+  private int chunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
 
   /**
    * Number of itemKeys in one PersistedBatchOperationChunk. Must be below 32KB total record size.
-   * Defaults to {@link EngineConfiguration#DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
+   * Defaults to {@link #DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
    */
-  private int dbChunkSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
+  private int dbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
 
   /**
    * The page size for batch operation queries. Defaults to {@link
-   * EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE}.
+   * #DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE}.
    */
-  private int queryPageSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
+  private int queryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
 
   /**
    * The size of the IN clause for batch operation queries. Defaults to {@link
-   * EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE}.
+   * #DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE}.
    */
-  private int queryInClauseSize = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
+  private int queryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
 
   /**
    * The maximum number of retries for batch operation queries. Defaults to {@link
-   * EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX}.
+   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX}.
    */
-  private int queryRetryMax = EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX;
+  private int queryRetryMax = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX;
 
   /**
    * The initial delay for retrying batch operation queries. Defaults to {@link
-   * EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY}.
+   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY}.
    */
-  private Duration queryRetryInitialDelay =
-      EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY;
+  private Duration queryRetryInitialDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY;
 
   /**
    * The maximum delay for retrying batch operation queries. Defaults to {@link
-   * EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY}.
+   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY}.
    */
-  private Duration queryRetryMaxDelay =
-      EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
+  private Duration queryRetryMaxDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
 
   /**
    * The backoff factor for retrying batch operation queries. Defaults to {@link
-   * EngineConfiguration#DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR}.
+   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR}.
    */
-  private int queryRetryBackoffFactor =
-      EngineConfiguration.DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
+  private int queryRetryBackoffFactor = DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
 
   public Duration getSchedulerInterval() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
