@@ -3743,7 +3743,7 @@ final class JsonSerializableToJsonTest {
       // ///////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "BatchOperationCreationRecord",
+        "Empty BatchOperationCreationRecord",
         (Supplier<BatchOperationCreationRecord>)
             () ->
                 new BatchOperationCreationRecord()
@@ -3885,7 +3885,9 @@ final class JsonSerializableToJsonTest {
                       "intent": "DELETE",
                       "recordValue": {
                         "resourceKey": 1,
-                        "resourceType": "PROCESS_DEFINITION"
+                        "resourceType": "PROCESS_DEFINITION",
+                        "processId": "",
+                        "tenantId": "<default>"
                       }
                     }
                  }
@@ -4147,11 +4149,34 @@ final class JsonSerializableToJsonTest {
             () ->
                 new HistoryDeletionRecord()
                     .setResourceKey(1L)
+                    .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                    .setProcessId("processId")
+                    .setTenantId("tenantId"),
+        """
+      {
+        "resourceKey": 1,
+        "resourceType": "PROCESS_INSTANCE",
+        "processId": "processId",
+        "tenantId": "tenantId"
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty HistoryDeletionRecord ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty HistoryDeletionRecord",
+        (Supplier<HistoryDeletionRecord>)
+            () ->
+                new HistoryDeletionRecord()
+                    .setResourceKey(1L)
                     .setResourceType(HistoryDeletionType.PROCESS_INSTANCE),
         """
       {
         "resourceKey": 1,
-        "resourceType": "PROCESS_INSTANCE"
+        "resourceType": "PROCESS_INSTANCE",
+        "processId": "",
+        "tenantId": "<default>"
       }
       """
       },
