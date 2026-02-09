@@ -11,6 +11,7 @@ package io.camunda.gateway.mcp.config.schema;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
@@ -32,17 +33,15 @@ import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import org.springaicommunity.mcp.annotation.McpMeta;
 import org.springaicommunity.mcp.annotation.McpProgressToken;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springaicommunity.mcp.context.McpAsyncRequestContext;
 import org.springaicommunity.mcp.context.McpSyncRequestContext;
-import org.springaicommunity.mcp.method.tool.utils.ClassUtils;
 import org.springaicommunity.mcp.method.tool.utils.ConcurrentReferenceHashMap;
 import org.springaicommunity.mcp.method.tool.utils.JsonParser;
 import org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator;
@@ -55,7 +54,17 @@ import org.springframework.lang.Nullable;
  */
 public class CamundaJsonSchemaGenerator {
 
+  private static final SchemaVersion SCHEMA_VERSION = SchemaVersion.DRAFT_2020_12;
   private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
+
+  private static final Set<Class<?>> MCP_FRAMEWORK_TYPES =
+      Set.of(
+          CallToolRequest.class,
+          McpSyncRequestContext.class,
+          McpAsyncRequestContext.class,
+          McpSyncServerExchange.class,
+          McpAsyncServerExchange.class,
+          McpMeta.class);
 
   private final Map<Method, String> methodSchemaCache = new ConcurrentReferenceHashMap<>(256);
   private final Map<Type, String> typeSchemaCache = new ConcurrentReferenceHashMap<>(256);
@@ -82,7 +91,6 @@ public class CamundaJsonSchemaGenerator {
 
     final SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
         typeSchemaCustomizer.apply(createSchemaGeneratorConfig());
-
     typeSchemaGenerator = new SchemaGenerator(schemaGeneratorConfigBuilder.build());
 
     final SchemaGeneratorConfig subtypeSchemaGeneratorConfig =
@@ -101,7 +109,7 @@ public class CamundaJsonSchemaGenerator {
             : new SpringAiSchemaModule(
                 SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-    return new SchemaGeneratorConfigBuilder(SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
+    return new SchemaGeneratorConfigBuilder(SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
         .with(jacksonModule)
         .with(openApiModule)
         .with(springAiSchemaModule)
@@ -116,88 +124,42 @@ public class CamundaJsonSchemaGenerator {
   }
 
   private String internalGenerateFromMethodArguments(final Method method) {
-    // Check if method has CallToolRequest parameter
-    final boolean hasCallToolRequestParam =
-        Arrays.stream(method.getParameterTypes()).anyMatch(CallToolRequest.class::isAssignableFrom);
+    final ObjectNode schema = createEmptySchema();
 
-    // If method has CallToolRequest, return minimal schema
-    if (hasCallToolRequestParam) {
-      // Check if there are other parameters besides CallToolRequest, exchange
-      // types,
-      // @McpProgressToken annotated parameters, and McpMeta parameters
-      final boolean hasOtherParams =
-          Arrays.stream(method.getParameters())
-              .anyMatch(
-                  param -> {
-                    final Class<?> type = param.getType();
-                    return !McpSyncRequestContext.class.isAssignableFrom(type)
-                        && !McpAsyncRequestContext.class.isAssignableFrom(type)
-                        && !CallToolRequest.class.isAssignableFrom(type)
-                        && !McpSyncServerExchange.class.isAssignableFrom(type)
-                        && !McpAsyncServerExchange.class.isAssignableFrom(type)
-                        && !param.isAnnotationPresent(McpProgressToken.class)
-                        && !McpMeta.class.isAssignableFrom(type);
-                  });
+    // return minimal schema if the method accepts only a CallToolRequest
+    if (Arrays.stream(method.getParameterTypes())
+        .anyMatch(CallToolRequest.class::isAssignableFrom)) {
+      final boolean hasNonFrameworkParams =
+          Arrays.stream(method.getParameters()).anyMatch(param -> !isFrameworkParameter(param));
 
-      // If only CallToolRequest (and possibly exchange), return empty schema
-      if (!hasOtherParams) {
-        final ObjectNode schema = objectMapper.createObjectNode();
-        schema.put("type", "object");
-        schema.putObject("properties");
-        schema.putArray("required");
+      if (!hasNonFrameworkParams) {
         return schema.toPrettyString();
       }
     }
 
-    final ObjectNode schema = objectMapper.createObjectNode();
-    schema.put("$schema", SchemaVersion.DRAFT_2020_12.getIdentifier());
-    schema.put("type", "object");
+    final ObjectNode properties = schema.withObject("properties");
+    final ArrayNode required = schema.withArray("required");
 
-    final ObjectNode properties = schema.putObject("properties");
-    final List<String> required = new ArrayList<>();
+    Arrays.stream(method.getParameters())
+        .filter(parameter -> !isFrameworkParameter(parameter))
+        .forEach(
+            parameter -> {
+              final String parameterName = parameter.getName();
 
-    for (int i = 0; i < method.getParameterCount(); i++) {
-      final Parameter parameter = method.getParameters()[i];
-      final String parameterName = parameter.getName();
-      final Type parameterType = method.getGenericParameterTypes()[i];
+              final ObjectNode parameterNode =
+                  subtypeSchemaGenerator.generateSchema(parameter.getParameterizedType());
 
-      // Skip parameters annotated with @McpProgressToken
-      if (parameter.isAnnotationPresent(McpProgressToken.class)) {
-        continue;
-      }
+              final String parameterDescription = getMethodParameterDescription(parameter);
+              if (Utils.hasText(parameterDescription)) {
+                parameterNode.put("description", parameterDescription);
+              }
 
-      // Skip McpMeta parameters
-      if (parameterType instanceof final Class<?> parameterClass
-          && McpMeta.class.isAssignableFrom(parameterClass)) {
-        continue;
-      }
+              properties.set(parameterName, parameterNode);
 
-      // Skip special parameter types
-      if (parameterType instanceof final Class<?> parameterClass
-          && (ClassUtils.isAssignable(McpSyncRequestContext.class, parameterClass)
-              || ClassUtils.isAssignable(McpAsyncRequestContext.class, parameterClass)
-              || ClassUtils.isAssignable(McpSyncServerExchange.class, parameterClass)
-              || ClassUtils.isAssignable(McpAsyncServerExchange.class, parameterClass)
-              || ClassUtils.isAssignable(CallToolRequest.class, parameterClass))) {
-        continue;
-      }
-
-      if (isMethodParameterRequired(method, i)) {
-        required.add(parameterName);
-      }
-
-      final ObjectNode parameterNode = subtypeSchemaGenerator.generateSchema(parameterType);
-      final String parameterDescription = getMethodParameterDescription(method, i);
-
-      if (Utils.hasText(parameterDescription)) {
-        parameterNode.put("description", parameterDescription);
-      }
-
-      properties.set(parameterName, parameterNode);
-    }
-
-    final var requiredArray = schema.putArray("required");
-    required.forEach(requiredArray::add);
+              if (isMethodParameterRequired(parameter)) {
+                required.add(parameterName);
+              }
+            });
 
     return schema.toPrettyString();
   }
@@ -211,9 +173,26 @@ public class CamundaJsonSchemaGenerator {
     return typeSchemaGenerator.generateSchema(type).toPrettyString();
   }
 
-  private boolean isMethodParameterRequired(final Method method, final int index) {
-    final Parameter parameter = method.getParameters()[index];
+  private ObjectNode createEmptySchema() {
+    final ObjectNode schema = objectMapper.createObjectNode();
+    schema.put("$schema", SCHEMA_VERSION.getIdentifier());
+    schema.put("type", "object");
+    schema.putObject("properties");
+    schema.putArray("required");
+    return schema;
+  }
 
+  private boolean isFrameworkParameter(final Parameter parameter) {
+    if (parameter.isAnnotationPresent(McpProgressToken.class)) {
+      return true;
+    }
+
+    final Class<?> type = parameter.getType();
+    return MCP_FRAMEWORK_TYPES.stream()
+        .anyMatch(frameworkType -> frameworkType.isAssignableFrom(type));
+  }
+
+  private boolean isMethodParameterRequired(final Parameter parameter) {
     final var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
     if (toolParamAnnotation != null) {
       return toolParamAnnotation.required();
@@ -239,9 +218,7 @@ public class CamundaJsonSchemaGenerator {
     return PROPERTY_REQUIRED_BY_DEFAULT;
   }
 
-  private String getMethodParameterDescription(final Method method, final int index) {
-    final Parameter parameter = method.getParameters()[index];
-
+  private String getMethodParameterDescription(final Parameter parameter) {
     final var toolParamAnnotation = parameter.getAnnotation(McpToolParam.class);
     if (toolParamAnnotation != null && Utils.hasText(toolParamAnnotation.description())) {
       return toolParamAnnotation.description();
