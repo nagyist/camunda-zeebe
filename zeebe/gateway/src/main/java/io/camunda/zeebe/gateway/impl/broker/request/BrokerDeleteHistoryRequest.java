@@ -43,6 +43,11 @@ public class BrokerDeleteHistoryRequest extends BrokerExecuteCommand<HistoryDele
     return this;
   }
 
+  public BrokerDeleteHistoryRequest setDecisionDefinitionId(final String decisionDefinitionId) {
+    requestDto.setDecisionDefinitionId(decisionDefinitionId);
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;

@@ -42,4 +42,6 @@ public interface HistoryDeletionRecordValue extends RecordValue, TenantOwned {
   HistoryDeletionType getResourceType();
 
   String getProcessId();
+
+  String getDecisionDefinitionId();
 }

@@ -24,6 +24,7 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
   private static final StringValue RESOURCE_TYPE = new StringValue("resourceType");
   private static final StringValue PROCESS_ID = new StringValue("processId");
   private static final StringValue TENANT_ID = new StringValue("tenantId");
+  private static final StringValue DECISION_DEFINITION_ID = new StringValue("decisionDefinitionId");
 
   private final LongProperty resourceKeyProp = new LongProperty(RESOURCE_KEY);
   private final EnumProperty<HistoryDeletionType> resourceTypeProp =
@@ -31,13 +32,16 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
   private final StringProperty processIdProp = new StringProperty(PROCESS_ID, "");
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final StringProperty decisionDefinitionIdProp =
+      new StringProperty(DECISION_DEFINITION_ID, "");
 
   public HistoryDeletionRecord() {
-    super(4);
+    super(5);
     declareProperty(resourceKeyProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(processIdProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(decisionDefinitionIdProp);
   }
 
   @Override
@@ -67,6 +71,16 @@ public class HistoryDeletionRecord extends UnifiedRecordValue
 
   public HistoryDeletionRecord setProcessId(final String processId) {
     processIdProp.setValue(processId);
+    return this;
+  }
+
+  @Override
+  public String getDecisionDefinitionId() {
+    return BufferUtil.bufferAsString(decisionDefinitionIdProp.getValue());
+  }
+
+  public HistoryDeletionRecord setDecisionDefinitionId(final String decisionDefinitionId) {
+    decisionDefinitionIdProp.setValue(decisionDefinitionId);
     return this;
   }
 
