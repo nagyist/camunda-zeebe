@@ -245,8 +245,8 @@ public class DeleteProcessInstanceHistoryIT {
         .satisfies(
             ex -> {
               final var details = ex.details();
-              assertThat(details.getTitle().equals("INVALID_STATE"));
-              assertThat(details.getStatus().equals(409));
+              assertThat(details.getTitle()).isEqualTo("INVALID_STATE");
+              assertThat(details.getStatus()).isEqualTo(409);
               assertThat(details.getDetail())
                   .contains(
                       "Expected to delete history for process instance with key '%d', but it is still active"
