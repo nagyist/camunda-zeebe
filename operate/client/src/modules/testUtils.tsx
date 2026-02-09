@@ -502,61 +502,6 @@ const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-const mockProcessInstances = {
-  processInstances: [
-    createInstance({id: '2251799813685594', processId: '2251799813685592'}),
-    createInstance({
-      id: '2251799813685596',
-      processId: '2251799813685592',
-      state: 'INCIDENT',
-    }),
-    createInstance({
-      id: '2251799813685598',
-      processId: '2251799813685592',
-      state: 'CANCELED',
-    }),
-  ],
-  totalCount: 912,
-};
-
-const mockProcessInstancesWithOperation = {
-  processInstances: [
-    createInstance({
-      id: '0000000000000002',
-      processId: '2251799813685612',
-      state: 'ACTIVE',
-      operations: [
-        {
-          state: 'FAILED',
-          batchOperationId: 'f4be6304-a0e0-4976-b81b-7a07fb4e96e5',
-          errorMessage: 'Batch Operation Error Message',
-          type: 'MODIFY_PROCESS_INSTANCE',
-          completedDate: null,
-        },
-        {
-          state: 'COMPLETED',
-          batchOperationId: 'c4be6304-a0e0-4976-b81b-7a07fb4e96e5',
-          errorMessage: '',
-          type: 'MODIFY_PROCESS_INSTANCE',
-          completedDate: null,
-        },
-      ],
-    }),
-  ],
-  totalCount: 1,
-};
-
-const mockCalledProcessInstances = {
-  processInstances: [
-    createInstance({
-      id: '2251799813685837',
-      processId: '2251799813685592',
-      parentInstanceId: '22517998136837261',
-    }),
-  ],
-  totalCount: 1,
-};
-
 const operations: OperationEntity[] = [
   {
     id: '921455fd-849a-49c5-be17-c92eb6d9e946',
@@ -1068,7 +1013,6 @@ export {
   searchResult,
   createIncident,
   createEnhancedIncident,
-  createOperation,
   mockProcessDefinitions,
   createProcess,
   createIncidentByError,
@@ -1079,9 +1023,6 @@ export {
   mockProcessXML,
   mockProcessWithInputOutputMappingsXML,
   mockCallActivityProcessXML,
-  mockProcessInstances,
-  mockProcessInstancesWithOperation,
-  mockCalledProcessInstances,
   operations,
   multiInstanceProcess,
   eventSubProcess,

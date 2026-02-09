@@ -25,11 +25,6 @@ const TOKEN_OPERATIONS = {
   CANCEL_TOKEN: 'CANCEL_TOKEN',
 } as const;
 
-const SORT_ORDER = {
-  ASC: 'asc',
-  DESC: 'desc',
-} as const;
-
 const PAGE_TITLE = {
   LOGIN: 'Operate: Log In',
   DASHBOARD: 'Operate: Dashboard',
@@ -54,7 +49,6 @@ const DEFAULT_TENANT = '<default>';
 export {
   ACTIVE_OPERATION_STATES,
   TOKEN_OPERATIONS,
-  SORT_ORDER,
   PAGE_TITLE,
   PAGE_TOP_PADDING,
   COLLAPSABLE_PANEL_MIN_WIDTH,

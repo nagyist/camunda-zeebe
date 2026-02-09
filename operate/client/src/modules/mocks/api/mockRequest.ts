@@ -396,5 +396,4 @@ export {
   mockDeleteRequest,
   mockPutRequest,
   mockPatchRequest,
-  checkPollingHeader,
 };
