@@ -20,7 +20,7 @@ public class ClusterVariableValidator {
     this.identifierValidator = identifierValidator;
   }
 
-  public List<String> validateTenantClusterVariableCreateRequest(
+  public List<String> validateTenantClusterVariableRequestWithValue(
       final String name, final Object value, final String tenantId) {
     final List<String> violations = new ArrayList<>();
     validateClusterVariableName(name, violations);
@@ -29,7 +29,7 @@ public class ClusterVariableValidator {
     return violations;
   }
 
-  public List<String> validateGlobalClusterVariableCreateRequest(
+  public List<String> validateGlobalClusterVariableRequestWithValue(
       final String name, final Object value) {
     final List<String> violations = new ArrayList<>();
     validateClusterVariableName(name, violations);

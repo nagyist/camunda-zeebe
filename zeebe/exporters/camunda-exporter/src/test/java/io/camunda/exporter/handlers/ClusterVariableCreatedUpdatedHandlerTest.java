@@ -26,12 +26,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
-public class ClusterVariableCreatedHandlerTest {
+public class ClusterVariableCreatedUpdatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "clusterVariable";
   private final int variableSizeThreshold = 10;
-  private final ClusterVariableCreatedHandler underTest =
-      new ClusterVariableCreatedHandler(indexName, variableSizeThreshold);
+  private final ClusterVariableCreatedUpdatedHandler underTest =
+      new ClusterVariableCreatedUpdatedHandler(indexName, variableSizeThreshold);
 
   @Test
   void testGetHandledValueType() {
@@ -46,7 +46,7 @@ public class ClusterVariableCreatedHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ClusterVariableIntent.class,
-      names = {"CREATE", "DELETE", "UPDATE", "UPDATED", "DELETED"},
+      names = {"CREATE", "DELETE", "UPDATE", "DELETED"},
       mode = Mode.EXCLUDE)
   void shouldHandleRecord(final ClusterVariableIntent intent) {
     // given
@@ -60,7 +60,7 @@ public class ClusterVariableCreatedHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ClusterVariableIntent.class,
-      names = {"CREATED"},
+      names = {"CREATED", "UPDATED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final ClusterVariableIntent intent) {
     // given
@@ -71,8 +71,12 @@ public class ClusterVariableCreatedHandlerTest {
     assertThat(underTest.handlesRecord(clusterVariableRecordValue)).isFalse();
   }
 
-  @Test
-  void shouldGenerateIdsForGlobalClusterVariable() {
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldGenerateIdsForGlobalClusterVariable(final ClusterVariableIntent intent) {
     // given
     final ClusterVariableRecordValue clusterVariableRecordValue =
         ImmutableClusterVariableRecordValue.builder()
@@ -83,7 +87,7 @@ public class ClusterVariableCreatedHandlerTest {
     final Record<ClusterVariableRecordValue> clusterVariableRecordValueRecord =
         factory.generateRecord(
             ValueType.CLUSTER_VARIABLE,
-            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(clusterVariableRecordValue));
+            r -> r.withIntent(intent).withValue(clusterVariableRecordValue));
 
     // when
     final var idList = underTest.generateIds(clusterVariableRecordValueRecord);
@@ -92,8 +96,12 @@ public class ClusterVariableCreatedHandlerTest {
     assertThat(idList).containsExactly(clusterVariableRecordValue.getName() + "-GLOBAL");
   }
 
-  @Test
-  void shouldGenerateIdsForTenantClusterVariable() {
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldGenerateIdsForTenantClusterVariable(final ClusterVariableIntent intent) {
     // given
     final ClusterVariableRecordValue clusterVariableRecordValue =
         ImmutableClusterVariableRecordValue.builder()
@@ -105,7 +113,7 @@ public class ClusterVariableCreatedHandlerTest {
     final Record<ClusterVariableRecordValue> clusterVariableRecordValueRecord =
         factory.generateRecord(
             ValueType.CLUSTER_VARIABLE,
-            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(clusterVariableRecordValue));
+            r -> r.withIntent(intent).withValue(clusterVariableRecordValue));
 
     // when
     final var idList = underTest.generateIds(clusterVariableRecordValueRecord);
@@ -149,8 +157,12 @@ public class ClusterVariableCreatedHandlerTest {
     verify(mockRequest, times(1)).add(indexName, inputEntity);
   }
 
-  @Test
-  void shouldUpdateGlobalClusterEntityFromRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldUpdateGlobalClusterEntityFromRecord(final ClusterVariableIntent intent) {
     // given
     final ClusterVariableRecordValue clusterVariableRecordValue =
         ImmutableClusterVariableRecordValue.builder()
@@ -162,7 +174,7 @@ public class ClusterVariableCreatedHandlerTest {
     final Record<ClusterVariableRecordValue> variableRecord =
         factory.generateRecord(
             ValueType.CLUSTER_VARIABLE,
-            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(clusterVariableRecordValue));
+            r -> r.withIntent(intent).withValue(clusterVariableRecordValue));
 
     // when
     final ClusterVariableEntity clusterVariableEntity = new ClusterVariableEntity();
@@ -179,8 +191,12 @@ public class ClusterVariableCreatedHandlerTest {
     assertThat(clusterVariableEntity.getFullValue()).isNull();
   }
 
-  @Test
-  void shouldUpdateTenantClusterEntityFromRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldUpdateTenantClusterEntityFromRecord(final ClusterVariableIntent intent) {
     // given
     final ClusterVariableRecordValue clusterVariableRecordValue =
         ImmutableClusterVariableRecordValue.builder()
@@ -193,7 +209,7 @@ public class ClusterVariableCreatedHandlerTest {
     final Record<ClusterVariableRecordValue> variableRecord =
         factory.generateRecord(
             ValueType.CLUSTER_VARIABLE,
-            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(clusterVariableRecordValue));
+            r -> r.withIntent(intent).withValue(clusterVariableRecordValue));
 
     // when
     final ClusterVariableEntity clusterVariableEntity = new ClusterVariableEntity();
@@ -212,8 +228,12 @@ public class ClusterVariableCreatedHandlerTest {
     assertThat(clusterVariableEntity.getFullValue()).isNull();
   }
 
-  @Test
-  void shouldUpdateEntityFromRecordWithFullValue() {
+  @ParameterizedTest
+  @EnumSource(
+      value = ClusterVariableIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldUpdateEntityFromRecordWithFullValue(final ClusterVariableIntent intent) {
 
     // given
     final ClusterVariableRecordValue clusterVariableRecordValue =
@@ -226,7 +246,7 @@ public class ClusterVariableCreatedHandlerTest {
     final Record<ClusterVariableRecordValue> variableRecord =
         factory.generateRecord(
             ValueType.CLUSTER_VARIABLE,
-            r -> r.withIntent(ClusterVariableIntent.CREATED).withValue(clusterVariableRecordValue));
+            r -> r.withIntent(intent).withValue(clusterVariableRecordValue));
 
     // when
     final ClusterVariableEntity clusterVariableEntity = new ClusterVariableEntity();
