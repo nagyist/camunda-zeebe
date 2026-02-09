@@ -38,10 +38,6 @@ public class Batch<T> {
     return entries.isEmpty();
   }
 
-  protected int spaceLeft() {
-    return size - entries.size();
-  }
-
   protected boolean isTimeThresholdReached() {
     final var elapsedTime = System.currentTimeMillis() - lastTimeFlushed;
     return elapsedTime >= flushInterval;

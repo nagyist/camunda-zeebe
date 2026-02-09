@@ -33,7 +33,6 @@ public class BatchTest {
   void shouldBeEmptyInitially() {
     assertThat(batch.isEmpty()).isTrue();
     assertThat(batch.getSize()).isZero();
-    assertThat(batch.spaceLeft()).isEqualTo(BATCH_SIZE);
   }
 
   @Test
@@ -75,7 +74,6 @@ public class BatchTest {
     batch.addRecord(mockRecord(3L), r -> "entry3");
 
     assertThat(batch.isFull()).isTrue();
-    assertThat(batch.spaceLeft()).isZero();
   }
 
   @Test

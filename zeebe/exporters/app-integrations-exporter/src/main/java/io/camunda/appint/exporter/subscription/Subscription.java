@@ -67,9 +67,15 @@ public class Subscription<T> {
       lastPosition = flush();
     }
 
-    if (batch.addRecord(record, this::mapForBatch) && batch.shouldFlush()) {
-      // If the record was added successfully and the batch should flush, we flush it
-      return flush();
+    if (batch.addRecord(record, this::mapForBatch)) {
+      if (batch.shouldFlush()) {
+        // If the record was added successfully and the batch should flush, we flush it
+        return flush();
+      }
+    } else if (batch.isEmpty()) {
+      // If the record was not added but the batch is empty, we can return the record position to
+      // mark it as exported
+      lastPosition = record.getPosition();
     }
 
     return lastPosition;
