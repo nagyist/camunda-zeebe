@@ -66,7 +66,8 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
     validateAuthorization(
             command,
             AuthorizationResourceType.PROCESS_DEFINITION,
-            PermissionType.DELETE_PROCESS_INSTANCE)
+            PermissionType.DELETE_PROCESS_INSTANCE,
+            recordValue.getProcessId())
         .flatMap(this::validateProcessInstanceDoesNotExist)
         .ifRightOrLeft(
             validRecord -> writeHistoryDeletionEvent(recordValue, command),
@@ -83,13 +84,25 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
 
   private void deleteDecisionInstance(final TypedRecord<HistoryDeletionRecord> command) {
     final var recordValue = command.getValue();
-    writeHistoryDeletionEvent(recordValue, command);
+
+    validateAuthorization(
+            command,
+            AuthorizationResourceType.DECISION_DEFINITION,
+            PermissionType.DELETE_DECISION_INSTANCE,
+            recordValue.getDecisionDefinitionId())
+        .ifRightOrLeft(
+            validRecord -> writeHistoryDeletionEvent(recordValue, command),
+            rejection -> {
+              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+            });
   }
 
   private Either<Rejection, HistoryDeletionRecord> validateAuthorization(
       final TypedRecord<HistoryDeletionRecord> command,
       final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
+      final PermissionType permissionType,
+      final String resourceId) {
     // If the command is part of a batch operation, the authorizations will be checked upon batch
     // operation creation. We cannot check the authorizations here.
     if (command.getBatchOperationReference()
@@ -103,7 +116,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
             .resourceType(resourceType)
             .permissionType(permissionType)
             .tenantId(command.getValue().getTenantId())
-            .addResourceId(command.getValue().getProcessId())
+            .addResourceId(resourceId)
             .build();
     return authCheckBehavior
         .isAuthorizedOrInternalCommand(request)
