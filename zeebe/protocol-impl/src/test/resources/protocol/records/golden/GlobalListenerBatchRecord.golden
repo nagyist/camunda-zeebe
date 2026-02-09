@@ -5,20 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.protocol.impl.record.value.globallisteners;
+package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class GlobalListenerBatchRecord extends UnifiedRecordValue
     implements GlobalListenerBatchRecordValue {
 
-  private final LongProperty globalListenerBatchKey = new LongProperty("globalListenerBatchKey", -1L);
+  private final LongProperty globalListenerBatchKey =
+      new LongProperty("globalListenerBatchKey", -1L);
   private final ArrayProperty<GlobalListenerRecord> taskListenersProp =
       new ArrayProperty<>("taskListeners", GlobalListenerRecord::new);
 

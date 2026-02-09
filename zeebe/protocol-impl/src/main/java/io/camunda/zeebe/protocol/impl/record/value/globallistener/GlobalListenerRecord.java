@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -30,6 +31,7 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   public static final int DEFAULT_RETRIES = 3;
   public static final int DEFAULT_PRIORITY = 50;
 
+  private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
   private final StringProperty idProp = new StringProperty("id", "");
   private final StringProperty typeProp = new StringProperty("type", "");
   private final IntegerProperty retriesProp = new IntegerProperty("retries", DEFAULT_RETRIES);
@@ -43,8 +45,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
       new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
 
   public GlobalListenerRecord() {
-    super(8);
-    declareProperty(idProp)
+    super(9);
+    declareProperty(globalListenerKeyProp)
+        .declareProperty(idProp)
         .declareProperty(typeProp)
         .declareProperty(retriesProp)
         .declareProperty(eventTypesProp)
@@ -52,6 +55,16 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
         .declareProperty(priorityProp)
         .declareProperty(sourceProp)
         .declareProperty(listenerTypeProp);
+  }
+
+  @Override
+  public Long getGlobalListenerKey() {
+    return globalListenerKeyProp.getValue();
+  }
+
+  public GlobalListenerRecord setGlobalListenerKey(final Long key) {
+    globalListenerKeyProp.setValue(key);
+    return this;
   }
 
   @Override
