@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 public record BatchOperationItemDbModel(
     String batchOperationKey,
     long itemKey,
-    long processInstanceKey,
+    Long processInstanceKey,
     Long rootProcessInstanceKey,
     BatchOperationEntity.BatchOperationItemState state,
     OffsetDateTime processedDate,

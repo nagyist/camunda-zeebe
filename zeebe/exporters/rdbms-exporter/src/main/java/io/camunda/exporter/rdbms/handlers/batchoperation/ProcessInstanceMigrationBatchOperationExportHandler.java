@@ -37,8 +37,8 @@ public class ProcessInstanceMigrationBatchOperationExportHandler
   }
 
   @Override
-  long getProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
-    return record.getValue().getProcessInstanceKey();
+  Optional<Long> getProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
+    return Optional.of(record.getValue().getProcessInstanceKey());
   }
 
   @Override

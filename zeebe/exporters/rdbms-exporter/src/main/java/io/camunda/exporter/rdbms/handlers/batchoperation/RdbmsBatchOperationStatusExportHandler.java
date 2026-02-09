@@ -77,7 +77,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
         new BatchOperationItemDbModel(
             String.valueOf(record.getBatchOperationReference()),
             getItemKey(record),
-            getProcessInstanceKey(record),
+            getProcessInstanceKey(record).orElse(null),
             getRootProcessInstanceKey(record).orElse(null),
             state,
             DateUtil.toOffsetDateTime(record.getTimestamp()),
@@ -123,7 +123,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
    * @param record the record
    * @return the process instance key
    */
-  abstract long getProcessInstanceKey(Record<T> record);
+  abstract Optional<Long> getProcessInstanceKey(Record<T> record);
 
   /**
    * Extract the root process instance key from the record.

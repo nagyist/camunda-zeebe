@@ -43,8 +43,8 @@ public class ProcessInstanceCancellationBatchOperationExportHandler
   }
 
   @Override
-  long getProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
-    return record.getValue().getProcessInstanceKey();
+  Optional<Long> getProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
+    return Optional.of(record.getValue().getProcessInstanceKey());
   }
 
   @Override

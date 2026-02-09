@@ -36,8 +36,8 @@ public class IncidentBatchOperationExportHandler
   }
 
   @Override
-  long getProcessInstanceKey(final Record<IncidentRecordValue> record) {
-    return record.getValue().getProcessInstanceKey();
+  Optional<Long> getProcessInstanceKey(final Record<IncidentRecordValue> record) {
+    return Optional.of(record.getValue().getProcessInstanceKey());
   }
 
   @Override

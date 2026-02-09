@@ -37,8 +37,9 @@ public class ProcessInstanceModificationBatchOperationExportHandler
   }
 
   @Override
-  long getProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
-    return record.getValue().getProcessInstanceKey();
+  Optional<Long> getProcessInstanceKey(
+      final Record<ProcessInstanceModificationRecordValue> record) {
+    return Optional.of(record.getValue().getProcessInstanceKey());
   }
 
   @Override
