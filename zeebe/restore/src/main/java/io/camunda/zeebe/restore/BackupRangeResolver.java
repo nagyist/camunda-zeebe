@@ -184,6 +184,10 @@ public final class BackupRangeResolver {
             backup ->
                 backup
                     .descriptor()
+                    // NOTE: we just need to be able to start exporting from a backup whose
+                    // snapshot position is <= exportedPosition. However, to do that we would need
+                    // to open the backup. It's simpler to just use the checkpointPosition.
+                    // We might be able to use `firstLogPosition` as an optimization in the future.
                     .map(ds -> ds.checkpointPosition() <= exportedPosition)
                     .orElse(false))
         .map(backup -> backup.id().checkpointId())
