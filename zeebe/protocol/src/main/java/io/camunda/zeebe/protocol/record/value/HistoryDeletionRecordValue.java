@@ -41,7 +41,21 @@ public interface HistoryDeletionRecordValue extends RecordValue, TenantOwned {
   /** Returns the type of resource to delete. */
   HistoryDeletionType getResourceType();
 
+  /**
+   * Returns the process id which belongs to the process instance to delete.
+   *
+   * <p>This is only set when performing a singular deletion (not a batch operation) and is used for
+   * performing the authorization checks. We cannot rely on the resource key for this as the
+   * resource will be deleted from primary storage.
+   */
   String getProcessId();
 
+  /**
+   * Returns the decision definition id which belongs to the decision instance to delete.
+   *
+   * <p>This is only set when performing a singular deletion (not a batch operation) and is used for
+   * performing the authorization checks. We cannot rely on the resource key for this as the
+   * resource will be deleted from primary storage.
+   */
   String getDecisionDefinitionId();
 }
