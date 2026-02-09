@@ -231,11 +231,17 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromBatchOperations(final BrokerBasedProperties override) {
     final var engineBatchOperation =
         unifiedConfiguration.getCamunda().getProcessing().getEngine().getBatchOperations();
-    override
-        .getExperimental()
-        .getEngine()
-        .getBatchOperations()
-        .setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
+    final var batchOperationsCfg = override.getExperimental().getEngine().getBatchOperations();
+    batchOperationsCfg.setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
+    batchOperationsCfg.setChunkSize(engineBatchOperation.getChunkSize());
+    batchOperationsCfg.setDbChunkSize(engineBatchOperation.getDbChunkSize());
+    batchOperationsCfg.setQueryPageSize(engineBatchOperation.getQueryPageSize());
+    batchOperationsCfg.setQueryInClauseSize(engineBatchOperation.getQueryInClauseSize());
+    batchOperationsCfg.setQueryRetryMax(engineBatchOperation.getQueryRetryMax());
+    batchOperationsCfg.setQueryRetryInitialDelay(engineBatchOperation.getQueryRetryInitialDelay());
+    batchOperationsCfg.setQueryRetryMaxDelay(engineBatchOperation.getQueryRetryMaxDelay());
+    batchOperationsCfg.setQueryRetryBackoffFactor(
+        engineBatchOperation.getQueryRetryBackoffFactor());
   }
 
   private void populateFromExpression(final BrokerBasedProperties override) {
