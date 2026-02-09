@@ -704,19 +704,15 @@ final class BackupEndpointTest {
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
                   1, 1L, CheckpointType.MARKER, 20L, 10L)));
+      final var startTimestamp = Instant.parse("2024-01-01T00:00:00Z");
+      final var endTimestamp = Instant.parse("2024-01-02T00:00:00Z");
       final var rangesResponse = new BackupRangesResponse();
       rangesResponse.setRanges(
           List.of(
               new BackupRangesResponse.PartitionBackupRange(
                   1,
-                  new CheckpointInfo(
-                      1,
-                      1L,
-                      1L,
-                      CheckpointType.SCHEDULED_BACKUP,
-                      Instant.now().minus(1, ChronoUnit.DAYS)),
-                  new CheckpointInfo(
-                      10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, Instant.now()),
+                  new CheckpointInfo(1, 1L, 1L, CheckpointType.SCHEDULED_BACKUP, startTimestamp),
+                  new CheckpointInfo(10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, endTimestamp),
                   Set.of())));
 
       when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
@@ -744,8 +740,23 @@ final class BackupEndpointTest {
                       List.of(
                           new PartitionBackupRange()
                               .partitionId(1)
-                              .start(1L)
-                              .end(10L)
+                              .start(
+                                  new PartitionBackupState()
+                                      .checkpointId(1L)
+                                      .checkpointPosition(1L)
+                                      .firstLogPosition(1L)
+                                      .checkpointType(BackupType.SCHEDULED_BACKUP)
+                                      .checkpointTimestamp(
+                                          OffsetDateTime.ofInstant(
+                                              startTimestamp, ZoneId.of("UTC"))))
+                              .end(
+                                  new PartitionBackupState()
+                                      .checkpointId(10L)
+                                      .checkpointPosition(150L)
+                                      .firstLogPosition(100L)
+                                      .checkpointType(BackupType.SCHEDULED_BACKUP)
+                                      .checkpointTimestamp(
+                                          OffsetDateTime.ofInstant(endTimestamp, ZoneId.of("UTC"))))
                               .missingCheckpoints(List.of()))));
     }
 
