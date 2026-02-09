@@ -23,6 +23,7 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import dev.failsafe.TimeoutExceededException;
 import io.camunda.appint.exporter.config.Config;
+import io.camunda.appint.exporter.transport.TransportException;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -160,7 +161,7 @@ final class AppIntegrationsExporterBatchIT {
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
     assertThatThrownBy(() -> export(generateRecords().limit(1)))
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(TransportException.class)
         .hasMessageContaining("Failed to post records. Status: 500");
 
     wireMock.verify(exactly(3), postRequestedFor(urlEqualTo("/")));
@@ -186,7 +187,7 @@ final class AppIntegrationsExporterBatchIT {
                     .withStatus(500)));
 
     assertThatThrownBy(() -> export(generateRecords().limit(1)))
-        .isInstanceOf(RuntimeException.class)
+        .isInstanceOf(TransportException.class)
         .hasCauseInstanceOf(TimeoutExceededException.class);
 
     wireMock.verify(exactly(1), postRequestedFor(urlEqualTo("/")));

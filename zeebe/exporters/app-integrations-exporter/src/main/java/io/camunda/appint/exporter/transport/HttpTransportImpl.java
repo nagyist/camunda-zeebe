@@ -101,9 +101,12 @@ public class HttpTransportImpl implements Transport<Event> {
         .run(() -> executeRequest(httpPost));
   }
 
-  private void executeRequest(final HttpPost httpPost) throws Exception {
+  private void executeRequest(final HttpPost httpPost) {
     try (final CloseableHttpResponse response = httpClient.execute(httpPost)) {
       handleResponse(response);
+    } catch (final IOException e) {
+      log.debug("IOException during HTTP request execution", e);
+      throw new TransportException("Failed to execute HTTP request", e);
     }
   }
 
@@ -127,7 +130,11 @@ public class HttpTransportImpl implements Transport<Event> {
           "Failed posting records. Status: {} reason: {}",
           statusCode,
           response.getStatusLine().getReasonPhrase());
-      throw new RuntimeException("Failed to post records. Status: " + statusCode);
+      throw new TransportException(
+          "Failed to post records. Status: "
+              + statusCode
+              + " reason: "
+              + response.getStatusLine().getReasonPhrase());
     }
   }
 
