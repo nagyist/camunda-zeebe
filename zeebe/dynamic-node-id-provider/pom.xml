@@ -71,6 +71,11 @@
       <artifactId>apache-client</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+
     <!--  TEST   -->
     <dependency>
       <groupId>org.assertj</groupId>
