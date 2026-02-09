@@ -175,7 +175,7 @@ describe('IncidentsByError', () => {
       'href',
       `${Paths.processes()}?process=call-level-2-process&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true`,
     );
-  }, 10000);
+  });
 
   it('should include tenant in link when multi-tenancy is enabled', async () => {
     const originalClientConfig = window.clientConfig;
