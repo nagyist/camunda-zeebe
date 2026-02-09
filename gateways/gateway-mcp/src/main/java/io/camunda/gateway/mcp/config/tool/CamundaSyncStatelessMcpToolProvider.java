@@ -18,6 +18,7 @@ import io.modelcontextprotocol.util.Utils;
 import java.lang.reflect.Method;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -114,13 +115,16 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
     if (toolAnnotation.annotations() != null) {
       final var toolAnnotations = toolAnnotation.annotations();
+
+      // apply tool annotations only if they deviate from the default value to reduce schema payload
+      // see https://modelcontextprotocol.io/specification/2025-11-25/schema#toolannotations
       toolBuilder.annotations(
           new ToolAnnotations(
-              toolAnnotations.title(),
-              toolAnnotations.readOnlyHint(),
-              toolAnnotations.destructiveHint(),
-              toolAnnotations.idempotentHint(),
-              toolAnnotations.openWorldHint(),
+              Optional.ofNullable(toolAnnotations.title()).filter(t -> !t.isBlank()).orElse(null),
+              applyIfNotDefaultValue(toolAnnotations.readOnlyHint(), false),
+              applyIfNotDefaultValue(toolAnnotations.destructiveHint(), true),
+              applyIfNotDefaultValue(toolAnnotations.idempotentHint(), false),
+              applyIfNotDefaultValue(toolAnnotations.openWorldHint(), true),
               null));
 
       if (!Utils.hasText(toolTitle)) {
@@ -161,5 +165,9 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
             returnMode, mcpToolMethod, toolObject, doGetToolCallException());
 
     return SyncToolSpecification.builder().tool(tool).callHandler(methodCallback).build();
+  }
+
+  private Boolean applyIfNotDefaultValue(final boolean value, final boolean defaultValue) {
+    return value == defaultValue ? null : value;
   }
 }

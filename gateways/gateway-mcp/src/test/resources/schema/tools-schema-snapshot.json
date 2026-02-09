@@ -10,11 +10,7 @@
         "required": []
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -27,11 +23,7 @@
         "required": []
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -52,11 +44,7 @@
         ]
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -76,13 +64,7 @@
           "incidentKey"
         ]
       },
-      "annotations": {
-        "title": "",
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      }
+      "annotations": {}
     },
     {
       "name": "searchIncidents",
@@ -224,11 +206,7 @@
         "required": []
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -249,11 +227,7 @@
         ]
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -274,11 +248,7 @@
         ]
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -387,11 +357,7 @@
         "required": []
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -439,13 +405,7 @@
         },
         "required": []
       },
-      "annotations": {
-        "title": "",
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      }
+      "annotations": {}
     },
     {
       "name": "getProcessInstance",
@@ -465,11 +425,7 @@
         ]
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -641,11 +597,7 @@
         "required": []
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -683,13 +635,7 @@
           "userTaskKey"
         ]
       },
-      "annotations": {
-        "title": "",
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      }
+      "annotations": {}
     },
     {
       "name": "getUserTask",
@@ -709,11 +655,7 @@
         ]
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -803,11 +745,7 @@
         ]
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -1037,11 +975,7 @@
         "required": []
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -1061,11 +995,7 @@
         ]
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     },
     {
@@ -1168,11 +1098,7 @@
         "required": []
       },
       "annotations": {
-        "title": "",
-        "readOnlyHint": true,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
+        "readOnlyHint": true
       }
     }
   ]
