@@ -381,14 +381,19 @@ public final class ProcessInstanceServices
       final Long processInstanceKey, final Long operationReference) {
 
     // make sure process instance exists before deletion, otherwise return not found
-    getByKey(
-        processInstanceKey,
-        securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
+    final var processInstance =
+        getByKey(
+            processInstanceKey,
+            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
 
+    // We pass along the process id and tenant id as the process instance won't exist in primary
+    // storage anymore. We cannot rely on just the key.
     final var brokerRequest =
         new BrokerDeleteHistoryRequest()
             .setResourceKey(processInstanceKey)
-            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setProcessId(processInstance.processDefinitionId())
+            .setTenantId(processInstance.tenantId());
 
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);

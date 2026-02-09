@@ -370,7 +370,7 @@ public final class EngineProcessors {
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
 
     HistoryDeletionProcessors.addHistoryDeletionProcessors(
-        typedRecordProcessors, writers, processingState);
+        typedRecordProcessors, writers, processingState, authCheckBehavior);
     GlobalListenersProcessors.addGlobalListenersProcessors(
         keyGenerator,
         typedRecordProcessors,

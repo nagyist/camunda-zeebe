@@ -33,6 +33,16 @@ public class BrokerDeleteHistoryRequest extends BrokerExecuteCommand<HistoryDele
     return this;
   }
 
+  public BrokerDeleteHistoryRequest setProcessId(final String processId) {
+    requestDto.setProcessId(processId);
+    return this;
+  }
+
+  public BrokerDeleteHistoryRequest setTenantId(final String tenantId) {
+    requestDto.setTenantId(tenantId);
+    return this;
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;
