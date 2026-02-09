@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SequencedCollection;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -104,6 +105,40 @@ public record Interval<T extends Comparable<T>>(
     return new Interval<>(start, false, end, true);
   }
 
+  public static <T extends Comparable<T>> Interval<T> point(final T value) {
+    return Interval.closed(value, value);
+  }
+
+  /**
+   * Creates a new Interval instance with the specified end value.
+   *
+   * @param newEnd The new end value for the interval.
+   * @return A new Interval instance with the updated end value, while preserving the start, start
+   *     inclusion, and end inclusion properties of the original interval.
+   */
+  public Interval<T> withEnd(final T newEnd) {
+    return new Interval<>(start, startInclusive, newEnd, endInclusive);
+  }
+
+  /**
+   * Creates a new Interval instance with a specified start value while preserving the other
+   * properties of the original interval.
+   *
+   * @param newStart the new start value for the interval
+   * @return a new Interval instance with the updated start value
+   */
+  public Interval<T> withStart(final T newStart) {
+    return new Interval<>(newStart, startInclusive, end, endInclusive);
+  }
+
+  public Interval<T> withStartInclusive(final boolean startInclusive) {
+    return new Interval<>(start, startInclusive, end, endInclusive);
+  }
+
+  public Interval<T> withEndInclusive(final boolean endInclusive) {
+    return new Interval<>(start, startInclusive, end, endInclusive);
+  }
+
   /**
    * Computes the intersection of all intervals in the collection. The intersection is the largest
    * interval that is contained by all input intervals.
@@ -165,6 +200,40 @@ public record Interval<T extends Comparable<T>>(
   }
 
   /**
+   * Creates a list of intervals from consecutive points. Each interval spans from one point to the
+   * next, using the provided factory to determine the interval type (e.g., closed, half-open).
+   *
+   * <p>Example with {@code Interval::closedOpen}: points [1, 3, 5, 7] produces intervals [1,3),
+   * [3,5), [5,7)
+   *
+   * @param points the ordered sequence of points (must be in ascending order)
+   * @param intervalFactory factory function to create intervals, e.g., {@code Interval::closed} or
+   *     {@code Interval::closedOpen}
+   * @return list of intervals spanning consecutive points, or empty list if fewer than 2 points
+   * @param <T> the type of the points, must be comparable
+   */
+  public static <T extends Comparable<T>> List<Interval<T>> fromPoints(
+      final List<T> points, final Interval.Factory<T> intervalFactory) {
+    if (points.size() < 2) {
+      return List.of();
+    }
+
+    final var intervals = new ArrayList<Interval<T>>(points.size() - 1);
+    for (int i = 0; i < points.size() - 1; i++) {
+      final var interval = intervalFactory.apply(points.get(i), points.get(i + 1));
+      final var endInclusive = interval.endInclusive;
+      if (i == 0 && !interval.startInclusive) {
+        intervals.add(Interval.point(interval.start));
+      }
+      intervals.add(interval);
+      if (i == points.size() - 2 && !endInclusive) {
+        intervals.add(Interval.point(interval.end));
+      }
+    }
+    return intervals;
+  }
+
+  /**
    * @param other interval to check
    * @return true if this interval completely covers the other interval
    */
@@ -187,6 +256,33 @@ public record Interval<T extends Comparable<T>>(
     final var beforeEnd = endInclusive ? endComparison <= 0 : endComparison < 0;
 
     return afterStart && beforeEnd;
+  }
+
+  /**
+   * Checks if a value is contained in this interval by mapping the interval bounds to a comparable
+   * type.
+   *
+   * @param value the value to check
+   * @param mapper function to map interval bounds to the comparable type
+   * @return true if the value is within the mapped interval
+   * @param <U> the comparable type to map to
+   */
+  public <U extends Comparable<U>> boolean contains(final U value, final Function<T, U> mapper) {
+    return map(mapper).contains(value);
+  }
+
+  /**
+   * Checks if another interval is completely contained in this interval by mapping both intervals
+   * to a comparable type.
+   *
+   * @param other the interval to check
+   * @param mapper function to map interval bounds to the comparable type
+   * @return true if the other interval is completely within the mapped interval
+   * @param <U> the comparable type to map to
+   */
+  public <U extends Comparable<U>> boolean contains(
+      final Interval<U> other, final Function<T, U> mapper) {
+    return map(mapper).contains(other);
   }
 
   /**
@@ -224,16 +320,33 @@ public record Interval<T extends Comparable<T>>(
    */
   public SequencedCollection<Interval<T>> smallestCover(
       final SequencedCollection<Interval<T>> intervals) {
-    final var result = new ArrayList<Interval<T>>();
-    Interval<T> previousInterval = null;
+    return smallestCover(intervals, Function.identity());
+  }
+
+  /**
+   * Given a sorted collection of intervals, returns the smallest subset of contiguous intervals
+   * that overlap with this interval, using a mapper function for comparison.
+   *
+   * <p>This is useful when you have intervals of one type (e.g., {@code Interval<BackupStatus>})
+   * but want to query using a different type (e.g., {@code Interval<Instant>}).
+   *
+   * @param intervals the collection of contiguous intervals
+   * @param mapper function to map interval bounds to this interval's type for comparison
+   * @return the original intervals that overlap with this interval when mapped
+   * @param <S> the type of the input intervals
+   */
+  public <S extends Comparable<S>> SequencedCollection<Interval<S>> smallestCover(
+      final SequencedCollection<Interval<S>> intervals, final Function<S, T> mapper) {
+    final var result = new ArrayList<Interval<S>>();
+    Interval<S> previousInterval = null;
     var i = 0;
     for (final var interval : intervals) {
-      if (previousInterval != null && !areContiguous(previousInterval, interval)) {
+      if (previousInterval != null && !previousInterval.contiguous(interval)) {
         throw new IllegalArgumentException(
             "Expected intervals to be contiguous, but interval at index %d is %s, interval at index %d is %s"
                 .formatted(i - 1, previousInterval, i, interval));
       }
-      if (interval.overlapsWith(this)) {
+      if (interval.map(mapper).overlapsWith(this)) {
         result.add(interval);
       }
       previousInterval = interval;
@@ -246,6 +359,17 @@ public record Interval<T extends Comparable<T>>(
     return List.of(start, end);
   }
 
+  public List<T> points() {
+    final var result = new ArrayList<T>(2);
+    if (startInclusive) {
+      result.add(start);
+    }
+    if (endInclusive) {
+      result.add(end);
+    }
+    return result;
+  }
+
   /**
    * Maps this interval to a new interval by applying the given function to both start and end
    * values.
@@ -256,6 +380,23 @@ public record Interval<T extends Comparable<T>>(
    */
   public <U extends Comparable<U>> Interval<U> map(final Function<T, U> mapper) {
     return new Interval<>(mapper.apply(start), startInclusive, mapper.apply(end), endInclusive);
+  }
+
+  /**
+   * Checks if the current interval is contiguous (meet at a boundary point without gap) with the
+   * specified interval. Note that order is important as this.contiguous(other) !=
+   * other.contiguous(this)
+   *
+   * @param other the interval to check for contiguity with the current interval
+   * @return true if the intervals are contiguous, false otherwise
+   */
+  public boolean contiguous(final Interval<T> other) {
+    // Contiguous means end == start and at least one bound is inclusive (no gap)
+    // [a, b] and [b, c] - both inclusive, contiguous (overlap at b is ok)
+    // [a, b) and [b, c] - first exclusive, second inclusive, contiguous
+    // [a, b] and (b, c] - first inclusive, second exclusive, contiguous
+    // [a, b) and (b, c] - both exclusive, NOT contiguous (gap at b)
+    return end.compareTo(other.start) == 0 && (endInclusive || other.startInclusive);
   }
 
   /**
@@ -295,18 +436,10 @@ public record Interval<T extends Comparable<T>>(
     return inclusive1 ? inclusiveSign : -inclusiveSign;
   }
 
-  /**
-   * Checks if two intervals are contiguous (meet at a boundary point without gap).
-   *
-   * @return true if the intervals are contiguous
-   */
-  private static <T extends Comparable<T>> boolean areContiguous(
-      final Interval<T> first, final Interval<T> second) {
-    // Contiguous means end == start and at least one bound is inclusive (no gap)
-    // [a, b] and [b, c] - both inclusive, contiguous (overlap at b is ok)
-    // [a, b) and [b, c] - first exclusive, second inclusive, contiguous
-    // [a, b] and (b, c] - first inclusive, second exclusive, contiguous
-    // [a, b) and (b, c] - both exclusive, NOT contiguous (gap at b)
-    return first.end.compareTo(second.start) == 0 && (first.endInclusive || second.startInclusive);
+  public interface Factory<T extends Comparable<T>> extends BiFunction<T, T, Interval<T>> {
+    static <T extends Comparable<T>> Factory<T> of(
+        final boolean startInclusive, final boolean endInclusive) {
+      return (start, end) -> new Interval<>(start, startInclusive, end, endInclusive);
+    }
   }
 }
