@@ -204,6 +204,29 @@
       "enabled": false
     },
     {
+      "description": "Exclude major updates to Spring, we will do those manually",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.springframework**"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Spring updates are often security-relevant, get those first (prio 10)",
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.springframework**"
+      ],
+      "prPriority": 10
+    },
+    {
       "description": "Digest + patch updates cover all use cases since they are used as base, so we disable other types.",
       "matchManagers": [
         "dockerfile"
