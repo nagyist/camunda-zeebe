@@ -391,6 +391,15 @@ public class RestGatewayPaths {
     return URL_CLUSTER_VARIABLES_SEARCH;
   }
 
+  public static String getClusterVariablesUpdateGlobalUrl(final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_GLOBAL, variableName);
+  }
+
+  public static String getClusterVariablesUpdateTenantUrl(
+      final String tenantId, final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_GET_TENANT, tenantId, variableName);
+  }
+
   public static String getAuditLogGetUrl(final String auditLogKey) {
     return String.format(URL_AUDIT_LOG_GET, auditLogKey);
   }

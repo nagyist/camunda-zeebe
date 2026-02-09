@@ -414,6 +414,17 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
   }
 
+  public void onUpdateGlobalClusterVariableRequest(
+      final String variableName, final ClusterVariableResult response) {
+    registerPut(RestGatewayPaths.getClusterVariablesUpdateGlobalUrl(variableName), response);
+  }
+
+  public void onUpdateTenantClusterVariableRequest(
+      final String tenantId, final String variableName, final ClusterVariableResult response) {
+    registerPut(
+        RestGatewayPaths.getClusterVariablesUpdateTenantUrl(tenantId, variableName), response);
+  }
+
   public void onSearchClusterVariableRequest(final SearchQueryResponse response) {
     registerPost(RestGatewayPaths.getClusterVariablesSearchUrl(), response);
   }

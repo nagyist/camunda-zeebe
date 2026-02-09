@@ -62,6 +62,7 @@ import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -75,6 +76,7 @@ import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
@@ -1963,6 +1965,36 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for creating a tenant-scoped cluster variable
    */
   TenantScopedClusterVariableCreationCommandStep1 newTenantScopedClusterVariableCreateRequest(
+      String tenantId);
+
+  /**
+   * Creates a request to update a globally-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGloballyScopedClusterVariableUpdateRequest()
+   *       .update("myVariable", "newValue")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for updating a globally-scoped cluster variable
+   */
+  GloballyScopedClusterVariableUpdateCommandStep1 newGloballyScopedClusterVariableUpdateRequest();
+
+  /**
+   * Creates a request to update a tenant-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newTenantScopedClusterVariableUpdateRequest("my-tenant-id")
+   *       .update("myVariable", "newValue")
+   *       .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for updating a tenant-scoped cluster variable
+   */
+  TenantScopedClusterVariableUpdateCommandStep1 newTenantScopedClusterVariableUpdateRequest(
       String tenantId);
 
   /**
