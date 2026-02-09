@@ -9,7 +9,6 @@ package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
-import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_UPDATE_AUTHORIZATION;
 
@@ -40,11 +39,13 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerModifyProcessInstanceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -375,26 +377,18 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<BatchOperationCreationRecord> deleteProcessInstance(
+  public CompletableFuture<HistoryDeletionRecord> deleteProcessInstance(
       final Long processInstanceKey, final Long operationReference) {
 
     // make sure process instance exists before deletion, otherwise return not found
-    final var processInstance =
-        getByKey(
-            processInstanceKey,
-            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
+    getByKey(
+        processInstanceKey,
+        securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()));
 
     final var brokerRequest =
-        new BrokerCreateBatchOperationRequest()
-            .setFilter(
-                new ProcessInstanceFilter.Builder().processInstanceKeys(processInstanceKey).build())
-            .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
-            .setAuthentication(authentication)
-            // the user only needs single instance delete permission, not batch
-            .setAuthorizationCheck(
-                Authorization.withAuthorization(
-                    PROCESS_DEFINITION_DELETE_PROCESS_INSTANCE_AUTHORIZATION,
-                    processInstance.processDefinitionId()));
+        new BrokerDeleteHistoryRequest()
+            .setResourceKey(processInstanceKey)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);
