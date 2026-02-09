@@ -100,6 +100,12 @@
             },
             "rootProcessInstanceKey": {
               "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "elementInstanceKey": {
+              "enabled": false
             }
           }
         }

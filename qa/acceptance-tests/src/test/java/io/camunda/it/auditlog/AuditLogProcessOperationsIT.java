@@ -228,7 +228,7 @@ public class AuditLogProcessOperationsIT {
         AuditLogOperationTypeEnum.MODIFY,
         processInstanceKey,
         processInstance.getProcessDefinitionKey(),
-        null);
+        SERVICE_TASKS_PROCESS_ID);
   }
 
   @Test

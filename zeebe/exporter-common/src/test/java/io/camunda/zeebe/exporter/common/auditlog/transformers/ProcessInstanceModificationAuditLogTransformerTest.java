@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 
-class ProcessInstanceModifiedAuditLogTransformerTest {
+class ProcessInstanceModificationAuditLogTransformerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final ProcessInstanceModificationAuditLogTransformer transformer =
@@ -32,7 +32,9 @@ class ProcessInstanceModifiedAuditLogTransformerTest {
         ImmutableProcessInstanceModificationRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceModificationRecordValue.class))
             .withProcessInstanceKey(123L)
+            .withProcessDefinitionKey(234L)
             .withTenantId("tenant-1")
+            .withBpmnProcessId("bpmnProcessId")
             .build();
 
     final Record<ProcessInstanceModificationRecordValue> record =
@@ -46,6 +48,8 @@ class ProcessInstanceModifiedAuditLogTransformerTest {
 
     // then
     assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
+    assertThat(entity.getProcessDefinitionId()).isEqualTo("bpmnProcessId");
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(234L);
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.MODIFY);
     assertThat(entity.getRootProcessInstanceKey())
         .isPositive()
