@@ -57,56 +57,122 @@ public class EngineBatchOperation {
       Set.of("zeebe.broker.experimental.engine.batchOperations.queryRetryBackoffFactor");
 
   /**
-   * The interval at which the batch operation scheduler runs. Defaults to {@link
-   * #DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
+   * The interval at which the batch operation scheduler runs.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL}.
    */
   private Duration schedulerInterval = DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL;
 
   /**
-   * Number of itemKeys in one BatchOperationChunkRecord. Must be below 4MB total record size.
-   * Defaults to {@link #DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
+   * Number of itemKeys in one BatchOperationChunkRecord.
+   *
+   * <p>To avoid too large records, the set of executed items ina batch operation is split into
+   * multiple chunks. Smaller values lead to more records needed to transport the items and the more
+   * metadata overhead is created. Larger values tend to overload the exporters as many rows need to
+   * be written per exported record.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
    */
   private int chunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
 
   /**
-   * Number of itemKeys in one PersistedBatchOperationChunk. Must be below 32KB total record size.
-   * Defaults to {@link #DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
+   * Number of itemKeys in one PersistedBatchOperationChunk.
+   *
+   * <p>The items of a batch operation are stored in a separate column family in the RocksDB
+   * database. To keep the single records/values of the RocksDb to a reasonable size, the items are
+   * split into multiple chunks. Setting this value to a higher value will result in larger chunks,
+   * which can lead to a more inefficient RocksDB cache. The default value 3500 means that each
+   * chunk record will be smaller than the default rocksdb block size of 32KB.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
    */
   private int dbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
 
   /**
-   * The page size for batch operation queries. Defaults to {@link
-   * #DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE}.
+   * The page size for batch operation queries.
+   *
+   * <p>To initialize a batch operation, the engine will query the secondary storage for relevant
+   * items using the given filter object. Since the secondary storage uses paginated queries, this
+   * setting allows to configure the maximum number of items that can be returned in a single query.
+   * The higher the value, the more items can be returned in a single query, which can lead to
+   * better performance but also to memory issues when the pages are too large.
+   *
+   * <p>When using Elasticsearch or OpenSearch as secondary storage, the default value of 10000
+   * items is also the maximum pageSize of these databases and a higher value here will be ignored.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE}.
    */
   private int queryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
 
   /**
-   * The size of the IN clause for batch operation queries. Defaults to {@link
-   * #DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE}.
+   * The size of the IN clause for batch operation queries.
+   *
+   * <p>Some batch operation types need to query the secondary storage in multiple steps. E.g.
+   * RESOLVE_INCIDENT first queries for processInstances and in a second step for all open incidents
+   * of these processInstances. This setting allows to configure the maximum number of itemKeys to
+   * be given in the second step query as processInstances "IN" clause. A higher value will result
+   * in fewer queries to the secondary storage, but may not be supported by all database systems.
+   * E.g. OracleDb only supports 1000 elements in an IN clause.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE}.
    */
   private int queryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
 
   /**
-   * The maximum number of retries for batch operation queries. Defaults to {@link
-   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX}.
+   * The maximum number of retries for batch operation queries.
+   *
+   * <p>Allows to configure the number of retries in case a query to the secondary database fails.
+   * This can be used to mitigate transient issues with the secondary database. A retry will be
+   * attempted after a delay, which can be configured with {@link #queryRetryInitialDelay} and
+   * {@link #queryRetryMaxDelay} and will be increased exponentially with the given backoff factor
+   * {@link #queryRetryBackoffFactor}.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX}.
    */
   private int queryRetryMax = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX;
 
   /**
-   * The initial delay for retrying batch operation queries. Defaults to {@link
-   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY}.
+   * The initial delay for retrying batch operation queries in case a query to secondary storage
+   * fails.
+   *
+   * <p>This can be used to mitigate transient issues with the secondary database. A retry will be
+   * attempted after a delay, which can be configured with this setting as initial delay and {@link
+   * #queryRetryMaxDelay} as maximum delay and will be increased exponentially with the given
+   * backoff factor {@link #queryRetryBackoffFactor}.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY}.
    */
   private Duration queryRetryInitialDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_INITIAL_DELAY;
 
   /**
-   * The maximum delay for retrying batch operation queries. Defaults to {@link
-   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY}.
+   * The maximum delay between retries if batch operation queries fail.
+   *
+   * <p>This can be used to mitigate transient issues with the secondary database. A retry will be
+   * attempted after a delay, which can be configured with {@link #queryRetryInitialDelay} as
+   * initial delay and this setting as maximum delay and will be increased exponentially with the
+   * given backoff factor {@link #queryRetryBackoffFactor}. The maximum delay can be used to prevent
+   * too long delays between retries in case of a high backoff factor or many retries.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY}.
    */
   private Duration queryRetryMaxDelay = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX_DELAY;
 
   /**
-   * The backoff factor for retrying batch operation queries. Defaults to {@link
-   * #DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR}.
+   * The backoff factor by which the delay between retries is increased.
+   *
+   * <p>This can be used to mitigate transient issues with the secondary database. A retry will be
+   * attempted after a delay, which can be configured with {@link #queryRetryInitialDelay} as
+   * initial delay and {@link #queryRetryMaxDelay} as maximum delay and will be increased
+   * exponentially with this backoff factor.
+   *
+   * <p>A higher value will lead to a faster increase of the delay between retries, which can be
+   * useful to reduce the load on the secondary database in case of longer outages, but can also
+   * lead to longer delays between retries in case of a high number of retries or a high backoff
+   * factor.
+   *
+   * <p>Setting the value to 1 will lead to a constant delay between retries.
+   *
+   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR}.
    */
   private int queryRetryBackoffFactor = DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
 
