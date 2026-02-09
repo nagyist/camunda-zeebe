@@ -3887,7 +3887,8 @@ final class JsonSerializableToJsonTest {
                         "resourceKey": 1,
                         "resourceType": "PROCESS_DEFINITION",
                         "processId": "",
-                        "tenantId": "<default>"
+                        "tenantId": "<default>",
+                        "decisionDefinitionId": ""
                       }
                     }
                  }
@@ -4151,13 +4152,15 @@ final class JsonSerializableToJsonTest {
                     .setResourceKey(1L)
                     .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
                     .setProcessId("processId")
-                    .setTenantId("tenantId"),
+                    .setTenantId("tenantId")
+                    .setDecisionDefinitionId("decisionDefinitionId"),
         """
       {
         "resourceKey": 1,
         "resourceType": "PROCESS_INSTANCE",
         "processId": "processId",
-        "tenantId": "tenantId"
+        "tenantId": "tenantId",
+        "decisionDefinitionId": "decisionDefinitionId"
       }
       """
       },
@@ -4176,7 +4179,8 @@ final class JsonSerializableToJsonTest {
         "resourceKey": 1,
         "resourceType": "PROCESS_INSTANCE",
         "processId": "",
-        "tenantId": "<default>"
+        "tenantId": "<default>",
+        "decisionDefinitionId": ""
       }
       """
       },
