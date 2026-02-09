@@ -119,6 +119,20 @@
       ]
     },
     {
+      "description": "Docker base image updates are usually security-relevant, get those first (prio 10)",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchFileNames": [
+        "Dockerfile",
+        "camunda.Dockerfile",
+        "operate.Dockerfile",
+        "optimize.Dockerfile",
+        "tasklist.Dockerfile"
+      ],
+      "prPriority": 10
+    },
+    {
       "matchManagers": [
         "maven"
       ],
