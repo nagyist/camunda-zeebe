@@ -178,11 +178,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should include tenant in link when multi-tenancy is enabled', async () => {
-    const originalClientConfig = window.clientConfig;
-    window.clientConfig = {
-      ...(window.clientConfig ?? {}),
-      multiTenancyEnabled: true,
-    } as typeof window.clientConfig;
+    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
 
     mockIncidentQueries();
 
@@ -205,8 +201,6 @@ describe('IncidentsByError', () => {
       'href',
       `${Paths.processes()}?process=process-elements-incidents&version=1&errorMessage=JSON+path+%27%24.paid%27+has+no+result.&incidentErrorHashCode=234254&incidents=true&tenant=tenant-a`,
     );
-
-    window.clientConfig = originalClientConfig;
   });
 
   it('should truncate the error message in search params', async () => {
