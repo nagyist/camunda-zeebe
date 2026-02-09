@@ -190,6 +190,9 @@ jobs:
               echo "❌ FAILED: Alpha release base version '${BASE_VERSION}' does not match expected pattern X.Y.0"
               exit 1
             fi
+            
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
           else
             # GA release - use release version directly
             BASE_VERSION="${RELEASE_VERSION}"
@@ -200,10 +203,10 @@ jobs:
               echo "❌ FAILED: GA release version '${BASE_VERSION}' does not match expected pattern X.Y.0"
               exit 1
             fi
+            
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
           fi
-          
-          MAJOR="${BASH_REMATCH[1]}"
-          MINOR="${BASH_REMATCH[2]}"
           
           # Handle edge case for X.0.0 releases
           if [[ "${MINOR}" -eq 0 ]]; then
@@ -221,13 +224,7 @@ jobs:
           # Extract actual previous version from optimize/pom.xml
           ACTUAL_PREVIOUS_VERSION=$(./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.previousVersion -q -DforceStdout 2>/dev/null || echo "")
           
-          # Validation checks
-          if [[ -z "${ACTUAL_PREVIOUS_VERSION}" ]]; then
-            echo "❌ FAILED: project.previousVersion missing from optimize/pom.xml"
-            echo "Update it before release. See: https://github.com/camunda/camunda/issues/40258"
-            exit 1
-          fi
-          
+          # Validation check
           if [[ "${ACTUAL_PREVIOUS_VERSION}" != "${EXPECTED_PREVIOUS_VERSION}" ]]; then
             echo "❌ FAILED: project.previousVersion not set correctly"
             echo "Expected: ${EXPECTED_PREVIOUS_VERSION}"
