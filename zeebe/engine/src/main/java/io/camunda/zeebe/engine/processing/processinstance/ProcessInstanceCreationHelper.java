@@ -95,7 +95,7 @@ public class ProcessInstanceCreationHelper {
       final DeployedProcess process,
       final long processInstanceKey,
       final Set<String> tags,
-      final String businessId) {
+      final DirectBuffer businessId) {
     return new ProcessInstanceRecord()
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())

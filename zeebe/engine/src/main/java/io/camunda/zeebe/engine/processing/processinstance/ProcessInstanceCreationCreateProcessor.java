@@ -98,7 +98,7 @@ public final class ProcessInstanceCreationCreateProcessor
 
     final var processInstance =
         helper.initProcessInstanceRecord(
-            process, processInstanceKey, record.getTags(), record.getBusinessId());
+            process, processInstanceKey, record.getTags(), record.getBusinessIdBuffer());
 
     helper.setVariablesFromDocument(processInstance, record.getVariablesBuffer());
 
