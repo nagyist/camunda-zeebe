@@ -819,7 +819,7 @@ final class SystemContextTest {
     assertThatThrownBy(() -> initSystemContext(brokerCfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            "Invalid expression for schedule: must be one of CRON, ISO8601, NONE or AUTO. Given: invalid-schedule");
+            "Invalid expression for schedule: must be one of CRON, ISO8601, NONE. Given: invalid-schedule");
   }
 
   @Test
@@ -836,7 +836,7 @@ final class SystemContextTest {
     assertThatThrownBy(() -> initSystemContext(brokerCfg))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            "Invalid expression for schedule: must be one of CRON, ISO8601, NONE or AUTO. Given: invalid-schedule");
+            "Invalid expression for schedule: must be one of CRON, ISO8601, NONE. Given: invalid-schedule");
   }
 
   @Test
