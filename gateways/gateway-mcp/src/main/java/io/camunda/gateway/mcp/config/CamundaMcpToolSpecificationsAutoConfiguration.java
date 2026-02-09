@@ -15,6 +15,7 @@ import io.camunda.gateway.mcp.config.tool.CamundaSyncStatelessMcpToolProvider;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
 import java.util.List;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 
 /**
@@ -26,9 +27,10 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration(after = CamundaMcpToolScannerAutoConfiguration.class)
 @ConditionalOnMcpGatewayEnabled
-public class CamundaMcpServerToolSpecificationsAutoConfiguration {
+public class CamundaMcpToolSpecificationsAutoConfiguration {
 
   @Bean
+  @ConditionalOnMissingBean
   public CamundaJsonSchemaGenerator mcpGatewayJsonSchemaGenerator() {
     return new CamundaJsonSchemaGenerator();
   }

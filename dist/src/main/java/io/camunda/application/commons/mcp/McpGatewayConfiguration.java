@@ -9,8 +9,8 @@ package io.camunda.application.commons.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
-import io.camunda.gateway.mcp.config.CamundaMcpServerToolSpecificationsAutoConfiguration;
 import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration;
+import io.camunda.gateway.mcp.config.CamundaMcpToolSpecificationsAutoConfiguration;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +36,7 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
  *
  * <ul>
  *   <li>{@link CamundaMcpToolScannerAutoConfiguration}
- *   <li>{@link CamundaMcpServerToolSpecificationsAutoConfiguration}
+ *   <li>{@link CamundaMcpToolSpecificationsAutoConfiguration}
  * </ul>
  */
 @Configuration(proxyBeanMethods = false)
