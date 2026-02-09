@@ -8,6 +8,8 @@
 
 package io.camunda.gateway.mcp.config.schema;
 
+import static io.camunda.gateway.mcp.config.tool.McpToolUtils.isFrameworkParameter;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,8 +26,6 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.camunda.gateway.mcp.config.tool.McpToolParams;
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
@@ -36,13 +36,8 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import org.springaicommunity.mcp.annotation.McpMeta;
-import org.springaicommunity.mcp.annotation.McpProgressToken;
 import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.context.McpAsyncRequestContext;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springaicommunity.mcp.method.tool.utils.ConcurrentReferenceHashMap;
 import org.springaicommunity.mcp.method.tool.utils.JsonParser;
 import org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator;
@@ -57,15 +52,6 @@ public class CamundaJsonSchemaGenerator {
 
   private static final SchemaVersion SCHEMA_VERSION = SchemaVersion.DRAFT_2020_12;
   private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
-
-  private static final Set<Class<?>> MCP_FRAMEWORK_TYPES =
-      Set.of(
-          CallToolRequest.class,
-          McpSyncRequestContext.class,
-          McpAsyncRequestContext.class,
-          McpSyncServerExchange.class,
-          McpAsyncServerExchange.class,
-          McpMeta.class);
 
   private final Map<Method, String> methodSchemaCache = new ConcurrentReferenceHashMap<>(256);
   private final Map<Type, String> typeSchemaCache = new ConcurrentReferenceHashMap<>(256);
@@ -200,16 +186,6 @@ public class CamundaJsonSchemaGenerator {
     schema.putObject("properties");
     schema.putArray("required");
     return schema;
-  }
-
-  private boolean isFrameworkParameter(final Parameter parameter) {
-    if (parameter.isAnnotationPresent(McpProgressToken.class)) {
-      return true;
-    }
-
-    final Class<?> type = parameter.getType();
-    return MCP_FRAMEWORK_TYPES.stream()
-        .anyMatch(frameworkType -> frameworkType.isAssignableFrom(type));
   }
 
   private boolean isMethodParameterRequired(final Parameter parameter) {

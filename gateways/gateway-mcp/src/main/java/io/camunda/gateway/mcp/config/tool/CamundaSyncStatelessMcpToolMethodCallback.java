@@ -63,12 +63,12 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     validateSyncRequest(callToolRequest);
 
     try {
-      // Build arguments for the method call
-      final Object[] args =
+      // build arguments for the method call
+      final Object[] methodArguments =
           buildMethodArguments(mcpTransportContext, callToolRequest.arguments(), callToolRequest);
 
-      // Invoke the method
-      final Object result = callMethod(args);
+      // invoke the method
+      final Object result = callMethod(methodArguments);
 
       return processResult(result);
     } catch (final ConstraintViolationException cve) {
@@ -97,41 +97,35 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     return Stream.of(toolMethod.getParameters())
         .map(
             parameter -> {
-              // Check for @McpToolParams - deserialize entire input map into DTO
+              // if @McpToolParams is present, deserialize the entire input map into wrapper DTO
               if (parameter.isAnnotationPresent(McpToolParams.class)) {
-                // Use parent's buildTypedArgument to convert the entire arguments map into the DTO
-                // type
-                // Spring's @Validated proxy will validate this if the parameter has @Valid
+                // Spring's @Validated proxy will validate this the parameter based on validation
+                // annotations
                 return buildTypedArgument(toolInputArguments, parameter.getParameterizedType());
               }
 
-              // Check for context types
               if (McpSyncRequestContext.class.isAssignableFrom(parameter.getType())
                   || McpAsyncRequestContext.class.isAssignableFrom(parameter.getType())) {
                 return createRequestContext(exchangeOrContext, request);
               }
 
-              // Check for @McpProgressToken
               if (parameter.isAnnotationPresent(McpProgressToken.class)) {
                 return request != null ? request.progressToken() : null;
               }
 
-              // Check for McpMeta
               if (McpMeta.class.isAssignableFrom(parameter.getType())) {
                 return request != null ? new McpMeta(request.meta()) : new McpMeta(null);
               }
 
-              // Check for CallToolRequest
               if (CallToolRequest.class.isAssignableFrom(parameter.getType())) {
                 return request;
               }
 
-              // Check for exchange/context types
               if (isExchangeOrContextType(parameter.getType())) {
                 return exchangeOrContext;
               }
 
-              // Standard parameter - look up by name and deserialize
+              // standard parameter - look up by name and deserialize
               final Object rawArgument = toolInputArguments.get(parameter.getName());
               return buildTypedArgument(rawArgument, parameter.getParameterizedType());
             })

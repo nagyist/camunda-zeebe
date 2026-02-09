@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mcp.config.tool;
 
+import static io.camunda.gateway.mcp.config.tool.McpToolUtils.isFrameworkParameter;
+
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
@@ -26,11 +28,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.McpPredicates;
-import org.springaicommunity.mcp.annotation.McpMeta;
-import org.springaicommunity.mcp.annotation.McpProgressToken;
 import org.springaicommunity.mcp.annotation.McpTool;
-import org.springaicommunity.mcp.context.McpAsyncRequestContext;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springaicommunity.mcp.method.tool.ReturnMode;
 import org.springaicommunity.mcp.method.tool.utils.ClassUtils;
 import org.springaicommunity.mcp.provider.tool.AbstractMcpToolProvider;
@@ -146,7 +144,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
     toolBuilder.title(toolTitle);
 
-    // Generate Output Schema from the method return type.
+    // generate output schema from the method return type
     final Class<?> methodReturnType = mcpToolMethod.getReturnType();
     if (toolAnnotation.generateOutputSchema()
         && methodReturnType != CallToolResult.class
@@ -206,32 +204,23 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
               method.getDeclaringClass().getSimpleName(), method.getName()));
     }
 
-    for (final Parameter param : params) {
-      if (param.isAnnotationPresent(McpToolParams.class)) {
-        continue;
-      }
-
-      if (!isFrameworkType(param)) {
-        throw new IllegalStateException(
-            String.format(
-                "Method '%s.%s' mixes @McpToolParams with individual parameter '%s' (type: %s). "
-                    + "Use either individual parameters OR a single @McpToolParams wrapper, not both.",
-                method.getDeclaringClass().getSimpleName(),
-                method.getName(),
-                param.getName(),
-                param.getType().getSimpleName()));
-      }
-    }
-  }
-
-  private static boolean isFrameworkType(final Parameter param) {
-    final Class<?> paramType = param.getType();
-    return McpSyncRequestContext.class.isAssignableFrom(paramType)
-        || McpAsyncRequestContext.class.isAssignableFrom(paramType)
-        || CallToolRequest.class.isAssignableFrom(paramType)
-        || McpTransportContext.class.isAssignableFrom(paramType)
-        || param.isAnnotationPresent(McpProgressToken.class)
-        || McpMeta.class.isAssignableFrom(paramType);
+    Arrays.stream(parameters)
+        .filter(
+            parameter ->
+                !parameter.isAnnotationPresent(McpToolParams.class)
+                    && !isFrameworkParameter(parameter))
+        .findFirst()
+        .ifPresent(
+            parameter -> {
+              throw new IllegalStateException(
+                  String.format(
+                      "Method '%s.%s' mixes @McpToolParams with individual parameter '%s' (type: %s). "
+                          + "Use either individual parameters OR a single @McpToolParams wrapper, not both.",
+                      method.getDeclaringClass().getSimpleName(),
+                      method.getName(),
+                      parameter.getName(),
+                      parameter.getType().getSimpleName()));
+            });
   }
 
   private Boolean applyIfNotDefaultValue(final boolean value, final boolean defaultValue) {
