@@ -1092,7 +1092,7 @@ class RdbmsExporterIT {
     final var item = items.getFirst();
     assertThat(item.itemKey()).isEqualTo(itemKey);
     assertThat(item.processInstanceKey()).isEqualTo(processInstanceKey);
-    assertThat(item.rootProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(item.rootProcessInstanceKey()).isNull();
     assertThat(item.operationType()).isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
     assertThat(item.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }

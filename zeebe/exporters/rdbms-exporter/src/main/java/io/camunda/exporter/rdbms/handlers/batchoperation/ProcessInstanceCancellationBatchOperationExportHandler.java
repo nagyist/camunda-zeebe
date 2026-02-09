@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.Optional;
 
 /**
  * This handles the batch operation item status of batch operations of type CANCEL_PROCESS_INSTANCE.
@@ -47,8 +48,8 @@ public class ProcessInstanceCancellationBatchOperationExportHandler
   }
 
   @Override
-  long getRootProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
-    return record.getValue().getRootProcessInstanceKey();
+  Optional<Long> getRootProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
+    return Optional.of(record.getValue().getRootProcessInstanceKey());
   }
 
   @Override

@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import java.util.Optional;
 
 /**
  * This handles the batch operation status item of batch operations of type RESOLVE_INCIDENT. It
@@ -40,8 +41,8 @@ public class IncidentBatchOperationExportHandler
   }
 
   @Override
-  long getRootProcessInstanceKey(final Record<IncidentRecordValue> record) {
-    return record.getValue().getRootProcessInstanceKey();
+  Optional<Long> getRootProcessInstanceKey(final Record<IncidentRecordValue> record) {
+    return Optional.of(record.getValue().getRootProcessInstanceKey());
   }
 
   @Override

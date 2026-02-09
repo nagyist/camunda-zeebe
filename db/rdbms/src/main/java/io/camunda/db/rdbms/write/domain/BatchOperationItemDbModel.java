@@ -18,7 +18,7 @@ public record BatchOperationItemDbModel(
     String batchOperationKey,
     long itemKey,
     long processInstanceKey,
-    long rootProcessInstanceKey,
+    Long rootProcessInstanceKey,
     BatchOperationEntity.BatchOperationItemState state,
     OffsetDateTime processedDate,
     String errorMessage) {

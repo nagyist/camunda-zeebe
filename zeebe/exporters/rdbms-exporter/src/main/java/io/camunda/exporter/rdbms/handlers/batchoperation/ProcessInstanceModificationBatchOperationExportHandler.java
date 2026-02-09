@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
+import java.util.Optional;
 
 /**
  * This handles the batch operation item status of batch operations of type MODIFY_PROCESS_INSTANCE.
@@ -41,8 +42,9 @@ public class ProcessInstanceModificationBatchOperationExportHandler
   }
 
   @Override
-  long getRootProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
-    return record.getValue().getRootProcessInstanceKey();
+  Optional<Long> getRootProcessInstanceKey(
+      final Record<ProcessInstanceModificationRecordValue> record) {
+    return Optional.of(record.getValue().getRootProcessInstanceKey());
   }
 
   @Override
