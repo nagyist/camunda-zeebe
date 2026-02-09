@@ -202,6 +202,7 @@ public final class BackupEndpoint {
     response.setPartitionId(state.partitionId());
     response.setCheckpointId(state.checkpointId());
     response.setCheckpointPosition(state.checkpointPosition());
+    response.setFirstLogPosition(state.firstLogPosition());
     response.setCheckpointTimestamp(
         OffsetDateTime.ofInstant(
             Instant.ofEpochMilli(state.checkpointTimestamp()), ZoneId.of("UTC")));

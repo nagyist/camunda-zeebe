@@ -771,7 +771,7 @@ final class BackupEndpointTest {
       stateResponse.setBackupStates(
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
-                  1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
+                  1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L, 5L)));
       when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
       when(api.getBackupRanges())
           .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
@@ -790,6 +790,7 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
+                              .firstLogPosition(5L)
                               .checkpointTimestamp(
                                   OffsetDateTime.ofInstant(
                                       Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
@@ -807,7 +808,7 @@ final class BackupEndpointTest {
       stateResponse.setBackupStates(
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
-                  1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L)));
+                  1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L, 5L)));
       stateResponse.setCheckpointStates(
           Set.of(
               new CheckpointStateResponse.PartitionCheckpointState(
@@ -830,6 +831,7 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
+                              .firstLogPosition(5L)
                               .checkpointTimestamp(
                                   OffsetDateTime.ofInstant(
                                       Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
@@ -890,13 +892,13 @@ final class BackupEndpointTest {
 
       final CheckpointStateResponse.PartitionCheckpointState p1BackupState =
           new CheckpointStateResponse.PartitionCheckpointState(
-              1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L);
+              1, 1L, CheckpointType.MANUAL_BACKUP, 20L, 10L, 5L);
       final CheckpointStateResponse.PartitionCheckpointState p2BackupState =
           new CheckpointStateResponse.PartitionCheckpointState(
-              2, 1L, CheckpointType.MANUAL_BACKUP, 20L, 20L);
+              2, 1L, CheckpointType.MANUAL_BACKUP, 20L, 20L, 15L);
       final CheckpointStateResponse.PartitionCheckpointState p3BackupState =
           new CheckpointStateResponse.PartitionCheckpointState(
-              3, 1L, CheckpointType.MANUAL_BACKUP, 30L, 40L);
+              3, 1L, CheckpointType.MANUAL_BACKUP, 30L, 40L, 25L);
 
       stateResponse.setCheckpointStates(Set.of(p1State, p2State, p3State));
       stateResponse.setBackupStates(Set.of(p1BackupState, p2BackupState, p3BackupState));
@@ -945,6 +947,7 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
+                              .firstLogPosition(5L)
                               .checkpointTimestamp(
                                   OffsetDateTime.ofInstant(
                                       Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
@@ -953,6 +956,7 @@ final class BackupEndpointTest {
                               .partitionId(2)
                               .checkpointId(1L)
                               .checkpointPosition(20L)
+                              .firstLogPosition(15L)
                               .checkpointTimestamp(
                                   OffsetDateTime.ofInstant(
                                       Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
@@ -961,6 +965,7 @@ final class BackupEndpointTest {
                               .partitionId(3)
                               .checkpointId(1L)
                               .checkpointPosition(40L)
+                              .firstLogPosition(25L)
                               .checkpointTimestamp(
                                   OffsetDateTime.ofInstant(
                                       Instant.ofEpochMilli(30L), ZoneId.of("UTC")))
@@ -1008,6 +1013,7 @@ final class BackupEndpointTest {
                               .partitionId(1)
                               .checkpointId(1L)
                               .checkpointPosition(10L)
+                              .firstLogPosition(-1L)
                               .checkpointTimestamp(
                                   OffsetDateTime.ofInstant(
                                       Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
