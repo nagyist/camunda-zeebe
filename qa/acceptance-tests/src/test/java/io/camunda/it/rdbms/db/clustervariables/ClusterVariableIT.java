@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ClusterVariableDbReader;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel;
 import io.camunda.db.rdbms.write.domain.ClusterVariableDbModel.ClusterVariableDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.ClusterVariableFixtures;
@@ -280,6 +281,137 @@ public class ClusterVariableIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldUpdateTenantClusterVariable(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
+
+    final ClusterVariableDbModel clusterVariable =
+        ClusterVariableFixtures.createRandomTenantClusterVariable(generateRandomString(100));
+
+    rdbmsWriters.getClusterVariableWriter().create(clusterVariable);
+    rdbmsWriters.flush();
+
+    // Create an updated version with new value but same name and tenantId
+    final String updatedValue = generateRandomString(100);
+    final ClusterVariableDbModel updatedClusterVariable =
+        clusterVariable.copy(b -> ((ClusterVariableDbModelBuilder) b).value(updatedValue));
+
+    rdbmsWriters.getClusterVariableWriter().update(updatedClusterVariable);
+    rdbmsWriters.flush();
+
+    final var instance =
+        clusterVariableReader.getTenantScopedClusterVariable(
+            clusterVariable.name(),
+            clusterVariable.tenantId(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+
+    assertThat(instance).isNotNull();
+    assertVariableDbModelEqualToEntity(updatedClusterVariable, instance);
+  }
+
+  @TestTemplate
+  public void shouldUpdateGlobalClusterVariable(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
+
+    final ClusterVariableDbModel clusterVariable =
+        ClusterVariableFixtures.createRandomGlobalClusterVariable(generateRandomString(100));
+
+    rdbmsWriters.getClusterVariableWriter().create(clusterVariable);
+    rdbmsWriters.flush();
+
+    // Create an updated version with new value but same name
+    final String updatedValue = generateRandomString(100);
+    final ClusterVariableDbModel updatedClusterVariable =
+        clusterVariable.copy(b -> ((ClusterVariableDbModelBuilder) b).value(updatedValue));
+
+    rdbmsWriters.getClusterVariableWriter().update(updatedClusterVariable);
+    rdbmsWriters.flush();
+
+    final var instance =
+        clusterVariableReader.getGloballyScopedClusterVariable(
+            clusterVariable.name(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+
+    assertThat(instance).isNotNull();
+    assertVariableDbModelEqualToEntity(updatedClusterVariable, instance);
+  }
+
+  @TestTemplate
+  public void shouldDeleteTenantClusterVariable(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
+
+    final ClusterVariableDbModel clusterVariable =
+        ClusterVariableFixtures.createRandomTenantClusterVariable(generateRandomString(100));
+
+    rdbmsWriters.getClusterVariableWriter().create(clusterVariable);
+    rdbmsWriters.flush();
+
+    // Verify the variable was created
+    final var instance =
+        clusterVariableReader.getTenantScopedClusterVariable(
+            clusterVariable.name(),
+            clusterVariable.tenantId(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+    assertThat(instance).isNotNull();
+    assertVariableDbModelEqualToEntity(clusterVariable, instance);
+
+    // Delete the variable
+    rdbmsWriters.getClusterVariableWriter().delete(clusterVariable);
+    rdbmsWriters.flush();
+
+    // Verify the variable was deleted
+    final var deletedInstance =
+        clusterVariableReader.getTenantScopedClusterVariable(
+            clusterVariable.name(),
+            clusterVariable.tenantId(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+    assertThat(deletedInstance).isNull();
+  }
+
+  @TestTemplate
+  public void shouldDeleteGlobalClusterVariable(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ClusterVariableDbReader clusterVariableReader = rdbmsService.getClusterVariableReader();
+
+    final ClusterVariableDbModel clusterVariable =
+        ClusterVariableFixtures.createRandomGlobalClusterVariable(generateRandomString(100));
+
+    rdbmsWriters.getClusterVariableWriter().create(clusterVariable);
+    rdbmsWriters.flush();
+
+    // Verify the variable was created
+    final var instance =
+        clusterVariableReader.getGloballyScopedClusterVariable(
+            clusterVariable.name(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+    assertThat(instance).isNotNull();
+    assertVariableDbModelEqualToEntity(clusterVariable, instance);
+
+    // Delete the variable
+    rdbmsWriters.getClusterVariableWriter().delete(clusterVariable);
+    rdbmsWriters.flush();
+
+    // Verify the variable was deleted
+    final var deletedInstance =
+        clusterVariableReader.getGloballyScopedClusterVariable(
+            clusterVariable.name(),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                AuthorizationResourceType.CLUSTER_VARIABLE, clusterVariable.name()));
+    assertThat(deletedInstance).isNull();
   }
 
   private void assertVariableDbModelEqualToEntity(
