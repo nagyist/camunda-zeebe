@@ -25,7 +25,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
   private static final boolean DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED = false;
   private static final boolean DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED = false;
-  private static final String DEFAULT_DEFAULT_ENGINE_NAME = "default";
+  private static final String DEFAULT_ENGINE_NAME = "default";
 
   private boolean continuousBackups = false;
 
@@ -40,7 +40,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
   private boolean legacySenderSubjectsDisabled = DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED;
   private boolean legacyReceiverSubjectsDisabled = DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED;
-  private String defaultEngineName = DEFAULT_DEFAULT_ENGINE_NAME;
+  private String defaultEngineName = DEFAULT_ENGINE_NAME;
   private RocksdbCfg rocksdb = new RocksdbCfg();
   private ExperimentalRaftCfg raft = new ExperimentalRaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();

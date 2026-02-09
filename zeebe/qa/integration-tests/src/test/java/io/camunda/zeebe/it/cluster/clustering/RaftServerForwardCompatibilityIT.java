@@ -125,7 +125,7 @@ public class RaftServerForwardCompatibilityIT {
    *   <li>Sending: All nodes send with subject: "default-partition-*"
    *   <li>Receiving (Node "0" / 8.11): Node listens to subject: "default-partition-*"
    *   <li>Receiving (Node "1" and "2" / 8.10): Nodes listen to subject: "default -partition-*" and
-   *       * "raft-partition-partition-*"
+   *       "raft-partition-partition-*"
    * </ul>
    */
   static void configure810To811Mode(final MemberId memberId, final TestStandaloneBroker broker) {

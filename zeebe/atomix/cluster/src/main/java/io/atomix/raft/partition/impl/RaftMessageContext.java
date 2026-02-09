@@ -61,11 +61,11 @@ class RaftMessageContext {
     leaderHeartbeatSubject = getSubject(prefix, "leaderHeartbeat");
   }
 
-  String getAppendV1subject() {
+  String getAppendV1Subject() {
     return appendV1subject;
   }
 
-  String getAppendV2subject() {
+  String getAppendV2Subject() {
     return appendV2subject;
   }
 

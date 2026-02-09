@@ -266,7 +266,6 @@ public class RaftPartitionConfig {
         + maxQuorumResponseTimeout
         + ", preferSnapshotReplicationThreshold="
         + preferSnapshotReplicationThreshold
-        + minStepDownFailureCount
         + ", engineName="
         + engineName
         + ", legacyReceiverSubjectsDisabled="

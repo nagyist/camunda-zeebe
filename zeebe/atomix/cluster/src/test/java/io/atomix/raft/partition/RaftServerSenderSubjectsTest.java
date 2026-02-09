@@ -92,8 +92,8 @@ public class RaftServerSenderSubjectsTest {
   }
 
   @ParameterizedTest
-  @MethodSource("provideTestClusters")
-  void shouldRegisterSubjects(
+  @MethodSource("provideScenarios")
+  void shouldCallWithCorrectSubject(
       final boolean disableLegacySender,
       final String subjectSuffix,
       final Consumer<RaftServerProtocol> applier,
@@ -116,8 +116,7 @@ public class RaftServerSenderSubjectsTest {
         .send(eq(subject), any(), any(), any(), any(), any());
   }
 
-  static Stream<Arguments> provideTestClusters() {
-
+  static Stream<Arguments> provideScenarios() {
     return Stream.of(
         Arguments.of(false, "append", applyAppendRequestV1()),
         Arguments.of(false, "append-versioned", applyAppendRequestV2()),

@@ -251,19 +251,19 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public void registerAppendV1Handler(
       final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
-    registerHandler(RaftMessageContext::getAppendV1subject, handler);
+    registerHandler(RaftMessageContext::getAppendV1Subject, handler);
   }
 
   @Override
   public void registerAppendV2Handler(
       final Function<VersionedAppendRequest, CompletableFuture<AppendResponse>> handler) {
-    registerHandler(RaftMessageContext::getAppendV2subject, handler);
+    registerHandler(RaftMessageContext::getAppendV2Subject, handler);
   }
 
   @Override
   public void unregisterAppendHandler() {
-    unregisterHandler(RaftMessageContext::getAppendV1subject);
-    unregisterHandler(RaftMessageContext::getAppendV2subject);
+    unregisterHandler(RaftMessageContext::getAppendV1Subject);
+    unregisterHandler(RaftMessageContext::getAppendV2Subject);
   }
 
   private <M extends RaftRequest, R extends RaftResponse> void registerHandler(
