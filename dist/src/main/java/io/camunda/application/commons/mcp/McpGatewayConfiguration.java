@@ -9,6 +9,8 @@ package io.camunda.application.commons.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
+import io.camunda.gateway.mcp.config.CamundaMcpServerToolSpecificationsAutoConfiguration;
+import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,6 +27,18 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
+/**
+ * Configuration for the MCP gateway implemented in the {@code gateway-mcp} module.
+ *
+ * <p>MCP specific beans overriding the default Spring AI behavior are created as part of the module
+ * autoconfigurations in the {@link io.camunda.gateway.mcp.config} package to resemble the
+ * overridden autoconfiguration logic as much as possible. See:
+ *
+ * <ul>
+ *   <li>{@link CamundaMcpToolScannerAutoConfiguration}
+ *   <li>{@link CamundaMcpServerToolSpecificationsAutoConfiguration}
+ * </ul>
+ */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.gateway.mcp"})
 @ConditionalOnMcpGatewayEnabled
