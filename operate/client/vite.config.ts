@@ -115,6 +115,13 @@ export default defineConfig(({mode}) => ({
             './src/**/*.browser.{test,spec}.?(c|m)[jt]s?(x)',
           ],
           setupFiles: ['./src/setupTests.tsx'],
+          deps: {
+            optimizer: {
+              web: {
+                include: ['styled-components'],
+              },
+            },
+          },
         },
       },
       {
