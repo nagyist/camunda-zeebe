@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.restore;
 
+import static io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -68,8 +68,7 @@ public class RestoreValidator {
 
   private static boolean checkPartitionDirectoryIsNotEmpty(
       final PartitionMetadata partitionMetadata, final String rootDataDirectory) {
-    final var partitionDirectory =
-        RaftPartitionFactory.getPartitionDirectory(partitionMetadata.id(), rootDataDirectory);
+    final var partitionDirectory = getPartitionDirectory(partitionMetadata.id(), rootDataDirectory);
     final var directory = partitionDirectory.toFile();
     final var files = directory.listFiles();
     return directory.exists() && directory.isDirectory() && files != null && files.length > 0;

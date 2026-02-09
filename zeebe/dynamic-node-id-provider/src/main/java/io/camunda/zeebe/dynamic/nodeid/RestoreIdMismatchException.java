@@ -9,9 +9,9 @@ package io.camunda.zeebe.dynamic.nodeid;
 
 public class RestoreIdMismatchException extends RuntimeException {
 
-  public RestoreIdMismatchException(final long expectedRestoreId, final long actualRestoreId) {
+  public RestoreIdMismatchException(final String expectedRestoreId, final String actualRestoreId) {
     super(
         String.format(
-            "Restore ID mismatch: expected %d but got %d", expectedRestoreId, actualRestoreId));
+            "Restore ID mismatch: expected %s but got %s", expectedRestoreId, actualRestoreId));
   }
 }

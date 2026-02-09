@@ -18,9 +18,9 @@ import java.util.Set;
  * A record that holds the restore status. The etag is used for conflict detection during updates.
  */
 public record StoredRestoreStatus(RestoreStatus restoreStatus, String etag) {
-  public record RestoreStatus(long restoreId, Set<Integer> restoredNodes) {
+  public record RestoreStatus(String restoreId, Set<Integer> restoredNodes) {
 
-    public RestoreStatus(final long restoreId, final Set<Integer> restoredNodes) {
+    public RestoreStatus(final String restoreId, final Set<Integer> restoredNodes) {
       this.restoreId = restoreId;
       this.restoredNodes =
           restoredNodes == null ? ImmutableSet.of() : ImmutableSet.copyOf(restoredNodes);

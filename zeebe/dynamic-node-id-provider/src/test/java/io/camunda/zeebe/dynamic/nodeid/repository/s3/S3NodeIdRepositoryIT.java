@@ -226,7 +226,7 @@ class S3NodeIdRepositoryIT {
   @Test
   void shouldReturnNullWhenRestoreStatusNotInitialized() {
     // given
-    final long restoreId = 123L;
+    final String restoreId = "123";
     repository = fixed(Clock.systemUTC().millis());
 
     // when
@@ -239,7 +239,7 @@ class S3NodeIdRepositoryIT {
   @Test
   void shouldUpdateAndGetRestoreStatus() {
     // given
-    final long restoreId = 123L;
+    final String restoreId = "123";
     repository = fixed(Clock.systemUTC().millis());
     final var restoreStatus = new RestoreStatus(restoreId, Set.of());
 
@@ -256,7 +256,7 @@ class S3NodeIdRepositoryIT {
   @Test
   void shouldUpdateRestoreStatusWithRestoredNodes() {
     // given
-    final long restoreId = 123L;
+    final String restoreId = "test-id";
     repository = fixed(Clock.systemUTC().millis());
     final var initialStatus = new RestoreStatus(restoreId, Set.of());
     repository.updateRestoreStatus(initialStatus, null);
@@ -276,7 +276,7 @@ class S3NodeIdRepositoryIT {
   @Test
   void shouldFailToUpdateRestoreStatusWhenEtagMismatch() {
     // given
-    final long restoreId = 123L;
+    final String restoreId = "test-id";
     repository = fixed(Clock.systemUTC().millis());
     final var initialStatus = new RestoreStatus(restoreId, Set.of());
     repository.updateRestoreStatus(initialStatus, null);
@@ -291,8 +291,8 @@ class S3NodeIdRepositoryIT {
   @Test
   void shouldGetAndUpdateMultipleRestoreId() {
     // given
-    final long restoreId1 = 123L;
-    final long restoreId2 = 456L;
+    final String restoreId1 = "test-id-1";
+    final String restoreId2 = "test-id-2";
     repository = fixed(Clock.systemUTC().millis());
     final var status1 = new RestoreStatus(restoreId1, Set.of(1));
     final var status2 = new RestoreStatus(restoreId2, Set.of(2));

@@ -31,7 +31,7 @@ public class RestoreStatusManagerTest {
   private NodeIdRepository repository;
 
   private RestoreStatusManager restoreStatusManager;
-  private final long restoreId = 123L;
+  private final String restoreId = "123";
 
   @BeforeEach
   void setUp() {

@@ -204,11 +204,11 @@ public class RestoreApp implements ApplicationRunner {
     return backupId != null && backupId.length > 0;
   }
 
-  private long getRestoreId() {
+  private String getRestoreId() {
     if (hasBackupId()) {
-      return Arrays.hashCode(backupId);
+      return String.valueOf(Arrays.hashCode(backupId));
     } else if (hasTimeRange()) {
-      return Objects.hash(from, to);
+      return String.valueOf(Objects.hash(from, to));
     } else {
       throw new IllegalStateException("No valid restore parameters provided");
     }
@@ -216,10 +216,10 @@ public class RestoreApp implements ApplicationRunner {
 
   public record PreRestoreActionResult(boolean skipRestore, String message) {}
 
-  public record PostRestoreActionContext(long restoreId, int nodeId, boolean skippedRestore) {}
+  public record PostRestoreActionContext(String restoreId, int nodeId, boolean skippedRestore) {}
 
   public interface PreRestoreAction {
-    PreRestoreActionResult beforeRestore(final long restoreId, int nodeId)
+    PreRestoreActionResult beforeRestore(final String restoreId, int nodeId)
         throws InterruptedException;
   }
 

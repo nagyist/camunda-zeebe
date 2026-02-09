@@ -158,7 +158,7 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   @Override
-  public StoredRestoreStatus getRestoreStatus(final long restoreId) {
+  public StoredRestoreStatus getRestoreStatus(final String restoreId) {
     final var request =
         GetObjectRequest.builder()
             .bucket(config.bucketName)
@@ -185,8 +185,8 @@ public class S3NodeIdRepository implements NodeIdRepository {
     }
   }
 
-  private String getRestoreStatusKey(final long restoreId) {
-    return "restore/%d".formatted(restoreId);
+  private String getRestoreStatusKey(final String restoreId) {
+    return "restore/%s".formatted(restoreId);
   }
 
   public void initializeForNode(final int nodeId) {

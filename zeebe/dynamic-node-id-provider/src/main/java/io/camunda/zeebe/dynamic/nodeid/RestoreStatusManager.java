@@ -34,12 +34,12 @@ public class RestoreStatusManager {
    * @param restoreId the restore ID to initialize
    * @return the initialized or existing restore status
    */
-  public RestoreStatus initializeRestore(final long restoreId) throws InterruptedException {
+  public RestoreStatus initializeRestore(final String restoreId) throws InterruptedException {
     while (true) {
       try {
         final var existingStatus = repository.getRestoreStatus(restoreId);
         if (existingStatus != null) {
-          if (existingStatus.restoreStatus().restoreId() != restoreId) {
+          if (!existingStatus.restoreStatus().restoreId().equals(restoreId)) {
             throw new RestoreIdMismatchException(
                 restoreId, existingStatus.restoreStatus().restoreId());
           }
@@ -70,7 +70,8 @@ public class RestoreStatusManager {
    * @param restoreId the restore ID to update
    * @param nodeId the node ID that completed restore
    */
-  public void markNodeRestored(final long restoreId, final int nodeId) throws InterruptedException {
+  public void markNodeRestored(final String restoreId, final int nodeId)
+      throws InterruptedException {
 
     // retry forever
     while (true) {
@@ -82,7 +83,7 @@ public class RestoreStatusManager {
 
         final var currentStatus = storedStatus.restoreStatus();
 
-        if (currentStatus.restoreId() != restoreId) {
+        if (!currentStatus.restoreId().equals(restoreId)) {
           throw new RestoreIdMismatchException(restoreId, currentStatus.restoreId());
         }
 
@@ -113,7 +114,7 @@ public class RestoreStatusManager {
    * @throws IllegalStateException if timeout is reached or restore status is not initialized
    */
   public void waitForAllNodesRestored(
-      final long restoreId, final int clusterSize, final Duration pollInterval)
+      final String restoreId, final int clusterSize, final Duration pollInterval)
       throws InterruptedException {
     final var expectedNodeIds = IntStream.range(0, clusterSize).boxed().collect(Collectors.toSet());
 
@@ -125,7 +126,7 @@ public class RestoreStatusManager {
 
       final var currentStatus = storedStatus.restoreStatus();
 
-      if (currentStatus.restoreId() != restoreId) {
+      if (!currentStatus.restoreId().equals(restoreId)) {
         throw new RestoreIdMismatchException(restoreId, currentStatus.restoreId());
       }
 
