@@ -61,7 +61,10 @@ public class CorrelateMessageInstructionTest {
     verify(camundaClient).newCorrelateMessageCommand();
 
     final CorrelateMessageCommandStep3 mockCommand =
-        camundaClient.newCorrelateMessageCommand().messageName(MESSAGE_NAME).withoutCorrelationKey();
+        camundaClient
+            .newCorrelateMessageCommand()
+            .messageName(MESSAGE_NAME)
+            .withoutCorrelationKey();
 
     verify(mockCommand).variables(Collections.emptyMap());
     verify(mockCommand).send();
@@ -117,7 +120,10 @@ public class CorrelateMessageInstructionTest {
     verify(camundaClient).newCorrelateMessageCommand();
 
     final CorrelateMessageCommandStep3 mockCommand =
-        camundaClient.newCorrelateMessageCommand().messageName(MESSAGE_NAME).withoutCorrelationKey();
+        camundaClient
+            .newCorrelateMessageCommand()
+            .messageName(MESSAGE_NAME)
+            .withoutCorrelationKey();
 
     verify(mockCommand).variables(variables);
     verify(mockCommand).send();
