@@ -77,14 +77,14 @@ public class BackupManagerMetrics {
   private Timer registerBackupLatency(final OperationType operationType) {
     return Timer.builder(BACKUP_OPERATIONS_LATENCY.getName())
         .description(BACKUP_OPERATIONS_LATENCY.getDescription())
-        .tag(MetricKeyName.OPERATION.asString(), operationType.name())
+        .tag(MetricKeyName.OPERATION.asString(), operationType.getValue())
         .register(registry);
   }
 
   private StatefulGauge registerOperationInProgress(final OperationType operationType) {
     return StatefulGauge.builder(BACKUP_OPERATIONS_IN_PROGRESS.getName())
         .description(BACKUP_OPERATIONS_IN_PROGRESS.getDescription())
-        .tag(MetricKeyName.OPERATION.asString(), operationType.name())
+        .tag(MetricKeyName.OPERATION.asString(), operationType.getValue())
         .register(registry);
   }
 
