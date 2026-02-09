@@ -35,13 +35,16 @@ public class GlobalJobStatisticsRequestImpl implements GlobalJobStatisticsReques
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private OffsetDateTime from;
-  private OffsetDateTime to;
+  private final OffsetDateTime from;
+  private final OffsetDateTime to;
   private String jobType;
 
-  public GlobalJobStatisticsRequestImpl(final HttpClient httpClient) {
+  public GlobalJobStatisticsRequestImpl(
+      final HttpClient httpClient, final OffsetDateTime from, final OffsetDateTime to) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+    this.from = from;
+    this.to = to;
   }
 
   @Override
@@ -55,12 +58,8 @@ public class GlobalJobStatisticsRequestImpl implements GlobalJobStatisticsReques
     final HttpCamundaFuture<GlobalJobStatistics> result = new HttpCamundaFuture<>();
     final Map<String, String> queryParams = new HashMap<>();
 
-    if (from != null) {
-      queryParams.put("from", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(from));
-    }
-    if (to != null) {
-      queryParams.put("to", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(to));
-    }
+    queryParams.put("from", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(from));
+    queryParams.put("to", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(to));
     if (jobType != null) {
       queryParams.put("jobType", jobType);
     }
@@ -73,18 +72,6 @@ public class GlobalJobStatisticsRequestImpl implements GlobalJobStatisticsReques
         StatisticsResponseMapper::toGlobalJobStatisticsResponse,
         result);
     return result;
-  }
-
-  @Override
-  public GlobalJobStatisticsRequest from(final OffsetDateTime from) {
-    this.from = from;
-    return this;
-  }
-
-  @Override
-  public GlobalJobStatisticsRequest to(final OffsetDateTime to) {
-    this.to = to;
-    return this;
   }
 
   @Override

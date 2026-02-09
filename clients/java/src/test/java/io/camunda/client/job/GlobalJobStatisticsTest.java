@@ -41,8 +41,7 @@ public class GlobalJobStatisticsTest extends ClientRestTest {
     final OffsetDateTime to = OffsetDateTime.of(2024, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC);
 
     // when
-    final GlobalJobStatistics result =
-        client.newGlobalJobStatisticsRequest().from(from).to(to).send().join();
+    final GlobalJobStatistics result = client.newGlobalJobStatisticsRequest(from, to).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -66,7 +65,7 @@ public class GlobalJobStatisticsTest extends ClientRestTest {
     final OffsetDateTime to = OffsetDateTime.of(2024, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC);
 
     // when
-    client.newGlobalJobStatisticsRequest().from(from).to(to).jobType("myJobType").send().join();
+    client.newGlobalJobStatisticsRequest(from, to).jobType("myJobType").send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -92,8 +91,7 @@ public class GlobalJobStatisticsTest extends ClientRestTest {
     final OffsetDateTime to = OffsetDateTime.of(2024, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC);
 
     // when
-    final GlobalJobStatistics result =
-        client.newGlobalJobStatisticsRequest().from(from).to(to).send().join();
+    final GlobalJobStatistics result = client.newGlobalJobStatisticsRequest(from, to).send().join();
 
     // then
     assertThat(result.isIncomplete()).isTrue();
@@ -110,8 +108,7 @@ public class GlobalJobStatisticsTest extends ClientRestTest {
     final OffsetDateTime to = OffsetDateTime.of(2024, 1, 2, 0, 0, 0, 0, ZoneOffset.UTC);
 
     // when
-    final GlobalJobStatistics result =
-        client.newGlobalJobStatisticsRequest().from(from).to(to).send().join();
+    final GlobalJobStatistics result = client.newGlobalJobStatisticsRequest(from, to).send().join();
 
     // then
     assertThat(result.getCreated().getCount()).isZero();

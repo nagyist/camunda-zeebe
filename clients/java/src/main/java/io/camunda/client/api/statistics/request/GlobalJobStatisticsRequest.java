@@ -17,29 +17,12 @@ package io.camunda.client.api.statistics.request;
 
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.statistics.response.GlobalJobStatistics;
-import java.time.OffsetDateTime;
 
 /**
  * Request to query global job statistics. Allows filtering by time range and optionally by job
  * type.
  */
 public interface GlobalJobStatisticsRequest extends FinalCommandStep<GlobalJobStatistics> {
-
-  /**
-   * Filters statistics to only include jobs created after the given time.
-   *
-   * @param from the start of the time range (inclusive)
-   * @return this request builder
-   */
-  GlobalJobStatisticsRequest from(OffsetDateTime from);
-
-  /**
-   * Filters statistics to only include jobs created before the given time.
-   *
-   * @param to the end of the time range (inclusive)
-   * @return this request builder
-   */
-  GlobalJobStatisticsRequest to(OffsetDateTime to);
 
   /**
    * Filters statistics to only include jobs of the given type.

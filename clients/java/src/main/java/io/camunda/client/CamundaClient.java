@@ -984,16 +984,17 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newGlobalJobStatisticsRequest()
-   *  .from(OffsetDateTime.now().minusDays(1))
-   *  .to(OffsetDateTime.now())
+   *  .newGlobalJobStatisticsRequest(OffsetDateTime.now().minusDays(1), OffsetDateTime.now())
    *  .jobType("myJobType")
    *  .send();
    * </pre>
    *
+   * @param from the start of the time range (inclusive)
+   * @param to the end of the time range (inclusive)
    * @return a builder for the global job statistics request
    */
-  GlobalJobStatisticsRequest newGlobalJobStatisticsRequest();
+  GlobalJobStatisticsRequest newGlobalJobStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to);
 
   /**
    * Executes a search request to query process instance sequence flows.

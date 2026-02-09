@@ -909,8 +909,9 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public GlobalJobStatisticsRequest newGlobalJobStatisticsRequest() {
-    return new GlobalJobStatisticsRequestImpl(httpClient);
+  public GlobalJobStatisticsRequest newGlobalJobStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to) {
+    return new GlobalJobStatisticsRequestImpl(httpClient, from, to);
   }
 
   @Override
