@@ -105,6 +105,9 @@
           "$ref": "#/definitions/PublishMessageInstruction"
         },
         {
+          "$ref": "#/definitions/CorrelateMessageInstruction"
+        },
+        {
           "$ref": "#/definitions/ResolveIncidentInstruction"
         },
         {
@@ -885,6 +888,34 @@
         "messageId": {
           "description": "The message ID for uniqueness.",
           "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "CorrelateMessageInstruction": {
+      "description": "An instruction to correlate a message.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "description": "The type of the instruction.",
+          "type": "string",
+          "const": "CORRELATE_MESSAGE"
+        },
+        "name": {
+          "description": "The name of the message.",
+          "type": "string"
+        },
+        "correlationKey": {
+          "description": "The correlation key of the message.",
+          "type": "string"
+        },
+        "variables": {
+          "description": "The variables to correlate with the message.",
+          "type": "object"
         }
       },
       "required": [
