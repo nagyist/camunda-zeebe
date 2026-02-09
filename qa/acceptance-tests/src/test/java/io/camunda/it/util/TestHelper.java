@@ -14,6 +14,7 @@ import static org.awaitility.Awaitility.await;
 
 import com.ibm.icu.text.Collator;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ActivatedJob;
@@ -47,6 +48,8 @@ import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +57,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -1461,6 +1465,34 @@ public final class TestHelper {
                     .anySatisfy(item -> assertThat(item.getName()).isEqualTo(expectedName));
               }
             });
+  }
+
+  /**
+   * Waits for all provided CamundaFutures to complete. This method executes all futures in parallel
+   * and blocks until all have completed.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * var futures = IntStream.rangeClosed(1, 10)
+   *   .mapToObj(i -> camundaClient.newCreateInstanceCommand()...send())
+   *   .toList();
+   * waitForAll(futures);
+   * }</pre>
+   *
+   * @param futures list of CamundaFutures to wait for
+   * @throws io.camunda.client.api.command.ClientException on unexpected errors
+   * @throws io.camunda.client.api.command.ClientStatusException on gRPC errors
+   */
+  public static void waitForAll(final List<? extends CamundaFuture<?>> futures) {
+    if (futures == null || futures.isEmpty()) {
+      return;
+    }
+    CompletableFuture.allOf(
+            futures.stream()
+                .map(CamundaFuture::toCompletableFuture)
+                .toArray(CompletableFuture[]::new))
+        .join();
   }
 
   /**

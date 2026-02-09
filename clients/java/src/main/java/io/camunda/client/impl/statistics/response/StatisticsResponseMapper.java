@@ -32,6 +32,7 @@ import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.search.response.SearchResponseImpl;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult;
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
@@ -41,6 +42,7 @@ import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStati
 import io.camunda.client.protocol.rest.StatusMetric;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -168,17 +170,15 @@ public class StatisticsResponseMapper {
         toJobStatusMetric(response.getCreated()),
         toJobStatusMetric(response.getCompleted()),
         toJobStatusMetric(response.getFailed()),
-        Boolean.TRUE.equals(response.getIsIncomplete()));
+        response.getIsIncomplete());
   }
 
   private static JobStatusMetric toJobStatusMetric(final StatusMetric metric) {
     if (metric == null) {
       return new JobStatusMetricImpl(0L, null);
     }
-    final java.time.OffsetDateTime lastUpdatedAt =
-        metric.getLastUpdatedAt() != null
-            ? java.time.OffsetDateTime.parse(metric.getLastUpdatedAt())
-            : null;
+    final OffsetDateTime lastUpdatedAt =
+        ParseUtil.parseOffsetDateTimeOrNull(metric.getLastUpdatedAt());
     return new JobStatusMetricImpl(ofNullable(metric.getCount()).orElse(0L), lastUpdatedAt);
   }
 }

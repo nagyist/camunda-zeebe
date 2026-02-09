@@ -12,6 +12,7 @@ import static io.camunda.it.util.TestHelper.activateAndFailJobsForTenant;
 import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.startProcessInstanceForTenant;
+import static io.camunda.it.util.TestHelper.waitForAll;
 import static io.camunda.it.util.TestHelper.waitForJobStatistics;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -146,8 +148,8 @@ public class GlobalJobStatisticsTenancyIT {
         });
 
     // Wait for export & store first batch export time
-    firstBatchExportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+    firstBatchExportedTime = OffsetDateTime.now();
 
     // ========== SECOND BATCH: Incomplete metrics (long worker name) ==========
     // Start a new process instance in TENANT_A to have a new taskA job available
@@ -180,8 +182,8 @@ public class GlobalJobStatisticsTenancyIT {
         });
 
     // Wait for export & store second batch export time
-    secondBatchExportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+    secondBatchExportedTime = OffsetDateTime.now();
 
     // ========== THIRD BATCH: Incomplete metrics (long tenant id) ==========
     // Create a tenant with a long ID that EXCEEDS the limit
@@ -210,40 +212,48 @@ public class GlobalJobStatisticsTenancyIT {
         });
 
     // Wait for export & store third batch export time
-    thirdBatchExportedTime = OffsetDateTime.now();
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+    thirdBatchExportedTime = OffsetDateTime.now();
 
     // ========== FOURTH BATCH: Incomplete metrics (max unique keys exceeded) ==========
     // Create unique tenant+jobType combinations to exceed MAX_UNIQUE_KEYS (5)
     // Note: The first MAX_UNIQUE_KEYS will be tracked, ensuring at least valid data is recorded
     // Deploy all processes first (deployments don't create job metrics)
-    for (int i = 1; i <= MAX_UNIQUE_KEYS + 1; i++) {
-      final String uniqueJobType = "type" + i; // type1, type2, ..., type6
-      final var uniqueProcess =
-          Bpmn.createExecutableProcess("uniqueProc" + i)
-              .startEvent()
-              .serviceTask("task" + i, t -> t.zeebeJobType(uniqueJobType))
-              .endEvent()
-              .done();
-      adminClient
-          .newDeployResourceCommand()
-          .addProcessModel(uniqueProcess, "uniqueProc" + i + ".bpmn")
-          .tenantId(TENANT_A)
-          .send()
-          .join();
-    }
+    final var deploymentFutures =
+        IntStream.rangeClosed(1, MAX_UNIQUE_KEYS + 1)
+            .mapToObj(
+                i -> {
+                  final String uniqueJobType = "type" + i; // type1, type2, ..., type6
+                  final var uniqueProcess =
+                      Bpmn.createExecutableProcess("uniqueProc" + i)
+                          .startEvent()
+                          .serviceTask("task" + i, t -> t.zeebeJobType(uniqueJobType))
+                          .endEvent()
+                          .done();
+                  return adminClient
+                      .newDeployResourceCommand()
+                      .addProcessModel(uniqueProcess, "uniqueProc" + i + ".bpmn")
+                      .tenantId(TENANT_A)
+                      .send();
+                })
+            .toList();
+    waitForAll(deploymentFutures);
 
-    // Now start all instances quickly (within one export interval)
+    // Now start all instances in parallel (within one export interval)
     // This ensures all jobs are created in the same batch
-    for (int i = 1; i <= MAX_UNIQUE_KEYS + 1; i++) {
-      adminClient
-          .newCreateInstanceCommand()
-          .bpmnProcessId("uniqueProc" + i)
-          .latestVersion()
-          .tenantId(TENANT_A)
-          .send()
-          .join();
-    }
+    final var instanceFutures =
+        IntStream.rangeClosed(1, MAX_UNIQUE_KEYS + 1)
+            .mapToObj(
+                i ->
+                    adminClient
+                        .newCreateInstanceCommand()
+                        .bpmnProcessId("uniqueProc" + i)
+                        .latestVersion()
+                        .tenantId(TENANT_A)
+                        .send())
+            .toList();
+    // Wait for all instances to be created
+    waitForAll(instanceFutures);
 
     // Wait for fourth batch metrics to be exported
     waitForJobStatistics(
@@ -258,6 +268,7 @@ public class GlobalJobStatisticsTenancyIT {
         });
 
     // Wait for export & store fourth batch export time
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     fourthBatchExportedTime = OffsetDateTime.now();
   }
 
