@@ -121,12 +121,14 @@ const NonFoldableElementInstancesNode: React.FC<NonFoldableElementInstancesNodeP
       const {latestMigrationDate, businessObjects} =
         useElementInstanceHistoryTree();
       const isRoot = elementType === 'PROCESS';
-      const {isSelected} = useProcessInstanceElementSelection();
-      const isElementSelected = isSelected({
-        elementId: isRoot ? undefined : elementId,
-        elementInstanceKey: scopeKey,
-        isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
-      });
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const isElementSelected = isRoot
+        ? !hasSelection
+        : isSelected({
+            elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+          });
 
       const {selectElementInstance, clearSelection} =
         useProcessInstanceElementSelection();
@@ -214,12 +216,14 @@ const NonFoldableVirtualElementInstanceNode: React.FC<NonFoldableVirtualElementI
       const {businessObjects} = useElementInstanceHistoryTree();
       const businessObject = businessObjects[elementId];
 
-      const {isSelected} = useProcessInstanceElementSelection();
-      const isElementSelected = isSelected({
-        elementId: isRoot ? undefined : elementId,
-        elementInstanceKey: scopeKey,
-        isMultiInstanceBody: isMultiInstance(businessObject),
-      });
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const isElementSelected = isRoot
+        ? !hasSelection
+        : isSelected({
+            elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: isMultiInstance(businessObject),
+          });
       const {selectElementInstance} = useProcessInstanceElementSelection();
 
       const handleSelect = () => {
@@ -335,12 +339,14 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
       const businessObject = businessObjects[elementId];
       const isRoot = elementType === 'bpmn:Process';
 
-      const {isSelected} = useProcessInstanceElementSelection();
-      const isElementSelected = isSelected({
-        elementId: isRoot ? undefined : elementId,
-        elementInstanceKey: scopeKey,
-        isMultiInstanceBody: isMultiInstance(businessObject),
-      });
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const isElementSelected = isRoot
+        ? !hasSelection
+        : isSelected({
+            elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: isMultiInstance(businessObject),
+          });
       const virtualChildren = convertToVirtualElementInstance({
         flowNodeInstances: getVisibleChildPlaceholders(
           scopeKey,
@@ -489,12 +495,14 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
       );
       const isRoot = elementType === 'PROCESS';
 
-      const {isSelected} = useProcessInstanceElementSelection();
-      const isElementSelected = isSelected({
-        elementId: isRoot ? undefined : elementId,
-        elementInstanceKey: scopeKey,
-        isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
-      });
+      const {isSelected, hasSelection} = useProcessInstanceElementSelection();
+      const isElementSelected = isRoot
+        ? !hasSelection
+        : isSelected({
+            elementId,
+            elementInstanceKey: scopeKey,
+            isMultiInstanceBody: elementType === 'MULTI_INSTANCE_BODY',
+          });
       const isExpanded = elementInstancesTreeStore.isNodeExpanded(scopeKey);
 
       const virtualChildren = modificationsStore.isModificationModeEnabled
