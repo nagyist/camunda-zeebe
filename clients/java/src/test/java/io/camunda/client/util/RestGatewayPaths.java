@@ -33,6 +33,10 @@ public class RestGatewayPaths {
       URL_CLUSTER_VARIABLES + "/global/%s";
   private static final String URL_CLUSTER_VARIABLES_GET_TENANT =
       URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
+  private static final String URL_CLUSTER_VARIABLES_UPDATE_GLOBAL =
+      URL_CLUSTER_VARIABLES + "/global/%s";
+  private static final String URL_CLUSTER_VARIABLES_UPDATE_TENANT =
+      URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
   private static final String URL_CLUSTER_VARIABLES_SEARCH = URL_CLUSTER_VARIABLES + "/search";
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
@@ -392,12 +396,12 @@ public class RestGatewayPaths {
   }
 
   public static String getClusterVariablesUpdateGlobalUrl(final String variableName) {
-    return String.format(URL_CLUSTER_VARIABLES_GET_GLOBAL, variableName);
+    return String.format(URL_CLUSTER_VARIABLES_UPDATE_GLOBAL, variableName);
   }
 
   public static String getClusterVariablesUpdateTenantUrl(
       final String tenantId, final String variableName) {
-    return String.format(URL_CLUSTER_VARIABLES_GET_TENANT, tenantId, variableName);
+    return String.format(URL_CLUSTER_VARIABLES_UPDATE_TENANT, tenantId, variableName);
   }
 
   public static String getAuditLogGetUrl(final String auditLogKey) {
