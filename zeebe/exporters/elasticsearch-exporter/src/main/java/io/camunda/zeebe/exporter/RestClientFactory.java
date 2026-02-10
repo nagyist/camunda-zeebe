@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.exporter;
 
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -61,6 +64,11 @@ final class RestClientFactory {
       setupBasicAuthentication(config, builder);
     }
 
+    if (config.hasProxyConfigured()) {
+      setupProxy(builder, config.getProxy());
+      addPreemptiveProxyAuthInterceptor(builder, config.getProxy());
+    }
+
     for (final var interceptor : interceptors) {
       builder.addInterceptorLast(interceptor);
     }
@@ -77,6 +85,38 @@ final class RestClientFactory {
             config.getAuthentication().getUsername(), config.getAuthentication().getPassword()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder builder, final ProxyConfiguration proxyConfig) {
+    builder.setProxy(
+        new HttpHost(
+            proxyConfig.getHost(),
+            proxyConfig.getPort(),
+            proxyConfig.isSslEnabled() ? "https" : "http"));
+  }
+
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder builder, final ProxyConfiguration proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    builder.addInterceptorFirst(
+        (HttpRequestInterceptor)
+            (request, context) -> {
+              if (!request.containsHeader("Proxy-Authorization")) {
+                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+              }
+            });
   }
 
   private HttpHost[] parseUrl(final ElasticsearchExporterConfiguration config) {

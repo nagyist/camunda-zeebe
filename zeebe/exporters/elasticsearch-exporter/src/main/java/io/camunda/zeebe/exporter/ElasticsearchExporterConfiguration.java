@@ -29,6 +29,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
   public final RetentionConfiguration retention = new RetentionConfiguration();
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  private final ProxyConfiguration proxy = new ProxyConfiguration();
   private boolean includeEnabledRecords = false;
 
   public boolean hasAuthenticationPresent() {
@@ -37,6 +38,14 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
+  }
+
+  public boolean hasProxyConfigured() {
+    return proxy.isEnabled();
+  }
+
+  public ProxyConfiguration getProxy() {
+    return proxy;
   }
 
   public List<PluginConfiguration> getInterceptorPlugins() {
@@ -59,6 +68,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
         + retention
         + ", authentication="
         + authentication
+        + ", proxy="
+        + proxy
         + ", interceptors="
         + interceptorPlugins
         + '}';
@@ -509,6 +520,82 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + minimumAge
           + ", policyName='"
           + policyName
+          + '\''
+          + '}';
+    }
+  }
+
+  public static class ProxyConfiguration {
+    private boolean enabled = false;
+    private String host;
+    private Integer port;
+    private boolean sslEnabled = false;
+    private String username;
+    private String password;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getHost() {
+      return host;
+    }
+
+    public void setHost(final String host) {
+      this.host = host;
+    }
+
+    public Integer getPort() {
+      return port;
+    }
+
+    public void setPort(final Integer port) {
+      this.port = port;
+    }
+
+    public boolean isSslEnabled() {
+      return sslEnabled;
+    }
+
+    public void setSslEnabled(final boolean sslEnabled) {
+      this.sslEnabled = sslEnabled;
+    }
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(final String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(final String password) {
+      this.password = password;
+    }
+
+    @Override
+    public String toString() {
+      // we don't want to expose the password
+      return "ProxyConfiguration{"
+          + "enabled="
+          + enabled
+          + ", host='"
+          + host
+          + '\''
+          + ", port="
+          + port
+          + ", sslEnabled="
+          + sslEnabled
+          + ", username='"
+          + username
           + '\''
           + '}';
     }
