@@ -535,7 +535,7 @@
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
-      <version>${version.elasticsearch}</version>
+      <version>${version.elasticsearch-java-client}</version>
     </dependency>
 
     <dependency>
