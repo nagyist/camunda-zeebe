@@ -10,11 +10,21 @@ package io.camunda.zeebe.backup.gcs;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import com.google.api.core.ApiFutures;
 import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
+import com.google.cloud.storage.transfermanager.DownloadJob;
+import com.google.cloud.storage.transfermanager.DownloadResult;
+import com.google.cloud.storage.transfermanager.ParallelDownloadConfig;
+import com.google.cloud.storage.transfermanager.ParallelUploadConfig;
+import com.google.cloud.storage.transfermanager.TransferManager;
+import com.google.cloud.storage.transfermanager.TransferStatus;
+import com.google.cloud.storage.transfermanager.UploadJob;
+import com.google.cloud.storage.transfermanager.UploadResult;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
@@ -31,31 +41,54 @@ final class FileSetManagerTest {
   void shouldSaveFileSet() throws IOException {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
+    final var mockTransferManager = mock(TransferManager.class);
+    final var manager =
+        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var namedFileSet =
         new NamedFileSetImpl(
             Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2")));
 
+    final var uploadJob =
+        UploadJob.newBuilder()
+            .setParallelUploadConfig(
+                ParallelUploadConfig.newBuilder().setBucketName("bucket").build())
+            .build();
+    when(mockTransferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
+        .thenReturn(uploadJob);
+
     // when
     manager.save(backupIdentifier, "filesetName", namedFileSet);
 
     // then
-    verify(mockClient).createFrom(any(), eq(Path.of("file1")), any());
-    verify(mockClient).createFrom(any(), eq(Path.of("file2")), any());
+    verify(mockTransferManager).uploadFiles(anyList(), any(ParallelUploadConfig.class));
   }
 
   @Test
   void shouldThrowExceptionOnSaveFileSet() throws IOException {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
+    final var mockTransferManager = mock(TransferManager.class);
+    final var manager =
+        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var namedFileSet =
         new NamedFileSetImpl(
             Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2")));
-    when(mockClient.createFrom(any(), any(Path.class), any()))
-        .thenThrow(new StorageException(412, "expected"));
+
+    final var failedResult =
+        UploadResult.newBuilder(
+                BlobInfo.newBuilder("bucket", "test").build(), TransferStatus.FAILED_TO_FINISH)
+            .setException(new StorageException(412, "expected"))
+            .build();
+    final var uploadJob =
+        UploadJob.newBuilder()
+            .setUploadResults(List.of(ApiFutures.immediateFuture(failedResult)))
+            .setParallelUploadConfig(
+                ParallelUploadConfig.newBuilder().setBucketName("bucket").build())
+            .build();
+    when(mockTransferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
+        .thenReturn(uploadJob);
 
     // when throw
     Assertions.assertThatThrownBy(() -> manager.save(backupIdentifier, "filesetName", namedFileSet))
@@ -68,7 +101,9 @@ final class FileSetManagerTest {
   void shouldDeleteFileSet() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
+    final var mockTransferManager = mock(TransferManager.class);
+    final var manager =
+        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final var mockBlob = mock(Blob.class);
@@ -87,7 +122,9 @@ final class FileSetManagerTest {
   void shouldThrowExceptionOnDeleteFileSetWhenListThrows() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
+    final var mockTransferManager = mock(TransferManager.class);
+    final var manager =
+        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     when(mockClient.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
 
@@ -102,7 +139,9 @@ final class FileSetManagerTest {
   void shouldThrowExceptionOnDeleteFileSetWhenBlobDeleteThrows() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
+    final var mockTransferManager = mock(TransferManager.class);
+    final var manager =
+        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final Blob mockBlob = mock(Blob.class);
@@ -121,11 +160,24 @@ final class FileSetManagerTest {
   void shouldRestoreFileSet() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
+    final var mockTransferManager = mock(TransferManager.class);
+    final var manager =
+        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
     final Path restorePath = Path.of("restorePath");
+
+    final var downloadJob =
+        DownloadJob.newBuilder()
+            .setParallelDownloadConfig(
+                ParallelDownloadConfig.newBuilder()
+                    .setBucketName("bucket")
+                    .setDownloadDirectory(restorePath)
+                    .build())
+            .build();
+    when(mockTransferManager.downloadBlobs(anyList(), any(ParallelDownloadConfig.class)))
+        .thenReturn(downloadJob);
 
     // when
     final var namedFileSet = manager.restore(backupIdentifier, "filesetName", fileSet, restorePath);
@@ -137,22 +189,37 @@ final class FileSetManagerTest {
     Assertions.assertThat(namedFileSet.namedFiles())
         .isEqualTo(Map.of("snapshotFile", expectedPath1, "snapshotFile2", expectedPath2));
 
-    verify(mockClient).downloadTo(any(), eq(expectedPath1));
-    verify(mockClient).downloadTo(any(), eq(expectedPath2));
+    verify(mockTransferManager).downloadBlobs(anyList(), any(ParallelDownloadConfig.class));
   }
 
   @Test
   void shouldThrowRestoreFileSetWhenDownloadToFails() {
     // given
     final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
+    final var mockTransferManager = mock(TransferManager.class);
+    final var manager =
+        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
     final Path restorePath = Path.of("restorePath");
-    doThrow(new StorageException(412, "expected"))
-        .when(mockClient)
-        .downloadTo(any(), any(Path.class));
+
+    final var failedResult =
+        DownloadResult.newBuilder(
+                BlobInfo.newBuilder("bucket", "test").build(), TransferStatus.FAILED_TO_FINISH)
+            .setException(new StorageException(412, "expected"))
+            .build();
+    final var downloadJob =
+        DownloadJob.newBuilder()
+            .setDownloadResults(List.of(ApiFutures.immediateFuture(failedResult)))
+            .setParallelDownloadConfig(
+                ParallelDownloadConfig.newBuilder()
+                    .setBucketName("bucket")
+                    .setDownloadDirectory(restorePath)
+                    .build())
+            .build();
+    when(mockTransferManager.downloadBlobs(anyList(), any(ParallelDownloadConfig.class)))
+        .thenReturn(downloadJob);
 
     // when - then throw
     assertThatThrownBy(() -> manager.restore(backupIdentifier, "filesetName", fileSet, restorePath))

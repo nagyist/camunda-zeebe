@@ -147,6 +147,12 @@
       <artifactId>zeebe-protocol</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.google.api</groupId>
+      <artifactId>api-common</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
