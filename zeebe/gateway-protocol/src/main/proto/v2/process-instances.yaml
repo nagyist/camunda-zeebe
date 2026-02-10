@@ -792,6 +792,12 @@ components:
           description: |
             The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint.
+        processDefinitionVersion:
+          description: |
+            The version of the process. By default, the latest version of the process is used.
+          type: integer
+          format: int32
+          default: -1
         variables:
           description: |
             JSON object that will instantiate the variables for the root variable scope
