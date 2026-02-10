@@ -268,7 +268,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   CONDITIONAL_SUBSCRIPTION_BY_TENANT_ID(137, PARTITION_LOCAL),
 
-  ROOT_PROCESS_INSTANCE_KEY_BY_BUSINESS_ID(138, PARTITION_LOCAL);
+  PROCESS_INSTANCE_KEY_BY_BUSINESS_ID(138, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

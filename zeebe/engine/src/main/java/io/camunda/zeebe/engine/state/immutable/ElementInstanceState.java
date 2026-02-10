@@ -142,7 +142,7 @@ public interface ElementInstanceState {
    * @param tenantId the tenant id
    * @return the process instance key, or -1 if not found
    */
-  long getRootProcessInstanceKeyByBusinessId(
+  long getProcessInstanceKeyByBusinessId(
       String businessId, long processDefinitionKey, String tenantId);
 
   @FunctionalInterface
