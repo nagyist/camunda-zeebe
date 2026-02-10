@@ -337,7 +337,8 @@ public final class ProcessInstanceModificationModifyProcessor
         .setProcessInstanceKey(value.getProcessInstanceKey())
         .setProcessDefinitionKey(processInstanceRecord.getProcessDefinitionKey())
         .setRootProcessInstanceKey(processInstanceRecord.getRootProcessInstanceKey())
-        .setTenantId(processInstanceRecord.getTenantId());
+        .setTenantId(processInstanceRecord.getTenantId())
+        .setBpmnProcessId(processInstanceRecord.getBpmnProcessId());
 
     final var requiredKeysForActivation =
         activateInstructions.stream()

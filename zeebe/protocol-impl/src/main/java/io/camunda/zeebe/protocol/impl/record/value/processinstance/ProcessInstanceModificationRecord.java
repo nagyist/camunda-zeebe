@@ -39,6 +39,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
 
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
@@ -46,6 +47,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
 
   private final ArrayProperty<ProcessInstanceModificationTerminateInstruction>
       terminateInstructionsProperty =
@@ -64,7 +66,7 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
 
   public ProcessInstanceModificationRecord() {
-    super(8);
+    super(9);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(terminateInstructionsProperty)
         .declareProperty(activateInstructionsProperty)
@@ -72,7 +74,8 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
         .declareProperty(activatedElementInstanceKeys)
         .declareProperty(tenantIdProp)
         .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(processDefinitionKeyProperty);
+        .declareProperty(processDefinitionKeyProperty)
+        .declareProperty(bpmnProcessIdProperty);
   }
 
   /**
@@ -216,6 +219,16 @@ public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
   public ProcessInstanceModificationRecord setProcessDefinitionKey(
       final long processDefinitionKey) {
     processDefinitionKeyProperty.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return BufferUtil.bufferAsString(bpmnProcessIdProperty.getValue());
+  }
+
+  public ProcessInstanceModificationRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 

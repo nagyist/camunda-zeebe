@@ -62,6 +62,9 @@
             },
             "businessId": {
               "type": "keyword"
+            },
+            "elementInstanceKey": {
+              "enabled": false
             }
           }
         }

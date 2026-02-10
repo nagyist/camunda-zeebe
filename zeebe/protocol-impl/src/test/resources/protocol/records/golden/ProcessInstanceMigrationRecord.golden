@@ -33,6 +33,7 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
       new StringValue("rootProcessInstanceKey");
   private static final StringValue PROCESS_DEFINITION_KEY_KEY =
       new StringValue("processDefinitionKey");
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
   private final LongProperty processInstanceKeyProperty =
       new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty targetProcessDefinitionKeyProperty =
@@ -48,15 +49,17 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1);
   private final LongProperty processDefinitionKeyProperty =
       new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
+  private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
 
   public ProcessInstanceMigrationRecord() {
-    super(6);
+    super(7);
     declareProperty(processInstanceKeyProperty)
         .declareProperty(targetProcessDefinitionKeyProperty)
         .declareProperty(mappingInstructionsProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(rootProcessInstanceKeyProperty)
-        .declareProperty(processDefinitionKeyProperty);
+        .declareProperty(processDefinitionKeyProperty)
+        .declareProperty(bpmnProcessIdProperty);
   }
 
   @Override
@@ -140,6 +143,16 @@ public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
 
   public ProcessInstanceMigrationRecord setTenantId(final String tenantId) {
     tenantIdProperty.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProperty.getValue());
+  }
+
+  public ProcessInstanceMigrationRecord setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 }

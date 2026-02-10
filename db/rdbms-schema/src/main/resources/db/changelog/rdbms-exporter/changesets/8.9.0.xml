@@ -121,6 +121,7 @@
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="IS_PREVIEW" type="BOOLEAN"/>
       <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="ELEMENT_INSTANCE_KEY" type="BIGINT"/>
     </createTable>
 
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_PROCESS_INSTANCE_KEY">

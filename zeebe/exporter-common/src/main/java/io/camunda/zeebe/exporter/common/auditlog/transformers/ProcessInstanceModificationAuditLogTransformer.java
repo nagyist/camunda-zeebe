@@ -24,8 +24,6 @@ public class ProcessInstanceModificationAuditLogTransformer
   @Override
   public void transform(
       final Record<ProcessInstanceModificationRecordValue> record, final AuditLogEntry log) {
-    final var value = record.getValue();
-    log.setProcessInstanceKey(value.getProcessInstanceKey());
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);
