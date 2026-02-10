@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
@@ -187,6 +188,7 @@ final class JsonSerializableToJsonTest {
               final int requestStreamId = 1;
 
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AgentInfo agentInfo = new AgentInfo().setId(123L).setName("agent-name");
 
               recordMetadata
                   .intent(intent)
@@ -200,6 +202,7 @@ final class JsonSerializableToJsonTest {
                   .requestId(requestId)
                   .requestStreamId(requestStreamId)
                   .authorization(authInfo)
+                  .agent(agentInfo)
                   .operationReference(1234)
                   .batchOperationReference(5678);
 
@@ -247,6 +250,10 @@ final class JsonSerializableToJsonTest {
                   "brokerVersion": "1.2.3",
                   "authorizations": {
                     "foo" : "bar"
+                  },
+                  "agent": {
+                    "id": 123,
+                    "name": "agent-name"
                   },
                   "recordVersion": 10,
                   "operationReference": 1234,
@@ -315,6 +322,7 @@ final class JsonSerializableToJsonTest {
                   "rejectionReason": "",
                   "brokerVersion": "0.0.0",
                   "authorizations": {},
+                  "agent": null,
                   "recordVersion": 1,
                   "operationReference": -1,
                   "batchOperationReference": -1,

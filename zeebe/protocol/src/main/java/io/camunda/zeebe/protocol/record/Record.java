@@ -104,6 +104,14 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   Map<String, Object> getAuthorizations();
 
   /**
+   * Provides agent information that is associated with the record, e.g. the id and name of the
+   * agent that produced the record within an adhoc subprocess
+   *
+   * @return the agent information associated with this record, or {@code null} if no agent
+   */
+  Agent getAgent();
+
+  /**
    * A record version is an integer starting from 1. The version of a record is defined when it is
    * written. It allows different versions of the same record to be processed or applied
    * differently.
