@@ -126,6 +126,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.awaitility.Awaitility;
@@ -134,6 +135,7 @@ import org.awaitility.core.ThrowingRunnable;
 
 public final class RecordingExporter implements Exporter {
   public static final long DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(5).toMillis();
+  public static final long DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME = Duration.ofMillis(200).toMillis();
 
   private static final ConcurrentSkipListMap<Integer, Record<?>> RECORDS =
       new ConcurrentSkipListMap<Integer, Record<?>>();
@@ -143,6 +145,7 @@ public final class RecordingExporter implements Exporter {
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
   private static boolean overrideMaximumWaitTime = false;
+  private static final boolean failOnMaximumWaitTime = true;
 
   private Controller controller;
 
@@ -750,6 +753,20 @@ public final class RecordingExporter implements Exporter {
   public static AwaitilityWrapper await(final Duration timeout) {
     final var conditionFactory = Awaitility.await().atMost(timeout);
     return new AwaitilityWrapper(conditionFactory);
+  }
+
+  /**
+   * This method should be used when you expect that no records will be written that match the
+   * criteria defined in the consumer. It temporarily sets the maximum wait time to {@link
+   * RecordingExporter#DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME} to speed up the test execution, and
+   * resets it after.
+   */
+  public static <T extends ExporterRecordStream<?, ?>> T expectNoMatchingRecords(
+      final Function<RecordStream, T> consumer) {
+    maximumWaitTime = DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME;
+    final var records = consumer.apply(records());
+    maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
+    return records;
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {

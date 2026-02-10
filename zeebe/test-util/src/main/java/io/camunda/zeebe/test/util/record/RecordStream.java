@@ -205,4 +205,9 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
         filter(r -> r.getValueType() == ValueType.BATCH_OPERATION_EXECUTION)
             .map(Record.class::cast));
   }
+
+  public ScaleRecordStream scaleRecords() {
+    return new ScaleRecordStream(
+        filter(r -> r.getValueType() == ValueType.SCALE).map(Record.class::cast));
+  }
 }
