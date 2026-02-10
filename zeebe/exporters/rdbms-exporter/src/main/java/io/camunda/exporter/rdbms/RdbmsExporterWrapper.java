@@ -317,12 +317,6 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getBatchOperationWriter(),
             batchOperationCache,
             BatchOperationType.DELETE_PROCESS_INSTANCE));
-    builder.withHandler(
-        ValueType.HISTORY_DELETION,
-        new HistoryDeletionBatchOperationExportHandler(
-            rdbmsWriters.getBatchOperationWriter(),
-            batchOperationCache,
-            BatchOperationType.DELETE_PROCESS_DEFINITION));
   }
 
   private void registerAuditLogHandlers(
