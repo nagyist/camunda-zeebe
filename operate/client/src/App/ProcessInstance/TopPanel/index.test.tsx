@@ -52,7 +52,6 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
-import * as modificationsUtils from 'modules/utils/modifications';
 
 const mockIncidents = {
   page: {totalItems: 1},
@@ -609,11 +608,6 @@ describe('TopPanel', () => {
       },
     });
 
-    const finishMovingTokenSpy = vi.spyOn(
-      modificationsUtils,
-      'finishMovingToken',
-    );
-
     const {user} = render(<TopPanel />, {
       wrapper: getWrapper(),
     });
@@ -634,16 +628,12 @@ describe('TopPanel', () => {
 
     await user.click(await screen.findByTestId('task-2'));
 
-    expect(finishMovingTokenSpy).toHaveBeenCalledWith(
-      expect.any(Number),
-      expect.any(Number),
-      expect.any(Object),
-      expect.any(String),
-      'task-2',
-      'sourceParent',
-    );
-
-    finishMovingTokenSpy.mockRestore();
+    const modifications = modificationsStore.state.modifications;
+    expect(modifications).toHaveLength(1);
+    expect(modifications[0].payload).toMatchObject({
+      operation: 'MOVE_TOKEN',
+      ancestorScopeType: 'sourceParent',
+    });
   });
 
   /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */

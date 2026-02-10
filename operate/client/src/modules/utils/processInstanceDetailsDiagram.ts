@@ -158,5 +158,3 @@ export {
   areInSameRunningScope,
   getAncestorScopeType,
 };
-
-export type {AncestorScopeType};
