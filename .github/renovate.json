@@ -148,12 +148,15 @@
       "enabled": false
     },
     {
+      "description": "Big (major+minor) updates are done manually due to alignment/breaking changes.",
       "matchDatasources": [
         "docker"
       ],
       "matchPackageNames": [
         "elasticsearch",
-        "opensearchproject/opensearch"
+        "opensearchproject/opensearch",
+        "eclipse-temurin",
+        "reg.mini.dev/1212/openjre-base"
       ],
       "matchUpdateTypes": [
         "major",
