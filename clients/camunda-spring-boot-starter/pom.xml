@@ -238,6 +238,11 @@
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
+      </plugin>
+
       <!-- START -->
       <!-- The following plugin setups are about generating test util classes -->
       <plugin>
