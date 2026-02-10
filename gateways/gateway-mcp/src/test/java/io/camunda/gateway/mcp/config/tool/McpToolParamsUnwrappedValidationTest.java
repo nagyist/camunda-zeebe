@@ -33,8 +33,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.validation.annotation.Validated;
 
 @ExtendWith(MockitoExtension.class)
-@ContextConfiguration(classes = {McpToolParamsValidationTest.TestTools.class})
-class McpToolParamsValidationTest extends ToolsTest {
+@ContextConfiguration(classes = {McpToolParamsUnwrappedValidationTest.TestTools.class})
+class McpToolParamsUnwrappedValidationTest extends ToolsTest {
 
   @MockitoBean private TestTaskService taskService;
   @Captor private ArgumentCaptor<TaskRequest> taskRequestCaptor;
@@ -55,7 +55,7 @@ class McpToolParamsValidationTest extends ToolsTest {
     }
 
     @CamundaMcpTool(description = "Create a task")
-    public CallToolResult createTask(@McpToolParams @Valid final TaskRequest request) {
+    public CallToolResult createTask(@McpToolParamsUnwrapped @Valid final TaskRequest request) {
       taskService.process(request);
       return CallToolResultMapper.from("created");
     }

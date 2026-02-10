@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class McpToolParamsRegistrationTest {
+class McpToolParamsUnwrappedRegistrationTest {
 
   private final CamundaJsonSchemaGenerator schemaGenerator = new CamundaJsonSchemaGenerator();
 
@@ -31,8 +31,8 @@ class McpToolParamsRegistrationTest {
     assertThatThrownBy(provider::getToolSpecifications)
         .isInstanceOf(IllegalStateException.class)
         .hasMessage(
-            "Method 'MultipleMcpToolParamsTool.invalidTool' has multiple @McpToolParams parameters. "
-                + "Only a single @McpToolParams parameter is allowed per method.");
+            "Method 'MultipleMcpToolParamsTool.invalidTool' has multiple @McpToolParamsUnwrapped parameters. "
+                + "Only a single @McpToolParamsUnwrapped parameter is allowed per method.");
   }
 
   @Test
@@ -43,9 +43,9 @@ class McpToolParamsRegistrationTest {
     assertThatThrownBy(provider::getToolSpecifications)
         .isInstanceOf(IllegalStateException.class)
         .hasMessage(
-            "Method 'MixedParamsTool.invalidTool' mixes @McpToolParams with individual parameter "
+            "Method 'MixedParamsTool.invalidTool' mixes @McpToolParamsUnwrapped with individual parameter "
                 + "'name' (type: String). Use either individual parameters OR a single "
-                + "@McpToolParams wrapper, not both.");
+                + "@McpToolParamsUnwrapped wrapper, not both.");
   }
 
   @Test
@@ -65,7 +65,8 @@ class McpToolParamsRegistrationTest {
   static class MultipleMcpToolParamsTool {
     @CamundaMcpTool(description = "invalid")
     public CallToolResult invalidTool(
-        @McpToolParams @Valid final SimpleDto first, @McpToolParams @Valid final SimpleDto second) {
+        @McpToolParamsUnwrapped @Valid final SimpleDto first,
+        @McpToolParamsUnwrapped @Valid final SimpleDto second) {
       return null;
     }
   }
@@ -73,7 +74,7 @@ class McpToolParamsRegistrationTest {
   static class MixedParamsTool {
     @CamundaMcpTool(description = "invalid")
     public CallToolResult invalidTool(
-        @McpToolParams @Valid final SimpleDto dto, final String name) {
+        @McpToolParamsUnwrapped @Valid final SimpleDto dto, final String name) {
       return null;
     }
   }
@@ -81,7 +82,7 @@ class McpToolParamsRegistrationTest {
   static class ValidToolWithFrameworkParams {
     @CamundaMcpTool(description = "valid")
     public CallToolResult validTool(
-        @McpToolParams @Valid final SimpleDto dto, final CallToolRequest request) {
+        @McpToolParamsUnwrapped @Valid final SimpleDto dto, final CallToolRequest request) {
       return null;
     }
   }

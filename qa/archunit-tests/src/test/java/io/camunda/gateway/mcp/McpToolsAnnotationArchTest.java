@@ -18,7 +18,7 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
-import io.camunda.gateway.mcp.config.tool.McpToolParams;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.tool.ToolDescriptions;
 import jakarta.validation.Valid;
 import org.springaicommunity.mcp.annotation.McpTool;
@@ -115,17 +115,19 @@ public class McpToolsAnnotationArchTest {
           .and()
           .arePublic()
           .should(
-              new ArchCondition<>("have @Valid on every parameter annotated with @McpToolParams") {
+              new ArchCondition<>(
+                  "have @Valid on every parameter annotated with @McpToolParamsUnwrapped") {
                 @Override
                 public void check(final JavaMethod method, final ConditionEvents events) {
                   for (final JavaParameter param : method.getParameters()) {
-                    final boolean hasMcpToolParams = param.isAnnotatedWith(McpToolParams.class);
+                    final boolean hasMcpToolParams =
+                        param.isAnnotatedWith(McpToolParamsUnwrapped.class);
                     final boolean hasValid = param.isAnnotatedWith(Valid.class);
                     if (hasMcpToolParams && !hasValid) {
                       events.add(
                           SimpleConditionEvent.violated(
                               method,
-                              "Parameter %d (%s) of method %s is annotated with @McpToolParams but missing @Valid"
+                              "Parameter %d (%s) of method %s is annotated with @McpToolParamsUnwrapped but missing @Valid"
                                   .formatted(
                                       param.getIndex(),
                                       param.getRawType().getSimpleName(),
@@ -135,5 +137,5 @@ public class McpToolsAnnotationArchTest {
                 }
               })
           .because(
-              "@McpToolParams DTOs must be annotated with @Valid to trigger cascading bean validation");
+              "@McpToolParamsUnwrapped DTOs must be annotated with @Valid to trigger cascading bean validation");
 }

@@ -25,7 +25,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
-import io.camunda.gateway.mcp.config.tool.McpToolParams;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
@@ -46,7 +46,7 @@ import org.springframework.lang.Nullable;
 
 /**
  * This is an adapted variant of {@link JsonSchemaGenerator}, configured to inline defs and with
- * support for {@link McpToolParams} expansion.
+ * support for {@link McpToolParamsUnwrapped} expansion.
  */
 public class CamundaJsonSchemaGenerator {
 
@@ -139,8 +139,8 @@ public class CamundaJsonSchemaGenerator {
               final ObjectNode parameterNode =
                   subtypeSchemaGenerator.generateSchema(parameter.getParameterizedType());
 
-              // handle @McpToolParams - unwrap DTO fields to root level
-              if (parameter.isAnnotationPresent(McpToolParams.class)) {
+              // handle @McpToolParamsUnwrapped - unwrap DTO fields to root level
+              if (parameter.isAnnotationPresent(McpToolParamsUnwrapped.class)) {
                 if (parameterNode.has("properties") && parameterNode.get("properties").isObject()) {
                   parameterNode
                       .withObject("properties")

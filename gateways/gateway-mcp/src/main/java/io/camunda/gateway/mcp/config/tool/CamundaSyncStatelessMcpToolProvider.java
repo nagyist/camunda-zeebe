@@ -102,7 +102,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
   private SyncToolSpecification createSyncToolSpecification(
       final Object toolObject, final Method mcpToolMethod) {
-    validateMcpToolParamsUsage(mcpToolMethod);
+    validateMcpToolParamsUnwrappedUsage(mcpToolMethod);
 
     final var toolAnnotation = mcpToolMethod.getAnnotation(CamundaMcpTool.class);
 
@@ -174,48 +174,48 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
   }
 
   /**
-   * Validates that @McpToolParams is used correctly.
+   * Validates that @{@link McpToolParamsUnwrapped} is used correctly.
    *
    * <p>Enforces mutual exclusivity: a method can have EITHER individual tool parameters OR a single
-   * {@code @McpToolParams} wrapper parameter, but not both. The only parameters allowed alongside
-   * {@code @McpToolParams} are MCP framework types (context, exchange, progress token, meta,
-   * request).
+   * {@code @McpToolParamsUnwrapped} wrapper parameter, but not both. The only parameters allowed
+   * alongside {@code @McpToolParamsUnwrapped} are MCP framework types (context, exchange, progress
+   * token, meta, request).
    *
    * @param method the tool method to validate
    * @throws IllegalStateException if @McpToolParams is used incorrectly
    */
-  private void validateMcpToolParamsUsage(final Method method) {
+  private void validateMcpToolParamsUnwrappedUsage(final Method method) {
     final Parameter[] parameters = method.getParameters();
 
-    final long mcpToolParamsCount =
+    final long annotatedParametersCount =
         Arrays.stream(parameters)
-            .filter(parameter -> parameter.isAnnotationPresent(McpToolParams.class))
+            .filter(parameter -> parameter.isAnnotationPresent(McpToolParamsUnwrapped.class))
             .count();
 
-    if (mcpToolParamsCount == 0) {
+    if (annotatedParametersCount == 0) {
       return;
     }
 
-    if (mcpToolParamsCount > 1) {
+    if (annotatedParametersCount > 1) {
       throw new IllegalStateException(
           String.format(
-              "Method '%s.%s' has multiple @McpToolParams parameters. "
-                  + "Only a single @McpToolParams parameter is allowed per method.",
+              "Method '%s.%s' has multiple @McpToolParamsUnwrapped parameters. "
+                  + "Only a single @McpToolParamsUnwrapped parameter is allowed per method.",
               method.getDeclaringClass().getSimpleName(), method.getName()));
     }
 
     Arrays.stream(parameters)
         .filter(
             parameter ->
-                !parameter.isAnnotationPresent(McpToolParams.class)
+                !parameter.isAnnotationPresent(McpToolParamsUnwrapped.class)
                     && !isFrameworkParameter(parameter))
         .findFirst()
         .ifPresent(
             parameter -> {
               throw new IllegalStateException(
                   String.format(
-                      "Method '%s.%s' mixes @McpToolParams with individual parameter '%s' (type: %s). "
-                          + "Use either individual parameters OR a single @McpToolParams wrapper, not both.",
+                      "Method '%s.%s' mixes @McpToolParamsUnwrapped with individual parameter '%s' (type: %s). "
+                          + "Use either individual parameters OR a single @McpToolParamsUnwrapped wrapper, not both.",
                       method.getDeclaringClass().getSimpleName(),
                       method.getName(),
                       parameter.getName(),

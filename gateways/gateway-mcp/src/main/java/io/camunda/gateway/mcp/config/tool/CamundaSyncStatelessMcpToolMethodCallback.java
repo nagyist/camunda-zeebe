@@ -28,9 +28,9 @@ import org.springaicommunity.mcp.method.tool.SyncStatelessMcpToolMethodCallback;
 /**
  * Camunda-specific callback for synchronous stateless MCP tool methods.
  *
- * <p>Extends the abstract callback to support {@link McpToolParams} annotation, which allows method
- * parameters annotated with {@code @McpToolParams} to be deserialized from the entire tool input
- * arguments map.
+ * <p>Extends the abstract callback to support {@link McpToolParamsUnwrapped} annotation, which
+ * allows method parameters annotated with {@code @McpToolParamsUnwrapped} to be deserialized from
+ * the entire tool input arguments map.
  *
  * <p>Original Spring AI implementation: {@link SyncStatelessMcpToolMethodCallback}
  */
@@ -48,7 +48,7 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     super(returnMode, toolMethod, toolObject, toolCallExceptionClass);
     hasWrapperParameter =
         Stream.of(toolMethod.getParameters())
-            .anyMatch(p -> p.isAnnotationPresent(McpToolParams.class));
+            .anyMatch(p -> p.isAnnotationPresent(McpToolParamsUnwrapped.class));
   }
 
   @Override
@@ -97,8 +97,9 @@ public class CamundaSyncStatelessMcpToolMethodCallback
     return Stream.of(toolMethod.getParameters())
         .map(
             parameter -> {
-              // if @McpToolParams is present, deserialize the entire input map into wrapper DTO
-              if (parameter.isAnnotationPresent(McpToolParams.class)) {
+              // if @McpToolParamsUnwrapped is present, deserialize the entire input map into
+              // wrapper DTO
+              if (parameter.isAnnotationPresent(McpToolParamsUnwrapped.class)) {
                 // Spring's @Validated proxy will validate this the parameter based on validation
                 // annotations
                 return buildTypedArgument(toolInputArguments, parameter.getParameterizedType());
@@ -153,9 +154,9 @@ public class CamundaSyncStatelessMcpToolMethodCallback
   /**
    * Cleans up validation property paths by removing internal method and parameter names.
    *
-   * <p>When the method uses {@code @McpToolParams}, the wrapper parameter name is an internal
-   * detail and must be stripped. Since {@code @McpToolParams} is mutually exclusive with individual
-   * parameters (enforced at registration time), the mode is unambiguous.
+   * <p>When the method uses {@code @McpToolParamsUnwrapped}, the wrapper parameter name is an
+   * internal detail and must be stripped. Since {@code @McpToolParamsUnwrapped} is mutually
+   * exclusive with individual parameters (enforced at registration time), the mode is unambiguous.
    *
    * <p>Examples:
    *

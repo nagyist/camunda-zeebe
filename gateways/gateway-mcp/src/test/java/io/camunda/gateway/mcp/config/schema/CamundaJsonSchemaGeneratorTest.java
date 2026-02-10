@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.gateway.mcp.config.tool.McpToolParams;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import jakarta.validation.Valid;
 import java.lang.reflect.Method;
@@ -121,12 +121,12 @@ class CamundaJsonSchemaGeneratorTest {
 
     public void withRepeatedTypesIndividual(final Address homeAddress, final Address workAddress) {}
 
-    public void withMcpToolParams(@McpToolParams @Valid final TaskDto dto) {}
+    public void withMcpToolParams(@McpToolParamsUnwrapped @Valid final TaskDto dto) {}
 
     public void withRepeatedTypesMcpToolParams(
-        @McpToolParams @Valid final DtoWithRepeatedTypes dto) {}
+        @McpToolParamsUnwrapped @Valid final DtoWithRepeatedTypes dto) {}
 
     public void withMcpToolParamsAndContext(
-        @McpToolParams @Valid final TaskDto dto, final McpSyncRequestContext context) {}
+        @McpToolParamsUnwrapped @Valid final TaskDto dto, final McpSyncRequestContext context) {}
   }
 }

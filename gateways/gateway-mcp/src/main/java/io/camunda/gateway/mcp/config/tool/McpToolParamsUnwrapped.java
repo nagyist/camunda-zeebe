@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  *
  * <pre>{@code
  * @CamundaMcpTool(description = "Create a task")
- * public CallToolResult createTask(@McpToolParams @Valid CreateTaskRequest request) {
+ * public CallToolResult createTask(@McpToolParamsUnwrapped @Valid CreateTaskRequest request) {
  *   // request.taskName, request.description are unwrapped to root level in schema
  *   return taskService.create(request);
  * }
@@ -50,13 +50,13 @@ import java.lang.annotation.Target;
  * <h3>Limitations:</h3>
  *
  * <ul>
- *   <li>Only one parameter per method can be annotated with {@code @McpToolParams}
+ *   <li>Only one parameter per method can be annotated with {@code @McpToolParamsUnwrapped}
  *   <li>Cannot be combined with other tool-input parameters (neither simple nor complex); the only
- *       parameters allowed alongside {@code @McpToolParams} are MCP framework types such as {@code
- *       McpSyncRequestContext}, {@code CallToolRequest}, {@code McpMeta}, etc.
+ *       parameters allowed alongside {@code @McpToolParamsUnwrapped} are MCP framework types such
+ *       as {@code McpSyncRequestContext}, {@code CallToolRequest}, {@code McpMeta}, etc.
  * </ul>
  */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface McpToolParams {}
+public @interface McpToolParamsUnwrapped {}

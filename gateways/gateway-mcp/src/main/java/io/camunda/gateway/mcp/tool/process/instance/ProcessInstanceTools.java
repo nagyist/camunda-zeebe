@@ -18,7 +18,7 @@ import io.camunda.gateway.mapping.http.SimpleRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
-import io.camunda.gateway.mcp.config.tool.McpToolParams;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
@@ -112,7 +112,8 @@ public class ProcessInstanceTools {
           `mcp-tool:<uniqueId>` which can be used to search for the started process instance in case
           of timeouts.""")
   public CallToolResult createProcessInstance(
-      @McpToolParams @Valid final McpProcessInstanceCreationInstruction creationInstruction) {
+      @McpToolParamsUnwrapped @Valid
+          final McpProcessInstanceCreationInstruction creationInstruction) {
     try {
       final var instruction =
           new ProcessInstanceCreationInstruction()
