@@ -29,33 +29,12 @@ public class ProxyConfiguration {
   @JsonProperty("sslEnabled")
   private boolean sslEnabled;
 
-  @JsonProperty("username")
-  private String username;
-
-  @JsonProperty("password")
-  private String password;
-
   public ProxyConfiguration(
       final boolean enabled, final String host, final Integer port, final boolean sslEnabled) {
     this.enabled = enabled;
     this.host = host;
     this.port = port;
     this.sslEnabled = sslEnabled;
-  }
-
-  public ProxyConfiguration(
-      final boolean enabled,
-      final String host,
-      final Integer port,
-      final boolean sslEnabled,
-      final String username,
-      final String password) {
-    this.enabled = enabled;
-    this.host = host;
-    this.port = port;
-    this.sslEnabled = sslEnabled;
-    this.username = username;
-    this.password = password;
   }
 
   public ProxyConfiguration() {}
@@ -109,24 +88,6 @@ public class ProxyConfiguration {
     this.sslEnabled = sslEnabled;
   }
 
-  public String getUsername() {
-    return username;
-  }
-
-  @JsonProperty("username")
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  @JsonProperty("password")
-  public void setPassword(final String password) {
-    this.password = password;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof ProxyConfiguration;
   }
@@ -140,14 +101,12 @@ public class ProxyConfiguration {
     return enabled == that.enabled
         && sslEnabled == that.sslEnabled
         && Objects.equals(host, that.host)
-        && Objects.equals(port, that.port)
-        && Objects.equals(username, that.username)
-        && Objects.equals(password, that.password);
+        && Objects.equals(port, that.port);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, host, port, sslEnabled, username, password);
+    return Objects.hash(enabled, host, port, sslEnabled);
   }
 
   @Override
@@ -160,8 +119,6 @@ public class ProxyConfiguration {
         + getPort()
         + ", sslEnabled="
         + isSslEnabled()
-        + ", username="
-        + getUsername()
         + ")";
   }
 }

@@ -30,7 +30,6 @@ import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
-import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import io.camunda.optimize.service.util.mapper.CustomAuthorizedReportDefinitionDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomCollectionEntityDeserializer;
@@ -46,7 +45,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -56,7 +54,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import javax.net.ssl.SSLContext;
@@ -405,52 +402,7 @@ public class OpenSearchClientBuilder {
         configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled())) {
       setupSSLContext(httpAsyncClientBuilder, configurationService);
     }
-
-    final ProxyConfiguration proxyConfig =
-        configurationService.getOpenSearchConfiguration().getConnection().getProxy();
-    if (proxyConfig != null && proxyConfig.isEnabled()) {
-      setupProxy(httpAsyncClientBuilder, proxyConfig);
-      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
-    }
-
     return httpAsyncClientBuilder;
-  }
-
-  private static void setupProxy(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
-    httpAsyncClientBuilder.setProxy(
-        new HttpHost(
-            proxyConfig.isSslEnabled() ? "https" : "http",
-            proxyConfig.getHost(),
-            proxyConfig.getPort()));
-    LOG.debug(
-        "Using proxy {}:{} for OpenSearch connection",
-        proxyConfig.getHost(),
-        proxyConfig.getPort());
-  }
-
-  private static void addPreemptiveProxyAuthInterceptor(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
-    final String username = proxyConfig.getUsername();
-    final String password = proxyConfig.getPassword();
-
-    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      return;
-    }
-
-    final String credentials = username + ":" + password;
-    final String encodedCredentials =
-        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
-    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
-
-    httpAsyncClientBuilder.addRequestInterceptorFirst(
-        (request, entity, context) -> {
-          if (!request.containsHeader("Proxy-Authorization")) {
-            request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
-          }
-        });
-
-    LOG.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   private static RequestConfig.Builder setTimeouts(

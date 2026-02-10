@@ -41,8 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -177,10 +175,7 @@ public class EmbeddedOptimizeExtension
           .getZeebeImportScheduler()
           .orElseThrow(() -> new OptimizeIntegrationTestException("No Zeebe Scheduler present"))
           .runImportRound(true)
-          .get(5, TimeUnit.MINUTES);
-    } catch (final TimeoutException e) {
-      throw new OptimizeIntegrationTestException(
-          "Import round did not complete within 5 minutes, likely hanging", e);
+          .get();
     } catch (final InterruptedException | ExecutionException e) {
       throw new OptimizeRuntimeException(e);
     }

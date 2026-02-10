@@ -18,8 +18,6 @@ import org.slf4j.LoggerFactory;
 /** Represents one page of entities that should be added to database. */
 public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runnable {
 
-  private static final int MAX_RETRIES = 10;
-
   protected final DatabaseClient databaseClient;
   protected List<OPT> newOptimizeEntities = Collections.emptyList();
   private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -48,47 +46,29 @@ public abstract class DatabaseImportJob<OPT extends OptimizeDto> implements Runn
   }
 
   protected void executeImport() {
-    try {
-      if (!newOptimizeEntities.isEmpty()) {
-        boolean success = false;
-        int retryCount = 0;
-        do {
+    if (!newOptimizeEntities.isEmpty()) {
+      boolean success = false;
+      do {
+        try {
+          final long persistStart = System.currentTimeMillis();
+          persistEntities(newOptimizeEntities);
+          final long persistEnd = System.currentTimeMillis();
+          logger.debug("Executing import to database took [{}] ms", persistEnd - persistStart);
+          success = true;
+        } catch (final Exception e) {
+          logger.error("Error while executing import to database", e);
+          final long sleepTime = backoffCalculator.calculateSleepTime();
           try {
-            final long persistStart = System.currentTimeMillis();
-            persistEntities(newOptimizeEntities);
-            final long persistEnd = System.currentTimeMillis();
-            logger.debug("Executing import to database took [{}] ms", persistEnd - persistStart);
-            success = true;
-          } catch (final Exception e) {
-            retryCount++;
-            if (retryCount >= MAX_RETRIES) {
-              logger.error(
-                  "Error while executing import to database after {} retries, aborting",
-                  retryCount,
-                  e);
-              break;
-            }
-            logger.error(
-                "Error while executing import to database, retry {}/{}",
-                retryCount,
-                MAX_RETRIES,
-                e);
-            final long sleepTime = backoffCalculator.calculateSleepTime();
-            try {
-              Thread.sleep(sleepTime);
-            } catch (final InterruptedException exception) {
-              logger.warn("Interrupted during import retry backoff, aborting");
-              Thread.currentThread().interrupt();
-              break;
-            }
+            Thread.sleep(sleepTime);
+          } catch (final InterruptedException exception) {
+            Thread.currentThread().interrupt();
           }
-        } while (!success);
-      } else {
-        logger.debug("Import job with no new entities, import bulk execution is skipped.");
-      }
-    } finally {
-      importCompleteCallback.run();
+        }
+      } while (!success);
+    } else {
+      logger.debug("Import job with no new entities, import bulk execution is skipped.");
     }
+    importCompleteCallback.run();
   }
 
   protected abstract void persistEntities(List<OPT> newOptimizeEntities) throws Exception;

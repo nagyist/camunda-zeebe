@@ -103,33 +103,25 @@ public class DatabaseImportJobExecutor {
 
     @Override
     public void rejectedExecution(final Runnable runnable, final ThreadPoolExecutor executor) {
-      if (executor.isShutdown()) {
-        LOG.warn(
-            "{}: Executor is shut down, running rejected job [{}] on caller thread.",
-            getClass().getSimpleName(),
-            runnable.getClass().getSimpleName());
-        runnable.run();
-        return;
-      }
       // this will block if the queue is full
-      try {
-        LOG.debug(
-            "{}: Max queue capacity is reached and, thus, can't schedule any new jobs. "
-                + "Caller needs to wait until there is new free spot. Job class [{}].",
-            super.getClass().getSimpleName(),
-            runnable.getClass().getSimpleName());
-        executor.getQueue().put(runnable);
-        LOG.debug(
-            "{}: Added job to queue. Caller can continue working on his tasks.",
-            super.getClass().getSimpleName());
-      } catch (final InterruptedException e) {
-        LOG.warn(
-            "{}: Interrupted while waiting to submit job [{}], running on caller thread.",
-            getClass().getSimpleName(),
-            runnable.getClass().getSimpleName(),
-            e);
-        Thread.currentThread().interrupt();
-        runnable.run();
+      if (!executor.isShutdown()) {
+        try {
+          LOG.debug(
+              "{}: Max queue capacity is reached and, thus, can't schedule any new jobs. "
+                  + "Caller needs to wait until there is new free spot. Job class [{}].",
+              super.getClass().getSimpleName(),
+              runnable.getClass().getSimpleName());
+          executor.getQueue().put(runnable);
+          LOG.debug(
+              "{}: Added job to queue. Caller can continue working on his tasks.",
+              super.getClass().getSimpleName());
+        } catch (final InterruptedException e) {
+          LOG.error(
+              "{}: Interrupted while waiting to submit a new job to the job executor!",
+              getClass().getSimpleName(),
+              e);
+          Thread.currentThread().interrupt();
+        }
       }
     }
   }
