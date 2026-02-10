@@ -30,6 +30,8 @@ CREATE TABLE PROCESS_INSTANCE
     ELEMENT_ID                  varchar(4000),
     VERSION                     smallint,
     DESCRIPTION                 varchar(4000),
+    TREE_PATH                   varchar(4000),
+    ERROR_MESSAGE               varchar(4000),
     CONSTRAINT PK_PROCESS_INSTANCE PRIMARY KEY (PROCESS_INSTANCE_KEY)
 );
 

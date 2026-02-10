@@ -52,6 +52,8 @@
       <column name="ELEMENT_ID" type="VARCHAR(${userCharColumnSize})" />
       <column name="VERSION" type="SMALLINT" />
       <column name="DESCRIPTION" type="VARCHAR(${userCharColumnSize})" />
+      <column name="TREE_PATH" type="VARCHAR(${treePathSize})" />
+      <column name="ERROR_MESSAGE" type="VARCHAR(${errorMessageSize})" />
     </createTable>
 
     <modifySql dbms="mariadb, mysql">
