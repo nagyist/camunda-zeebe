@@ -115,10 +115,9 @@ public final class RaftPartitionFactory {
         brokerCfg.getExperimental().getRaft().getPreferSnapshotReplicationThreshold());
 
     partitionConfig.setEngineName(brokerCfg.getExperimental().getDefaultEngineName());
-    partitionConfig.setLegacySenderSubjectsDisabled(
-        brokerCfg.getExperimental().isLegacySenderSubjectsDisabled());
-    partitionConfig.setLegacyReceiverSubjectsDisabled(
-        brokerCfg.getExperimental().isLegacyReceiverSubjectsDisabled());
+    partitionConfig.setSendOnLegacySubject(brokerCfg.getExperimental().isSendOnLegacySubject());
+    partitionConfig.setReceiveOnLegacySubject(
+        brokerCfg.getExperimental().isReceiveOnLegacySubject());
 
     return new RaftPartition(
         partitionMetadata, partitionConfig, partitionDirectory.toFile(), partitionMeterRegistry);

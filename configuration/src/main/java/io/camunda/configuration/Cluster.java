@@ -142,8 +142,8 @@ public class Cluster implements Cloneable {
    */
   @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
 
-  private boolean legacySenderSubjectsDisabled;
-  private boolean legacyReceiverSubjectsDisabled;
+  private boolean sendOnLegacySubject = true;
+  private boolean receiveOnLegacySubject = true;
 
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
@@ -300,20 +300,20 @@ public class Cluster implements Cloneable {
     this.partitioning = partitioning;
   }
 
-  public boolean isLegacyReceiverSubjectsDisabled() {
-    return legacyReceiverSubjectsDisabled;
+  public boolean isReceiveOnLegacySubject() {
+    return receiveOnLegacySubject;
   }
 
-  public void setLegacyReceiverSubjectsDisabled(final boolean legacyReceiverSubjectsDisabled) {
-    this.legacyReceiverSubjectsDisabled = legacyReceiverSubjectsDisabled;
+  public void setReceiveOnLegacySubject(final boolean receiveOnLegacySubject) {
+    this.receiveOnLegacySubject = receiveOnLegacySubject;
   }
 
-  public boolean isLegacySenderSubjectsDisabled() {
-    return legacySenderSubjectsDisabled;
+  public boolean isSendOnLegacySubject() {
+    return sendOnLegacySubject;
   }
 
-  public void setLegacySenderSubjectsDisabled(final boolean legacySenderSubjectsDisabled) {
-    this.legacySenderSubjectsDisabled = legacySenderSubjectsDisabled;
+  public void setSendOnLegacySubject(final boolean sendOnLegacySubject) {
+    this.sendOnLegacySubject = sendOnLegacySubject;
   }
 
   @Override
@@ -355,6 +355,10 @@ public class Cluster implements Cloneable {
         + compressionAlgorithm
         + ", globalListeners="
         + globalListeners
+        + ", sendOnLegacySubject="
+        + sendOnLegacySubject
+        + ", receiveOnLegacySubject="
+        + receiveOnLegacySubject
         + '}';
   }
 

@@ -102,7 +102,7 @@ public class RaftServerForwardCompatibilityIT {
    */
   static void configure89To810Mode(final MemberId memberId, final TestStandaloneBroker broker) {
     if (memberId.id().equals(MEMBER_NODE_ID_0)) {
-      broker.withClusterConfig(c -> c.setLegacySenderSubjectsDisabled(true));
+      broker.withClusterConfig(c -> c.setSendOnLegacySubject(false));
     }
   }
 
@@ -116,7 +116,7 @@ public class RaftServerForwardCompatibilityIT {
    * </ul>
    */
   static void configure810Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    broker.withClusterConfig(c -> c.setLegacySenderSubjectsDisabled(true));
+    broker.withClusterConfig(c -> c.setSendOnLegacySubject(false));
   }
 
   /**
@@ -130,11 +130,11 @@ public class RaftServerForwardCompatibilityIT {
    * </ul>
    */
   static void configure810To811Mode(final MemberId memberId, final TestStandaloneBroker broker) {
-    broker.withClusterConfig(c -> c.setLegacySenderSubjectsDisabled(true));
+    broker.withClusterConfig(c -> c.setSendOnLegacySubject(false));
     if (memberId.id().equals(MEMBER_NODE_ID_0)) {
       broker.withClusterConfig(
           c -> {
-            c.setLegacyReceiverSubjectsDisabled(true);
+            c.setReceiveOnLegacySubject(false);
           });
     }
   }
@@ -150,8 +150,8 @@ public class RaftServerForwardCompatibilityIT {
   static void configure811Mode(final MemberId memberId, final TestStandaloneBroker broker) {
     broker.withClusterConfig(
         c -> {
-          c.setLegacySenderSubjectsDisabled(true);
-          c.setLegacyReceiverSubjectsDisabled(true);
+          c.setSendOnLegacySubject(false);
+          c.setReceiveOnLegacySubject(false);
         });
   }
 }

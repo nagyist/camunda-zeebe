@@ -69,7 +69,7 @@ public class RaftServerReceiverSubjectsTest {
   @MethodSource("provideConfigurations")
   void shouldRegisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
     // given
-    final var legacyReceiverSubjectsDisabled = config.isLegacyReceiverSubjectsDisabled();
+    final var legacyReceiverSubjectsDisabled = config.isReceiveOnLegacySubject();
     final var engineName = config.getEngineName();
 
     // when
@@ -85,19 +85,19 @@ public class RaftServerReceiverSubjectsTest {
   void shouldUnregisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
     // given
     final var server = createRaftPartitionServer(config, tempDir);
-    final var legacyReceiverSubjectsDisabled = config.isLegacyReceiverSubjectsDisabled();
+    final var receiveOnLegacySubject = config.isReceiveOnLegacySubject();
     final var engineName = config.getEngineName();
 
     // when
     server.stop().join();
 
     // then
-    assertLegacySubjectsUnregistered(legacyReceiverSubjectsDisabled);
+    assertLegacySubjectsUnregistered(receiveOnLegacySubject);
     assertEngineAwareSubjectsUnregistered(engineName);
   }
 
-  void assertLegacySubjectsRegistered(final boolean isLegacyReceiverDisabled) {
-    assertSubjectsRegistered(PARTITION_GROUP, isLegacyReceiverDisabled ? 0 : 1);
+  void assertLegacySubjectsRegistered(final boolean receiveOnLegacySubject) {
+    assertSubjectsRegistered(PARTITION_GROUP, receiveOnLegacySubject ? 1 : 0);
   }
 
   void assertEngineAwareSubjectsRegistered(final String engineName) {
@@ -132,8 +132,8 @@ public class RaftServerReceiverSubjectsTest {
         .replyTo(eq(subjectPrefix.formatted("transfer")), any(), any(), any());
   }
 
-  void assertLegacySubjectsUnregistered(final boolean isLegacyReceiverDisabled) {
-    assertSubjectsUnregistered(PARTITION_GROUP, isLegacyReceiverDisabled ? 0 : 1);
+  void assertLegacySubjectsUnregistered(final boolean receiveOnLegacySubject) {
+    assertSubjectsUnregistered(PARTITION_GROUP, receiveOnLegacySubject ? 1 : 0);
   }
 
   void assertEngineAwareSubjectsUnregistered(final String engineName) {
@@ -171,9 +171,9 @@ public class RaftServerReceiverSubjectsTest {
   static Stream<Arguments> provideConfigurations() {
     return Stream.of(
         Arguments.of(createDefaultConfig()),
-        Arguments.of(createRaftWithDisabledLegacyReceiverSubjects()),
+        Arguments.of(createConfigAndDisableReceiveOnLegacySubject()),
         Arguments.of(createConfigWithEngineName()),
-        Arguments.of(createConfigWithEngineNameAndDisabledLegacyReceiverSubjects()));
+        Arguments.of(createConfigWithEngineNameAndDisableReceiveOnLegacySubject()));
   }
 
   static RaftPartitionConfig createDefaultConfig() {
@@ -183,10 +183,10 @@ public class RaftServerReceiverSubjectsTest {
     return raftPartitionConfig;
   }
 
-  static RaftPartitionConfig createRaftWithDisabledLegacyReceiverSubjects() {
+  static RaftPartitionConfig createConfigAndDisableReceiveOnLegacySubject() {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
-    raftPartitionConfig.setLegacyReceiverSubjectsDisabled(true);
+    raftPartitionConfig.setReceiveOnLegacySubject(false);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;
   }
@@ -199,11 +199,11 @@ public class RaftServerReceiverSubjectsTest {
     return raftPartitionConfig;
   }
 
-  static RaftPartitionConfig createConfigWithEngineNameAndDisabledLegacyReceiverSubjects() {
+  static RaftPartitionConfig createConfigWithEngineNameAndDisableReceiveOnLegacySubject() {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
     raftPartitionConfig.setEngineName("foo");
-    raftPartitionConfig.setLegacyReceiverSubjectsDisabled(true);
+    raftPartitionConfig.setReceiveOnLegacySubject(false);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
     return raftPartitionConfig;
   }

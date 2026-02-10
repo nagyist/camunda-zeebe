@@ -81,11 +81,11 @@ public class RaftServerSenderSubjectsTest {
         meterRegistry);
   }
 
-  private RaftPartitionConfig createRaftPartitionConfig(final boolean disableLegacySender) {
+  private RaftPartitionConfig createRaftPartitionConfig(final boolean sendOnLegacySubject) {
     final var raftPartitionConfig = new RaftPartitionConfig();
     final var raftStorageConfig = new RaftStorageConfig();
 
-    raftPartitionConfig.setLegacySenderSubjectsDisabled(disableLegacySender);
+    raftPartitionConfig.setSendOnLegacySubject(sendOnLegacySubject);
     raftPartitionConfig.setStorageConfig(raftStorageConfig);
 
     return raftPartitionConfig;
@@ -94,18 +94,18 @@ public class RaftServerSenderSubjectsTest {
   @ParameterizedTest
   @MethodSource("provideScenarios")
   void shouldCallWithCorrectSubject(
-      final boolean disableLegacySender,
+      final boolean sendOnLegacySubject,
       final String subjectSuffix,
       final Consumer<RaftServerProtocol> applier,
       @TempDir final Path tempDir) {
     // given
-    final var config = createRaftPartitionConfig(disableLegacySender);
+    final var config = createRaftPartitionConfig(sendOnLegacySubject);
     final var server = createRaftPartitionServer(config, tempDir);
     final var protocol = server.getServer().getContext().getProtocol();
 
     final var prefixSubject =
         PARTITION_NAME_FORMAT.formatted(
-            !disableLegacySender ? PARTITION_GROUP : config.getEngineName(), 1);
+            sendOnLegacySubject ? PARTITION_GROUP : config.getEngineName(), 1);
     final var subject = "%s-%s".formatted(prefixSubject, subjectSuffix);
 
     // when
@@ -118,17 +118,6 @@ public class RaftServerSenderSubjectsTest {
 
   static Stream<Arguments> provideScenarios() {
     return Stream.of(
-        Arguments.of(false, "append", applyAppendRequestV1()),
-        Arguments.of(false, "append-versioned", applyAppendRequestV2()),
-        Arguments.of(false, "configure", configureRequest()),
-        Arguments.of(false, "force-configure", forceConfigureRequest()),
-        Arguments.of(false, "install", installRequest()),
-        Arguments.of(false, "join", joinRequest()),
-        Arguments.of(false, "leave", leaveRequest()),
-        Arguments.of(false, "poll", pollRequest()),
-        Arguments.of(false, "reconfigure", reconfigureRequest()),
-        Arguments.of(false, "vote", voteRequest()),
-        Arguments.of(false, "transfer", transferRequest()),
         Arguments.of(true, "append", applyAppendRequestV1()),
         Arguments.of(true, "append-versioned", applyAppendRequestV2()),
         Arguments.of(true, "configure", configureRequest()),
@@ -139,7 +128,18 @@ public class RaftServerSenderSubjectsTest {
         Arguments.of(true, "poll", pollRequest()),
         Arguments.of(true, "reconfigure", reconfigureRequest()),
         Arguments.of(true, "vote", voteRequest()),
-        Arguments.of(true, "transfer", transferRequest()));
+        Arguments.of(true, "transfer", transferRequest()),
+        Arguments.of(false, "append", applyAppendRequestV1()),
+        Arguments.of(false, "append-versioned", applyAppendRequestV2()),
+        Arguments.of(false, "configure", configureRequest()),
+        Arguments.of(false, "force-configure", forceConfigureRequest()),
+        Arguments.of(false, "install", installRequest()),
+        Arguments.of(false, "join", joinRequest()),
+        Arguments.of(false, "leave", leaveRequest()),
+        Arguments.of(false, "poll", pollRequest()),
+        Arguments.of(false, "reconfigure", reconfigureRequest()),
+        Arguments.of(false, "vote", voteRequest()),
+        Arguments.of(false, "transfer", transferRequest()));
   }
 
   static Consumer<RaftServerProtocol> applyAppendRequestV1() {

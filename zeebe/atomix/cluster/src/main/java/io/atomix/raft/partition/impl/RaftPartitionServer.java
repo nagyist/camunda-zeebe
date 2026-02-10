@@ -322,13 +322,12 @@ public class RaftPartitionServer implements HealthMonitorable {
     final var legacySubjects = createLegacySubjects();
     final var engineSubjects = createEngineSubjects();
 
-    final var sendingSubject =
-        config.isLegacySenderSubjectsDisabled() ? engineSubjects : legacySubjects;
+    final var sendingSubject = config.isSendOnLegacySubject() ? legacySubjects : engineSubjects;
 
     final var receivingSubjects =
-        config.isLegacyReceiverSubjectsDisabled()
-            ? List.of(engineSubjects)
-            : List.of(legacySubjects, engineSubjects);
+        config.isReceiveOnLegacySubject()
+            ? List.of(legacySubjects, engineSubjects)
+            : List.of(engineSubjects);
 
     return new RaftServerCommunicator(
         sendingSubject,

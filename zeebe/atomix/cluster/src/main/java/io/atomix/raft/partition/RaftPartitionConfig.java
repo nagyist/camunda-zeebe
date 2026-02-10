@@ -31,8 +31,8 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
   private static final String DEFAULT_ENGINE_NAME = "default";
-  private static final boolean DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED = false;
-  private static final boolean DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED = false;
+  private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
+  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -49,8 +49,8 @@ public class RaftPartitionConfig {
   private Duration configurationChangeTimeout;
   private int snapshotChunkSize;
   private String engineName = DEFAULT_ENGINE_NAME;
-  private boolean legacyReceiverSubjectsDisabled = DEFAULT_LEGACY_RECEIVER_SUBJECTS_DISABLED;
-  private boolean legacySenderSubjectsDisabled = DEFAULT_LEGACY_SENDER_SUBJECTS_DISABLED;
+  private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
+  private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
 
   /**
    * Returns the Raft leader election timeout.
@@ -223,20 +223,20 @@ public class RaftPartitionConfig {
     this.engineName = engineName;
   }
 
-  public boolean isLegacyReceiverSubjectsDisabled() {
-    return legacyReceiverSubjectsDisabled;
+  public boolean isReceiveOnLegacySubject() {
+    return receiveOnLegacySubject;
   }
 
-  public void setLegacyReceiverSubjectsDisabled(final boolean legacyReceiverSubjectsDisabled) {
-    this.legacyReceiverSubjectsDisabled = legacyReceiverSubjectsDisabled;
+  public void setReceiveOnLegacySubject(final boolean receiveOnLegacySubject) {
+    this.receiveOnLegacySubject = receiveOnLegacySubject;
   }
 
-  public boolean isLegacySenderSubjectsDisabled() {
-    return legacySenderSubjectsDisabled;
+  public boolean isSendOnLegacySubject() {
+    return sendOnLegacySubject;
   }
 
-  public void setLegacySenderSubjectsDisabled(final boolean legacySenderSubjectsDisabled) {
-    this.legacySenderSubjectsDisabled = legacySenderSubjectsDisabled;
+  public void setSendOnLegacySubject(final boolean sendOnLegacySubject) {
+    this.sendOnLegacySubject = sendOnLegacySubject;
   }
 
   @Override
@@ -268,10 +268,10 @@ public class RaftPartitionConfig {
         + preferSnapshotReplicationThreshold
         + ", engineName="
         + engineName
-        + ", legacyReceiverSubjectsDisabled="
-        + legacyReceiverSubjectsDisabled
-        + ", legacySenderSubjectsDisabled="
-        + legacySenderSubjectsDisabled
+        + ", receiveOnLegacySubject="
+        + receiveOnLegacySubject
+        + ", sendOnLegacySubject="
+        + sendOnLegacySubject
         + '}';
   }
 }
