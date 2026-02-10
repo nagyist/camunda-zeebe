@@ -746,8 +746,11 @@ public final class SearchQueryRequestMapper {
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
       toProcessDefinitionInstanceStatisticsQuery(
           final ProcessDefinitionInstanceStatisticsQuery request) {
+    final var filter =
+        FilterBuilders.processInstance().states(ProcessInstanceState.ACTIVE.name()).build();
     if (request == null) {
-      return Either.right(SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().build());
+      return Either.right(
+          SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().filter(filter).build());
     }
 
     final var page = toOffsetPagination(request.getPage());
@@ -757,8 +760,6 @@ public final class SearchQueryRequestMapper {
                 request.getSort()),
             SortOptionBuilders::processDefinitionInstanceStatistics,
             SearchQuerySortRequestMapper::applyProcessDefinitionInstanceStatisticsSortField);
-    final var filter =
-        FilterBuilders.processInstance().states(ProcessInstanceState.ACTIVE.name()).build();
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::processDefinitionInstanceStatisticsQuery);
   }
