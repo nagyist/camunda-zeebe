@@ -52,7 +52,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
@@ -281,7 +280,7 @@ public class BackupControllerIT {
                 b.index("1")
                     .indexUuid("uuid")
                     .nodeId("someNodeId1")
-                    .shardId(Math.abs(UUID.randomUUID().hashCode()))
+                    .shardId(1)
                     .status("FAILURE")
                     .reason("Shard 1 is not allocated"));
     final SnapshotShardFailure failure2 =
@@ -290,7 +289,7 @@ public class BackupControllerIT {
                 b.index("2")
                     .indexUuid("uuid2")
                     .nodeId("someNodeId2")
-                    .shardId(Math.abs(UUID.randomUUID().hashCode()))
+                    .shardId(2)
                     .status("FAILURE")
                     .reason("Shard 2 is not allocated"));
     final List<SnapshotShardFailure> shardFailures = asList(failure1, failure2);
