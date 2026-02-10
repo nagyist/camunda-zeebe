@@ -44,7 +44,8 @@ const Details: React.FC<Props> = ({
               {field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
             ],
             filter: {
-              tenantId: {$eq: tenantId},
+              processDefinitionId,
+              tenantId,
             },
           }
         : {
@@ -52,6 +53,9 @@ const Details: React.FC<Props> = ({
               {field: 'activeInstancesWithIncidentCount', order: 'desc'},
               {field: 'activeInstancesWithoutIncidentCount', order: 'desc'},
             ],
+            filter: {
+              processDefinitionId,
+            },
           },
   });
 
