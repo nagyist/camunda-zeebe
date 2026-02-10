@@ -21,6 +21,15 @@ import java.util.function.Consumer;
 public interface ProcessDefinitionInstanceVersionStatisticsFilter extends StatisticsRequestFilter {
 
   /**
+   * Filters by process definition ID. This filter is mandatory for this statistic and defines the
+   * process definition for which version statistics are calculated.
+   *
+   * @param value the ID of the process definition
+   * @return the updated filter
+   */
+  ProcessDefinitionInstanceVersionStatisticsFilter processDefinitionId(final String value);
+
+  /**
    * Filters process definition by tenant id.
    *
    * @param value the id of tenant

@@ -107,7 +107,7 @@ public class RestGatewayPaths {
   private static final String URL_PROCESS_DEFINITION_INSTANCE_STATISTICS =
       REST_API_PATH + "/process-definitions/statistics/process-instances";
   private static final String URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS =
-      REST_API_PATH + "/process-definitions/%s/statistics/process-instances";
+      REST_API_PATH + "/process-definitions/statistics/process-instances-by-version";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION =
       REST_API_PATH + "/incidents/statistics/process-instances-by-definition";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
@@ -407,9 +407,8 @@ public class RestGatewayPaths {
     return URL_PROCESS_DEFINITION_INSTANCE_STATISTICS;
   }
 
-  public static String getProcessDefinitionInstanceVersionStatisticsUrl(
-      final String processDefinitionId) {
-    return String.format(URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS, processDefinitionId);
+  public static String getProcessDefinitionInstanceVersionStatisticsUrl() {
+    return URL_PROCESS_DEFINITION_INSTANCE_VERSION_STATISTICS;
   }
 
   public static String getIncidentProcessInstanceStatisticsByErrorUrl() {

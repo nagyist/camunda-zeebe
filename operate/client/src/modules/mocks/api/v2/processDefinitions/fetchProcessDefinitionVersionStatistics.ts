@@ -16,9 +16,7 @@ const mockFetchProcessDefinitionVersionStatistics = (
   processDefinitionId: string,
 ) =>
   mockPostRequest<GetProcessDefinitionInstanceVersionStatisticsResponseBody>(
-    endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl({
-      processDefinitionId,
-    }),
+    endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl(),
   );
 
 export {mockFetchProcessDefinitionVersionStatistics};

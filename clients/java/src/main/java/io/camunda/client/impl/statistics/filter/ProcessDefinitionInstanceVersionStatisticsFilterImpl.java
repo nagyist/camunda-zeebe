@@ -32,6 +32,12 @@ public class ProcessDefinitionInstanceVersionStatisticsFilterImpl
   }
 
   @Override
+  public ProcessDefinitionInstanceVersionStatisticsFilter processDefinitionId(final String value) {
+    filter.setProcessDefinitionId(value);
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionInstanceVersionStatisticsFilter tenantId(final String value) {
     filter.setTenantId(value);
     return this;

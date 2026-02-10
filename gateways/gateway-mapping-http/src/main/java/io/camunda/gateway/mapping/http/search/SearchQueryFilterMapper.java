@@ -1026,16 +1026,23 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static ProcessDefinitionInstanceVersionStatisticsFilter
+  static Either<List<String>, ProcessDefinitionInstanceVersionStatisticsFilter>
       toProcessDefinitionInstanceVersionStatisticsFilter(
           final io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsFilter
               filter) {
-    final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
-    if (filter != null) {
-      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    if (filter.getProcessDefinitionId() == null || filter.getProcessDefinitionId().isBlank()) {
+      return Either.left(
+          List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.processDefinitionId")));
     }
 
-    return builder.build();
+    final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
+    builder.processDefinitionId(filter.getProcessDefinitionId());
+    Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+
+    return Either.right(builder.build());
   }
 
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(

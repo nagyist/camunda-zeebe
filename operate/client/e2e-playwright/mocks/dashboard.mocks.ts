@@ -623,7 +623,7 @@ function mockResponses({
 
     if (
       url.includes(
-        '/v2/process-definitions/orderProcess/statistics/process-instances',
+        '/v2/process-definitions/statistics/process-instances-by-version',
       ) &&
       method === 'POST'
     ) {

@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -695,11 +694,14 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             .endCursor(null)
             .build();
     when(processDefinitionServices.searchProcessDefinitionInstanceVersionStatistics(
-            anyString(), any(ProcessDefinitionInstanceVersionStatisticsQuery.class)))
+            any(ProcessDefinitionInstanceVersionStatisticsQuery.class)))
         .thenReturn(statsResult);
     final var request =
         """
             {
+              "filter": {
+                "processDefinitionId": "process_definition_id"
+              },
               "sort": [
                 {
                   "field": "activeInstancesWithoutIncidentCount",
@@ -729,7 +731,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(PROCESS_DEFINITION_URL + processDefinitionId + "/statistics/process-instances")
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances-by-version")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -743,9 +745,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     verify(processDefinitionServices)
         .searchProcessDefinitionInstanceVersionStatistics(
-            anyString(), instanceVersionStatsQueryCaptor.capture());
+            instanceVersionStatsQueryCaptor.capture());
     final var capturedQuery = instanceVersionStatsQueryCaptor.getValue();
     assertThat(capturedQuery).isNotNull();
+    assertThat(capturedQuery.filter().processDefinitionId()).isEqualTo(processDefinitionId);
     final var sort = capturedQuery.sort();
     assertThat(sort).isNotNull();
     assertThat(sort.getFieldSortings().size()).isEqualTo(1);

@@ -449,11 +449,8 @@ public class RestGatewayService {
   }
 
   public void onProcessDefinitionInstanceVersionStatisticsRequest(
-      final String processDefinitionId,
       final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
-    registerPost(
-        RestGatewayPaths.getProcessDefinitionInstanceVersionStatisticsUrl(processDefinitionId),
-        response);
+    registerPost(RestGatewayPaths.getProcessDefinitionInstanceVersionStatisticsUrl(), response);
   }
 
   public void onIncidentProcessInstanceStatisticsByErrorRequest(
