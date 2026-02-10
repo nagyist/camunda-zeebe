@@ -56,13 +56,6 @@ public final class VariableTypeFilter implements ExporterRecordFilter, RecordVer
     allowedTypes = Collections.unmodifiableSet(allowed);
   }
 
-  private static Set<VariableValueType> normalizeTypes(final Set<VariableValueType> rawTypes) {
-    if (rawTypes == null || rawTypes.isEmpty()) {
-      return Collections.emptySet();
-    }
-    return Set.copyOf(rawTypes);
-  }
-
   @Override
   public boolean accept(final Record<?> record) {
     if (!(record.getValue() instanceof final VariableRecordValue variableRecordValue)) {
