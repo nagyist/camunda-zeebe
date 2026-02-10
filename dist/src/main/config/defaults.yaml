@@ -991,14 +991,6 @@ camunda: # Type: io.camunda.configuration.Camunda
         # per exported record.
         # Defaults to {@link #DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
         chunk-size: 100 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_CHUNKSIZE
-        # Number of itemKeys in one PersistedBatchOperationChunk.
-        # The items of a batch operation are stored in a separate column family in the RocksDB database. To
-        # keep the single records/values of the RocksDb to a reasonable size, the items are split into
-        # multiple chunks. Setting this value to a higher value will result in larger chunks, which can lead
-        # to a more inefficient RocksDB cache. The default value 3500 means that each chunk record will be
-        # smaller than the default rocksdb block size of 32KB.
-        # Defaults to {@link #DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
-        db-chunk-size: 3500 # Type: Integer, Env: CAMUNDA_PROCESSING_ENGINE_BATCHOPERATIONS_DBCHUNKSIZE
         # The size of the IN clause for batch operation queries.
         # Some batch operation types need to query the secondary storage in multiple steps. E.g.
         # RESOLVE_INCIDENT first queries for processInstances and in a second step for all open incidents of
