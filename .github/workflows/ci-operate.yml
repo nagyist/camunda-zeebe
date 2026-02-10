@@ -128,7 +128,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run test -- --no-file-parallelism --maxWorkers 1 --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
@@ -172,7 +172,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - name: Download blob reports
@@ -212,7 +212,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run ts-check
@@ -247,7 +247,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run eslint
@@ -287,7 +287,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
@@ -336,7 +336,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
@@ -383,7 +383,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - name: Build frontend
