@@ -226,12 +226,7 @@ public final class CreateProcessInstanceTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("my-task", t -> t.zeebeJobType("my-job"))
-                .endEvent()
-                .done())
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
         .deploy();
 
     // when
