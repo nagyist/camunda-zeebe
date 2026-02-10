@@ -79,8 +79,9 @@ const ModificationDropdown: React.FC<Props> = observer(
     const availableModifications = useAvailableModifications({
       runningElementInstanceCount: selectedRunningInstanceCount,
       elementId: flowNodeId,
-      elementInstanceKey:
-        flowNodeSelectionStore.state.selection?.flowNodeInstanceId,
+      isSpecificElementInstanceSelected:
+        flowNodeSelectionStore.state.selection?.flowNodeInstanceId !==
+        undefined,
       isMultiInstanceBody:
         flowNodeSelectionStore.state.selection?.isMultiInstance,
       isElementInstanceKeyAvailable: !isNil(

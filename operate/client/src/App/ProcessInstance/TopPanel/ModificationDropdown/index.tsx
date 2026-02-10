@@ -77,7 +77,7 @@ const ModificationDropdown: React.FC<Props> = observer(
     const availableModifications = useAvailableModifications({
       runningElementInstanceCount: selectedElementRunningInstancesCount ?? 0,
       elementId: selectedElementId ?? undefined,
-      elementInstanceKey: selectedElementInstanceKey ?? undefined,
+      isSpecificElementInstanceSelected: selectedElementInstanceKey !== null,
       isMultiInstanceBody: isSelectedInstanceMultiInstanceBody,
       isElementInstanceKeyAvailable:
         selectedElementInstanceKey !== null ||

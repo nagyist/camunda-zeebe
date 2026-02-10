@@ -262,7 +262,7 @@ const useCanBeModified = (elementId?: string) => {
 type UseAvailableModificationsParams = {
   runningElementInstanceCount: number;
   elementId?: string;
-  elementInstanceKey?: string;
+  isSpecificElementInstanceSelected?: boolean;
   isMultiInstanceBody?: boolean;
   isElementInstanceKeyAvailable?: boolean;
 };
@@ -270,7 +270,7 @@ type UseAvailableModificationsParams = {
 const useAvailableModifications = ({
   runningElementInstanceCount,
   elementId,
-  elementInstanceKey,
+  isSpecificElementInstanceSelected,
   isMultiInstanceBody,
   isElementInstanceKeyAvailable,
 }: UseAvailableModificationsParams) => {
@@ -290,7 +290,7 @@ const useAvailableModifications = ({
   if (
     appendableFlowNodes.includes(elementId) &&
     !(isMultiInstance(businessObjects?.[elementId]) && !isMultiInstanceBody) &&
-    elementInstanceKey === undefined
+    !isSpecificElementInstanceSelected
   ) {
     options.push('add');
   }
