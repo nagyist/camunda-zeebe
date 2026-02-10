@@ -618,4 +618,48 @@ public final class CreateProcessInstanceTest {
             but an instance with this business id already exists for process definition key '%s'"""
                 .formatted(businessId, processDefinitionKey));
   }
+
+  @Test
+  public void shouldCreateProcessInstanceWithBusinessIdInUseForOtherTenant() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent()
+            .done();
+    ENGINE.deployment().withTenantId("tenant_one").withXmlResource(process).deploy();
+    ENGINE.deployment().withTenantId("tenant_two").withXmlResource(process).deploy();
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withBusinessId(businessId)
+        .withTenantId("tenant_one")
+        .create();
+
+    // when
+    final var secondProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTenantId("tenant_two")
+            .withTags("secondInstance")
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasTenantId("tenant_two")
+        .hasProcessInstanceKey(secondProcessInstanceKey);
+  }
 }
