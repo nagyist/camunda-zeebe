@@ -903,7 +903,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "timeout": 2,
-                  "tenantIds": []
+                  "tenantIds": [],
+                  "tenantFilter": "PROVIDED"
                 }
                 """
       },
@@ -928,7 +929,8 @@ final class JsonSerializableToJsonTest {
                   "jobKeys": [],
                   "jobs": [],
                   "timeout": -1,
-                  "tenantIds": []
+                  "tenantIds": [],
+                  "tenantFilter": "PROVIDED"
                 }
                 """
       },

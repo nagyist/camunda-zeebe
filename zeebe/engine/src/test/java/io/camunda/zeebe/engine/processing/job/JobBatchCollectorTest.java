@@ -84,7 +84,8 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to only accept the first job
     lengthEvaluator.canWriteEventOfLength = (length) -> toggle.getAndSet(false);
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -106,7 +107,8 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to accept no jobs
     lengthEvaluator.canWriteEventOfLength = (length) -> false;
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -168,7 +170,8 @@ final class JobBatchCollectorTest {
     record.getValue().setMaxJobsToActivate(1);
 
     // when
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, AuthorizedTenants.DEFAULT_TENANTS);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
