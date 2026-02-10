@@ -115,6 +115,6 @@ public class BackupRequest implements BufferReader, BufferWriter {
     if (checkpointType != null) {
       bodyEncoder.checkpointType(checkpointType.getValue());
     }
-    return getLength();
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 }
