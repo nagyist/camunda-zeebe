@@ -24,7 +24,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Timeout(2 * 60)
 public class RaftServerForwardCompatibilityIT {
 
-  private static final int DEFAULT_COUNT = 3;
+  private static final int PARTITION_COUNT = 3;
+  private static final int REPLICATION_FACTOR = 2;
   private static final String MEMBER_NODE_ID_0 = "0";
 
   @ParameterizedTest(name = "{0}")
@@ -37,7 +38,7 @@ public class RaftServerForwardCompatibilityIT {
 
     // then
     try (final var camundaClient = cluster.availableGateway().newClientBuilder().build()) {
-      createInstanceWithAJobOnAllPartitions(camundaClient, "foo", DEFAULT_COUNT);
+      createInstanceWithAJobOnAllPartitions(camundaClient, "foo", PARTITION_COUNT);
     }
   }
 
@@ -69,9 +70,9 @@ public class RaftServerForwardCompatibilityIT {
   static TestCluster createTestClusterWithBrokerConfiguration(
       final BiConsumer<MemberId, TestStandaloneBroker> brokerConfigurationApplier) {
     return TestCluster.builder()
-        .withBrokersCount(DEFAULT_COUNT)
-        .withPartitionsCount(DEFAULT_COUNT)
-        .withReplicationFactor(DEFAULT_COUNT)
+        .withBrokersCount(PARTITION_COUNT)
+        .withPartitionsCount(PARTITION_COUNT)
+        .withReplicationFactor(REPLICATION_FACTOR)
         .withBrokerConfig(brokerConfigurationApplier)
         .build();
   }
