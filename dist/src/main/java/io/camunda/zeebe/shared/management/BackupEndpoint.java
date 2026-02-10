@@ -220,25 +220,21 @@ public final class BackupEndpoint {
 
   private CheckpointType toCheckpointType(
       final io.camunda.zeebe.protocol.record.value.management.CheckpointType checkpointType) {
-    if (checkpointType == null) {
-      return null;
-    }
     return switch (checkpointType) {
       case SCHEDULED_BACKUP -> CheckpointType.SCHEDULED_BACKUP;
       case MANUAL_BACKUP -> CheckpointType.MANUAL_BACKUP;
       case MARKER -> CheckpointType.MARKER;
+      case null -> null;
     };
   }
 
   private BackupType toBackupType(
       final io.camunda.zeebe.protocol.record.value.management.CheckpointType checkpointType) {
-    if (checkpointType == null) {
-      return null;
-    }
     return switch (checkpointType) {
       case MANUAL_BACKUP -> BackupType.MANUAL_BACKUP;
       case SCHEDULED_BACKUP -> BackupType.SCHEDULED_BACKUP;
       case MARKER -> null;
+      case null -> null;
     };
   }
 
