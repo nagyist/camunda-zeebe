@@ -205,12 +205,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance of this variable.
         rootProcessInstanceKey:
-          allOf:
-            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-          description: |
-            The key of the root process instance. The root process instance is the top-level
-            ancestor in the process instance hierarchy. This field is only present for data
-            belonging to process instance hierarchies created in version 8.9 or later.
+          $ref: 'keys.yaml#/components/schemas/RootProcessInstanceKey'
 
     VariableValueFilterProperty:
       type: object
