@@ -61,6 +61,10 @@ final class ProcessInstanceElementActivatingV3Applier
         elementInstanceState.newInstance(
             flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      insertBusinessIdIndex(value);
+    }
+
     if (flowScopeInstance == null) {
       applyRootProcessState(elementInstance, value);
       return;
@@ -140,9 +144,6 @@ final class ProcessInstanceElementActivatingV3Applier
         elementInstance.setProcessDepth(parentProcessInstance.getProcessDepth() + 1);
         elementInstanceState.updateInstance(elementInstance);
       }
-    } else {
-      // insert business id index for root process instances
-      insertBusinessIdIndex(value);
     }
   }
 
