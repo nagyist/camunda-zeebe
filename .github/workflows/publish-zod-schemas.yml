@@ -52,7 +52,6 @@ jobs:
           node-version: 24
           registry-url: 'https://registry.npmjs.org'
           scope: '@camunda'
-          always-auth: true
 
       - name: Install dependencies
         run: npm ci
