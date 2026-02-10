@@ -79,8 +79,5 @@ public interface JobBatchRecordValue extends RecordValue {
   /**
    * @return the tenant filtering strategy used for job activation
    */
-  @Value.Default
-  default TenantFilter getTenantFilter() {
-    return TenantFilter.PROVIDED;
-  }
+  TenantFilter getTenantFilter();
 }
