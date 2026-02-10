@@ -34,7 +34,9 @@ public sealed interface Event {
       String externalFormReference,
       Integer priority,
       String formKey,
-      OffsetDateTime createdAt) {}
+      OffsetDateTime createdAt,
+      String dueDate,
+      String followUpDate) {}
 
   record UserTaskEvent(
       @JsonUnwrapped EventMetaData eventMetaData,

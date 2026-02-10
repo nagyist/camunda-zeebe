@@ -88,25 +88,6 @@ public class BatchTest {
   }
 
   @Test
-  void shouldFlushAndReturnLastPosition() {
-    batch.addRecord(mockRecord(1L), r -> "entry1");
-    batch.addRecord(mockRecord(2L), r -> "entry2");
-
-    final long lastPosition = batch.flush();
-
-    assertThat(lastPosition).isEqualTo(2L);
-    assertThat(batch.isEmpty()).isTrue();
-    assertThat(batch.getSize()).isZero();
-  }
-
-  @Test
-  void shouldThrowWhenFlushingEmptyBatch() {
-    assertThatThrownBy(() -> batch.flush())
-        .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Flushing empty batch not allowed");
-  }
-
-  @Test
   void shouldReturnCopyOfEntries() {
     batch.addRecord(mockRecord(1L), r -> "entry1");
     batch.addRecord(mockRecord(2L), r -> "entry2");

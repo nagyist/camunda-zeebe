@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.appint.exporter.config.BatchConfig;
 import io.camunda.appint.exporter.config.Config;
 import io.camunda.appint.exporter.config.ConfigValidator;
 import io.camunda.appint.exporter.event.Event;
@@ -21,6 +22,7 @@ import io.camunda.appint.exporter.transport.Authentication.ApiKey;
 import io.camunda.appint.exporter.transport.HttpTransportConfig;
 import io.camunda.appint.exporter.transport.HttpTransportImpl;
 import io.camunda.appint.exporter.transport.JsonMapper;
+import java.util.function.Consumer;
 
 public class SubscriptionFactory {
 
@@ -39,7 +41,8 @@ public class SubscriptionFactory {
     };
   }
 
-  public static Subscription<Event> createDefault(final Config config) {
+  public static Subscription<Event> createDefault(
+      final Config config, final Consumer<Long> positionConsumer) {
     ConfigValidator.validate(config);
     final var auth =
         switch (config.getApiKey()) {
@@ -55,7 +58,12 @@ public class SubscriptionFactory {
             config.getRequestTimeoutMs());
     final var transport = new HttpTransportImpl(createJsonMapper(), httpTransportConfig);
     final var mapper = new SupportedRecordsMapper();
-    final var batch = new Batch<Event>(config.getBatchSize(), config.getBatchIntervalMs());
-    return new Subscription<>(transport, mapper, batch, config.isContinueOnError());
+    final var batchConfig =
+        new BatchConfig(
+            config.getMaxBatchesInFlight(),
+            config.getBatchSize(),
+            config.getBatchIntervalMs(),
+            config.isContinueOnError());
+    return new Subscription<>(transport, mapper, batchConfig, positionConsumer);
   }
 }

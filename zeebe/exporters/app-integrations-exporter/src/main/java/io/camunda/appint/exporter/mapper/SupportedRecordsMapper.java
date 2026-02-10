@@ -46,7 +46,7 @@ public class SupportedRecordsMapper implements RecordMapper<Event> {
 
   private Event.UserTaskEvent mapUserTaskCreatedEvent(final Record<UserTaskRecordValue> record) {
     final var eventMetaData = eventMetaDataFrom(record);
-    final var processMetaData = erocessMetaDataFrom(record);
+    final var processMetaData = eventProcessMetaDataFrom(record);
     final var userTaskMetaData = userTaskMetaDataFrom(record);
     return new Event.UserTaskEvent(eventMetaData, userTaskMetaData, processMetaData);
   }
@@ -56,7 +56,7 @@ public class SupportedRecordsMapper implements RecordMapper<Event> {
         String.valueOf(record.getKey()), record.getIntent().name(), record.getValueType().name());
   }
 
-  private static Event.ProcessMetaData erocessMetaDataFrom(
+  private static Event.ProcessMetaData eventProcessMetaDataFrom(
       final Record<UserTaskRecordValue> record) {
     return new Event.ProcessMetaData(
         String.valueOf(record.getValue().getProcessDefinitionKey()),
@@ -85,6 +85,8 @@ public class SupportedRecordsMapper implements RecordMapper<Event> {
         record.getValue().getExternalFormReference(),
         record.getValue().getPriority(),
         String.valueOf(record.getValue().getFormKey()),
-        createdAt);
+        createdAt,
+        record.getValue().getDueDate(),
+        record.getValue().getFollowUpDate());
   }
 }

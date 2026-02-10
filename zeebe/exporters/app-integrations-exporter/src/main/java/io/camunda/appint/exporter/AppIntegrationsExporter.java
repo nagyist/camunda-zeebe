@@ -31,16 +31,12 @@ public class AppIntegrationsExporter implements Exporter {
   @Override
   public void configure(final Context context) {
     config = context.getConfiguration().instantiate(Config.class);
-    subscription = SubscriptionFactory.createDefault(config);
   }
 
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    if (subscription == null) {
-      throw new IllegalStateException(
-          "Subscription must be configured before opening the exporter.");
-    }
+    subscription = SubscriptionFactory.createDefault(config, this::updateExportPosition);
     scheduleDelayedFlush();
   }
 
@@ -54,7 +50,7 @@ public class AppIntegrationsExporter implements Exporter {
   @Override
   public void export(final Record<?> record) {
     try {
-      updateExportPosition(subscription.exportRecord(record));
+      subscription.exportRecord(record);
     } catch (final Exception e) {
       log.debug("Exception during export of record: {}", record.getPosition(), e);
       throw e;
@@ -64,7 +60,7 @@ public class AppIntegrationsExporter implements Exporter {
   private void attemptFlushAndReschedule() {
     try {
       log.debug("Attempting to flush exporter from background task");
-      updateExportPosition(subscription.attemptFlush());
+      subscription.attemptFlush();
     } catch (final Throwable e) {
       log.warn("Error during flush. Will retry with next attempt.", e);
     } finally {

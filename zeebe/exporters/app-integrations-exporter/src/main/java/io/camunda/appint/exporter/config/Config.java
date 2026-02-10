@@ -20,6 +20,7 @@ public class Config {
   private long requestTimeoutMs = 5000;
 
   // Batch settings
+  private int maxBatchesInFlight = 2;
   private int batchSize = 50;
   private Long batchIntervalMs = 2000L;
 
@@ -47,6 +48,15 @@ public class Config {
 
   public Config setContinueOnError(final boolean continueOnError) {
     this.continueOnError = continueOnError;
+    return this;
+  }
+
+  public int getMaxBatchesInFlight() {
+    return maxBatchesInFlight;
+  }
+
+  public Config setMaxBatchesInFlight(final int maxBatchesInFlight) {
+    this.maxBatchesInFlight = maxBatchesInFlight;
     return this;
   }
 

@@ -17,7 +17,7 @@ public class Batch<T> {
   private final int size;
   private final List<T> entries;
   private final long flushInterval;
-  private long lastTimeFlushed = System.currentTimeMillis();
+  private final long batchCreatedTime = System.currentTimeMillis();
   private long lastLogPosition = -1;
 
   public Batch(final int size, final long flushInterval) {
@@ -39,33 +39,28 @@ public class Batch<T> {
   }
 
   protected boolean isTimeThresholdReached() {
-    final var elapsedTime = System.currentTimeMillis() - lastTimeFlushed;
+    final var elapsedTime = System.currentTimeMillis() - batchCreatedTime;
     return elapsedTime >= flushInterval;
   }
 
-  public boolean addRecord(final Record<?> record, final Function<Record<?>, T> entryMapper) {
+  public boolean addEntry(final T entry, final long entryLogPosition) {
     if (isFull()) {
       throw new IllegalStateException("Batch has too many entries. Drain first.");
     } else {
-      if (lastLogPosition == -1 || record.getPosition() > lastLogPosition) {
-        lastLogPosition = record.getPosition();
-        return entries.add(entryMapper.apply(record));
+      if (lastLogPosition == -1 || entryLogPosition > lastLogPosition) {
+        lastLogPosition = entryLogPosition;
+        return entries.add(entry);
       }
     }
     return false;
   }
 
-  public List<T> getEntries() {
-    return new ArrayList<>(entries);
+  public boolean addRecord(final Record<?> record, final Function<Record<?>, T> entryMapper) {
+    return addEntry(entryMapper.apply(record), record.getPosition());
   }
 
-  public long flush() {
-    if (entries.isEmpty()) {
-      throw new IllegalStateException("Flushing empty batch not allowed.");
-    }
-    lastTimeFlushed = System.currentTimeMillis();
-    entries.clear();
-    return lastLogPosition;
+  public List<T> getEntries() {
+    return new ArrayList<>(entries);
   }
 
   public int getSize() {

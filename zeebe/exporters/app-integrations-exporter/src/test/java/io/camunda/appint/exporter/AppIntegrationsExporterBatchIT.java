@@ -8,6 +8,8 @@
 package io.camunda.appint.exporter;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.moreThanOrExactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
@@ -16,14 +18,13 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.Scenario;
-import dev.failsafe.TimeoutExceededException;
 import io.camunda.appint.exporter.config.Config;
-import io.camunda.appint.exporter.transport.TransportException;
+import io.camunda.appint.exporter.subscription.SubscriptionFactory;
+import io.camunda.appint.exporter.transport.Authentication.ApiKey;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.List;
 import java.util.Map;
@@ -70,15 +72,66 @@ final class AppIntegrationsExporterBatchIT {
   }
 
   @Test
+  void shouldExportRecord() {
+    // given
+    wireMock.stubFor(post("/").willReturn(ok()));
+    final var record = generateUserTaskRecords();
+    setupExporter(
+        config ->
+            config
+                .setBatchSize(1)
+                .setMaxRetries(2)
+                .setRetryDelayMs(100L)
+                .setRequestTimeoutMs(500L)
+                .setContinueOnError(true));
+
+    // when
+    exporter.export(record);
+    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
+    final var expectedJson =
+        SubscriptionFactory.createJsonMapper()
+            .toJson(
+                Map.of(
+                    "events",
+                    List.of(
+                        Map.of(
+                            "id",
+                            String.valueOf(record.getKey()),
+                            "type",
+                            record.getValueType().name(),
+                            "intent",
+                            record.getIntent().name(),
+                            "userTaskKey",
+                            String.valueOf(record.getValue().getUserTaskKey()),
+                            "assignee",
+                            record.getValue().getAssignee()))));
+
+    // then
+    assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+
+    wireMock.verify(
+        exactly(1),
+        postRequestedFor(urlEqualTo("/"))
+            .withHeader(ApiKey.HEADER_NAME, equalTo("test-key"))
+            .withRequestBody(equalToJson(expectedJson, true, true)));
+  }
+
+  private Record<UserTaskRecordValue> generateUserTaskRecords() {
+    return factory.generateRecord(
+        ValueType.USER_TASK, r -> r.withPosition(++logPosition).withIntent(UserTaskIntent.CREATED));
+  }
+
+  @Test
   void testSingleRecordBatching() {
     setupExporter(config -> config.setBatchSize(1));
 
     wireMock.stubFor(post(anyUrl()).willReturn(ok()));
 
-    export(generateRecords().limit(100));
+    final var records = export(generateRecords().limit(100));
 
     Awaitility.await().until(() -> exporter.getSubscription().getBatch().getSize() == 0);
 
+    assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
     wireMock.verify(exactly(100), postRequestedFor(urlEqualTo("/")));
   }
 
@@ -88,15 +141,17 @@ final class AppIntegrationsExporterBatchIT {
 
     wireMock.stubFor(post(anyUrl()).willReturn(ok()));
 
-    export(generateRecords().limit(100));
+    final var records = export(generateRecords().limit(100));
 
-    Awaitility.await().until(() -> exporter.getSubscription().getBatch().getSize() == 0);
+    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
 
+    assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
     wireMock.verify(moreThanOrExactly(10), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
   void testRetries() {
+    // given
     setupExporter(
         config ->
             config
@@ -123,22 +178,21 @@ final class AppIntegrationsExporterBatchIT {
 
     wireMock.stubFor(post(anyUrl()).inScenario("retry").whenScenarioStateIs("ok").willReturn(ok()));
 
-    export(generateRecords().limit(1));
+    // when
+    final var records = export(generateRecords().limit(1));
+    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
 
-    Awaitility.await().until(() -> exporter.getSubscription().getBatch().getSize() == 0);
-
+    // then
+    assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
     wireMock.verify(exactly(3), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
-  void testAllRetriesFail() {
+  void testAllRetriesFailWithContinueOnError() {
+    // given
     setupExporter(
         config ->
-            config
-                .setBatchSize(1)
-                .setMaxRetries(2)
-                .setRetryDelayMs(100L)
-                .setContinueOnError(false));
+            config.setBatchSize(1).setMaxRetries(2).setRetryDelayMs(100L).setContinueOnError(true));
 
     wireMock.stubFor(
         post(anyUrl())
@@ -160,15 +214,18 @@ final class AppIntegrationsExporterBatchIT {
             .whenScenarioStateIs("third attempt")
             .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
 
-    assertThatThrownBy(() -> export(generateRecords().limit(1)))
-        .isInstanceOf(TransportException.class)
-        .hasMessageContaining("Failed to post records. Status: 500");
+    // when
+    final var records = export(generateRecords().limit(1));
+    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
 
+    // then
+    assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
     wireMock.verify(exactly(3), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
   void testTimeoutFails() {
+    // given
     setupExporter(
         config ->
             config
@@ -176,7 +233,7 @@ final class AppIntegrationsExporterBatchIT {
                 .setMaxRetries(2)
                 .setRetryDelayMs(100L)
                 .setRequestTimeoutMs(500L)
-                .setContinueOnError(false));
+                .setContinueOnError(true));
 
     wireMock.stubFor(
         post(anyUrl())
@@ -186,54 +243,42 @@ final class AppIntegrationsExporterBatchIT {
                     .withFixedDelay(550)
                     .withStatus(500)));
 
-    assertThatThrownBy(() -> export(generateRecords().limit(1)))
-        .isInstanceOf(TimeoutExceededException.class);
+    // when
+    export(generateRecords().limit(1));
+    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
 
+    // then
     wireMock.verify(exactly(1), postRequestedFor(urlEqualTo("/")));
   }
 
   @Test
-  void testAllRetriesFailWithContinueOnError() {
+  void testBatchingWithMultipleInFlight() {
+    // given
     setupExporter(
         config ->
-            config.setBatchSize(1).setMaxRetries(2).setRetryDelayMs(100L).setContinueOnError(true));
+            config
+                .setMaxBatchesInFlight(4)
+                .setBatchSize(5)
+                .setMaxRetries(2)
+                .setRetryDelayMs(100L)
+                .setContinueOnError(false));
 
-    assertThat(exporter.getSubscription().getBatch().getLastLogPosition()).isEqualTo(-1L);
+    wireMock.stubFor(post(anyUrl()).willReturn(ok()));
 
-    wireMock.stubFor(
-        post(anyUrl())
-            .inScenario("retry")
-            .whenScenarioStateIs(Scenario.STARTED)
-            .willSetStateTo("second attempt")
-            .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
+    // when
+    final var records = export(generateRecords().limit(25));
 
-    wireMock.stubFor(
-        post(anyUrl())
-            .inScenario("retry")
-            .whenScenarioStateIs("second attempt")
-            .willSetStateTo("third attempt")
-            .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
+    Awaitility.await().until(() -> !exporter.getSubscription().isActive());
 
-    wireMock.stubFor(
-        post(anyUrl())
-            .inScenario("retry")
-            .whenScenarioStateIs("third attempt")
-            .willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
-
-    final var record = export(generateRecords().limit(1)).getFirst();
-
-    assertThat(exporter.getSubscription().getBatch().getSize()).isEqualTo(0);
-    assertThat(exporter.getSubscription().getBatch().getLastLogPosition())
-        .isEqualTo(record.getPosition());
-
-    wireMock.verify(exactly(3), postRequestedFor(urlEqualTo("/")));
+    // then
+    assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
+    wireMock.verify(exactly(5), postRequestedFor(urlEqualTo("/")));
   }
 
   private void setupExporter(final Consumer<Config> configurator) {
     final var config = new Config().setUrl(url).setApiKey("test-key");
     configurator.accept(config);
     testContext.setConfiguration(new ExporterTestConfiguration<>("test", config));
-
     exporter = new AppIntegrationsExporter();
     exporter.configure(testContext);
     exporter.open(controller);

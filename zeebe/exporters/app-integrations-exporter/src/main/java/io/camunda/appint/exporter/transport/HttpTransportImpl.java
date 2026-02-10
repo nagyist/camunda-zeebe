@@ -16,7 +16,6 @@ import io.camunda.appint.exporter.transport.Authentication.ApiKey;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -51,7 +50,7 @@ public class HttpTransportImpl implements Transport<Event> {
 
     retryPolicy =
         RetryPolicy.builder()
-            .handle(IOException.class, ClientProtocolException.class, RuntimeException.class)
+            .handle(TransportException.class)
             .withDelay(Duration.ofMillis(httpTransportConfig.retryDelayMs()))
             .withMaxRetries(httpTransportConfig.maxRetries())
             .build();
@@ -110,6 +109,18 @@ public class HttpTransportImpl implements Transport<Event> {
     }
   }
 
+  private void handleResponse(final CloseableHttpResponse response) {
+    final int statusCode = response.getStatusLine().getStatusCode();
+    final String responseReason = response.getStatusLine().getReasonPhrase();
+    if (statusCode >= 200 && statusCode < 300) {
+      log.debug("Successfully posted records to: {}", responseReason);
+    } else {
+      log.debug("Failed posting records. Status: {} reason: {}", statusCode, responseReason);
+      throw new TransportException(
+          "Failed to post records. Status: " + statusCode + " reason: " + responseReason);
+    }
+  }
+
   private void abortRequest(final HttpPost httpPost) {
     log.debug("Aborting HTTP request due to requestTimeoutMs or failure");
     if (!httpPost.isAborted()) {
@@ -118,23 +129,6 @@ public class HttpTransportImpl implements Transport<Event> {
       } catch (final Exception e) {
         log.debug("Failed to abort HTTP request", e);
       }
-    }
-  }
-
-  private void handleResponse(final CloseableHttpResponse response) {
-    final int statusCode = response.getStatusLine().getStatusCode();
-    if (statusCode >= 200 && statusCode < 300) {
-      log.debug("Successfully posted records to: {}", response.getStatusLine().getReasonPhrase());
-    } else {
-      log.debug(
-          "Failed posting records. Status: {} reason: {}",
-          statusCode,
-          response.getStatusLine().getReasonPhrase());
-      throw new TransportException(
-          "Failed to post records. Status: "
-              + statusCode
-              + " reason: "
-              + response.getStatusLine().getReasonPhrase());
     }
   }
 

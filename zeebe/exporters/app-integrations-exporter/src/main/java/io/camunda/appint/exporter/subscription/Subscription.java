@@ -7,10 +7,13 @@
  */
 package io.camunda.appint.exporter.subscription;
 
+import io.camunda.appint.exporter.config.BatchConfig;
+import io.camunda.appint.exporter.dispatch.DispatcherImpl;
 import io.camunda.appint.exporter.mapper.RecordMapper;
 import io.camunda.appint.exporter.transport.Transport;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,106 +22,113 @@ public class Subscription<T> {
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final Transport<T> transport;
   private final RecordMapper<T> mapper;
-  private final Batch<T> batch;
   private final ReentrantLock lock = new ReentrantLock();
-  private final boolean continueOnError;
+  private final DispatcherImpl dispatcher;
+  private final BatchConfig batchConfig;
+  private final Consumer<Long> positionConsumer;
+
+  private Batch<T> currentBatch;
 
   public Subscription(
       final Transport<T> transport,
       final RecordMapper<T> mapper,
-      final Batch<T> batch,
-      final boolean continueOnError) {
+      final BatchConfig batchConfig,
+      final Consumer<Long> positionConsumer) {
     this.transport = transport;
     this.mapper = mapper;
-    this.batch = batch;
-    this.continueOnError = continueOnError;
-    if (continueOnError) {
+    this.batchConfig = batchConfig;
+    this.positionConsumer = positionConsumer;
+    if (batchConfig.continueOnError()) {
       log.warn(
           "Subscription is configured to continue on error. This may lead to data loss if errors occur during export.");
     }
+    dispatcher = new DispatcherImpl(batchConfig.maxBatchesInFlight());
+    currentBatch = new Batch<>(batchConfig.batchSize(), batchConfig.batchIntervalMs());
   }
 
-  public Long exportRecord(final Record<?> record) {
+  public void exportRecord(final Record<?> record) {
     if (mapper.supports(record)) {
       // Record matches the filter criteria, we can add it to the batch
-      return batchRecord(record);
-    } else if (batch.isEmpty()) {
+      batchRecord(record);
+    } else if (!hasBatchesInFlight()) {
       // An empty batch allows us to save the exported record position
-      return record.getPosition();
-    } else {
-      // Batch has entries, but the record does not match the filter
-      // We do not export it, but we return null to indicate no position was pushed
-      return null;
+      positionConsumer.accept(record.getPosition());
     }
   }
 
-  private Long batchRecord(final Record<?> record) {
+  private void batchRecord(final Record<?> record) {
     lock.lock();
     try {
-      return verifyAndAddToBatch(record);
+      verifyAndAddToBatch(record);
     } finally {
       lock.unlock();
     }
   }
 
-  private Long verifyAndAddToBatch(final Record<?> record) {
-    Long lastPosition = null;
-    if (batch.isFull()) {
-      lastPosition = flush();
+  private void verifyAndAddToBatch(final Record<?> record) {
+    if (currentBatch.shouldFlush()) {
+      flush();
     }
 
-    if (batch.addRecord(record, this::mapForBatch)) {
-      if (batch.shouldFlush()) {
-        // If the record was added successfully and the batch should flush, we flush it
-        return flush();
-      }
-    } else if (batch.isEmpty()) {
-      // If the record was not added but the batch is empty, we can return the record position to
-      // mark it as exported
-      lastPosition = record.getPosition();
+    if (currentBatch.addRecord(record, this::mapForBatch) && currentBatch.shouldFlush()) {
+      flush();
     }
-
-    return lastPosition;
   }
 
   private T mapForBatch(final Record<?> record) {
     return mapper.map(record);
   }
 
-  public Long attemptFlush() {
+  public void attemptFlush() {
     if (lock.tryLock()) {
-      if (batch.shouldFlush()) {
+      if (currentBatch.shouldFlush()) {
         try {
-          return flush();
+          flush();
         } finally {
           lock.unlock();
         }
       }
     }
-    return null;
   }
 
-  private Long flush() {
-    long lastPosition;
-    try {
-      transport.send(batch.getEntries());
-      lastPosition = batch.flush();
-    } catch (final Exception e) {
-      if (continueOnError) {
-        lastPosition = batch.flush();
-        log.warn("Failed to send records. Continuing with last position: {}.", lastPosition, e);
-      } else {
-        throw e;
-      }
-    }
-    return lastPosition;
+  private void flush() {
+    final var lastPosition = currentBatch.getLastLogPosition();
+    final var entries = currentBatch.getEntries();
+
+    dispatcher.dispatch(
+        () -> {
+          try {
+            transport.send(entries);
+          } catch (final Exception e) {
+            if (batchConfig.continueOnError()) {
+              log.warn(
+                  "Error during transport of batch. Will continue with next batch. This may lead to data loss.",
+                  e);
+            } else {
+              log.debug("Error during transport of batch. Will retry with next attempt.", e);
+              throw e;
+            }
+          }
+          positionConsumer.accept(lastPosition);
+        });
+
+    currentBatch = new Batch<>(batchConfig.batchSize(), batchConfig.batchIntervalMs());
   }
 
   public Batch<T> getBatch() {
-    return batch;
+    return currentBatch;
+  }
+
+  public boolean isActive() {
+    return dispatcher.isActive();
   }
 
   public void close() {
     transport.close();
+    dispatcher.close();
+  }
+
+  public boolean hasBatchesInFlight() {
+    return !currentBatch.isEmpty() || dispatcher.isActive();
   }
 }
