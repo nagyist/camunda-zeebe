@@ -337,7 +337,7 @@ final class BackupRangeResolverTest {
         .hasCauseInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             String.format(
-                "No complete backup range found for partition %d in interval [2026-01-20T10:30:00Z, 2026-01-20T11:00:00Z], ranges=[Incomplete[checkpontInterval=[100, 300], deletedCheckpointIds=[300]]]",
+                "No complete backup range found for partition %d in interval [2026-01-20T10:30:00Z, 2026-01-20T11:00:00Z], ranges=[Incomplete[checkpointInterval=[100, 300], deletedCheckpointIds=[300]]]",
                 partitionWithDeletion));
   }
 

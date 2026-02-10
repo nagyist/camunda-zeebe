@@ -35,7 +35,7 @@ public sealed interface BackupRange {
 
     @Override
     public long lastCheckpointId() {
-      return checkpointInterval.end();
+      return checkpointInterval().end();
     }
 
     @Override
@@ -45,7 +45,7 @@ public sealed interface BackupRange {
 
     @Override
     public SequencedCollection<Long> checkpoints() {
-      return checkpointInterval.values();
+      return checkpointInterval().values();
     }
   }
 
@@ -53,7 +53,7 @@ public sealed interface BackupRange {
    * A backup range with deletions. Verification of all contained backups is required to determine
    * whether the range is effectively complete or not.
    */
-  record Incomplete(Interval<Long> checkpontInterval, Set<Long> deletedCheckpointIds)
+  record Incomplete(Interval<Long> checkpointInterval, Set<Long> deletedCheckpointIds)
       implements BackupRange {
     public Incomplete(
         final long startCheckpointId,
@@ -76,22 +76,22 @@ public sealed interface BackupRange {
 
     @Override
     public long firstCheckpointId() {
-      return checkpontInterval().start();
+      return checkpointInterval.start();
     }
 
     @Override
     public long lastCheckpointId() {
-      return checkpontInterval.end();
+      return checkpointInterval.end();
     }
 
     @Override
     public boolean contains(final Interval<Long> other) {
-      return checkpontInterval.contains(other) && !isInDeletionRange(other);
+      return checkpointInterval.contains(other) && !isInDeletionRange(other);
     }
 
     @Override
     public SequencedCollection<Long> checkpoints() {
-      return Stream.concat(checkpontInterval.values().stream(), deletedCheckpointIds.stream())
+      return Stream.concat(checkpointInterval.values().stream(), deletedCheckpointIds.stream())
           .sorted()
           .distinct()
           .toList();

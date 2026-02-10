@@ -200,7 +200,9 @@ public class RestoreManager implements CloseableSilently {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
     return IntStream.rangeClosed(1, partitionCount)
         .boxed()
-        .collect(Collectors.toMap(partition -> partition, partition -> backupIds));
+        .collect(
+            Collectors.toMap(
+                partition -> partition, partition -> Arrays.copyOf(backupIds, backupIds.length)));
   }
 
   /**
@@ -416,7 +418,8 @@ public class RestoreManager implements CloseableSilently {
                       }
 
                       return Map.entry(partition, positionModel.lastExportedPosition());
-                    }))
+                    },
+                    executor))
         .thenApply(
             s -> s.stream().collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue)));
   }
@@ -431,6 +434,7 @@ public class RestoreManager implements CloseableSilently {
     } catch (final InterruptedException ignored) {
       // Not much we can do here, just report in case it's a bug in the shutdown process.
       LOG.warn("Interrupted while waiting for executor to shutdown", ignored);
+      Thread.currentThread().interrupt();
     }
   }
 

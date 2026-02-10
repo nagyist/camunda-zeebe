@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * The {@code BackupRangeResolver} class provides methods to resolve backup ranges and backup
@@ -54,6 +55,21 @@ public final class BackupRangeResolver {
       final int partitionCount,
       final Map<Integer, Long> exportedPositions,
       final Executor executor) {
+    // Verify that exportedPositions is available for all partitions
+    final var errors =
+        IntStream.rangeClosed(1, partitionCount)
+            .boxed()
+            .flatMap(
+                p ->
+                    !exportedPositions.containsKey(p)
+                        ? Stream.of(
+                            "Expected to find exported position for partition %d, but found none"
+                                .formatted(p))
+                        : Stream.empty())
+            .toList();
+    if (!errors.isEmpty()) {
+      throw new IllegalStateException(String.format("Errors: %s", errors));
+    }
     // Get backup ranges from the store for each partition
     return FuturesUtil.parTraverse(
             IntStream.rangeClosed(1, partitionCount).boxed().toList(),
@@ -279,12 +295,13 @@ public final class BackupRangeResolver {
                 "Partition %d: backup range [%d, %d] has deletions: %s"
                     .formatted(
                         partition,
-                        incomplete.checkpontInterval().start(),
-                        incomplete.checkpontInterval().end(),
+                        incomplete.checkpointInterval().start(),
+                        incomplete.checkpointInterval().end(),
                         incomplete.deletedCheckpointIds()));
         case final BackupRange.Complete complete -> {
           validateRangeCoverage(globalCheckpointId, complete);
-          validateLogPositionContiguity(globalCheckpointId);
+          validateGlobalCheckpointConsistency(globalCheckpointId);
+          validateBackupChainOverlaps(partition, backupStatuses);
         }
       }
     }
@@ -328,6 +345,7 @@ public final class BackupRangeResolver {
                   info ->
                       info.backupStatuses().stream()
                           .mapToLong(bs -> bs.id().checkpointId())
+                          .distinct()
                           .toArray()));
     }
 
@@ -348,21 +366,14 @@ public final class BackupRangeResolver {
         throw new IllegalStateException("Partition %d: no backups found".formatted(partition));
       }
 
-      if (backupStatuses.getLast().id().checkpointId() != globalCheckpointId) {
-        throw new IllegalStateException(
-            "Partition %d: last backup checkpoint %d is not equal to global checkpoint %d."
-                .formatted(
-                    partition, backupStatuses.getLast().id().checkpointId(), globalCheckpointId));
-      }
       if (backupStatuses.getFirst().id().checkpointId() > safeStart) {
         throw new IllegalStateException(
-            "Partition %d: first backup checkpoint %d is before safe start %d."
+            "Partition %d: first backup checkpoint %d is after safe start %d."
                 .formatted(partition, backupStatuses.getFirst().id().checkpointId(), safeStart));
       }
     }
 
-    private void validateLogPositionContiguity(final long globalCheckpointId) {
-
+    private void validateGlobalCheckpointConsistency(final long globalCheckpointId) {
       if (backupStatuses.isEmpty()) {
         throw new IllegalStateException(
             "Partition %d has no backups in range [%d, %d]"
@@ -374,17 +385,16 @@ public final class BackupRangeResolver {
 
       if (firstCheckpointId > safeStart) {
         throw new IllegalStateException(
-            "Partition %ds first backup at checkpoint %d is after safe start %d"
+            "Partition %d: first backup at checkpoint %d is after safe start %d"
                 .formatted(partition, firstCheckpointId, safeStart));
       }
 
-      if (lastCheckpointId < globalCheckpointId) {
+      if (backupStatuses.getLast().id().checkpointId() != globalCheckpointId) {
         throw new IllegalStateException(
-            "Partition %d: last backup at checkpoint %d is before global checkpoint %d"
-                .formatted(partition, lastCheckpointId, globalCheckpointId));
+            "Partition %d: last backup checkpoint %d is not equal to global checkpoint %d."
+                .formatted(
+                    partition, backupStatuses.getLast().id().checkpointId(), globalCheckpointId));
       }
-
-      validateBackupChainOverlaps(partition, backupStatuses);
     }
 
     private void validateBackupChainOverlaps(

@@ -204,13 +204,13 @@ public record Interval<T extends Comparable<T>>(
    * next, using the provided factory to determine the interval type (e.g., closed, half-open).
    *
    * <p>Example with {@code Interval::closedOpen}: points [1, 3, 5, 7] produces intervals [1,3),
-   * [3,5), [5,7)
+   * [3,5), [5,7), [7,7]
    *
    * @param points the ordered sequence of points (must be in ascending order)
    * @param intervalFactory factory function to create intervals, e.g., {@code Interval::closed} or
    *     {@code Interval::closedOpen}
    * @return list of intervals spanning consecutive points, or empty list if fewer than 2 points
-   * @param <T> the type of the points, must be comparable
+   * @param <T> the type of the points must be comparable
    */
   public static <T extends Comparable<T>> List<Interval<T>> fromPoints(
       final List<T> points, final Interval.Factory<T> intervalFactory) {

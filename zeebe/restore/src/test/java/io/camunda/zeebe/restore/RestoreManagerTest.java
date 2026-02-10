@@ -151,7 +151,7 @@ final class RestoreManagerTest {
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
-      // when - trying to restore backups from baseTime to baseTime + 5 minutes
+      // when - trying to restore backups from 'from' to 'from' + 5 minutes
       // then - should fail because partition 2 doesn't have a continuous range
       final var to = from.plusSeconds(5 * 60);
       assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
