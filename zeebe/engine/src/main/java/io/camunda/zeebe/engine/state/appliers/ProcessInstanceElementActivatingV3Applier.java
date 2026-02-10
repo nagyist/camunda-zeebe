@@ -326,7 +326,7 @@ final class ProcessInstanceElementActivatingV3Applier
    */
   private void insertBusinessIdIndex(final ProcessInstanceRecord value) {
     final var businessId = value.getBusinessId();
-    if (businessId != null && !businessId.isEmpty()) {
+    if (!businessId.isEmpty()) {
       elementInstanceState.insertProcessInstanceKeyByBusinessId(
           businessId,
           value.getProcessDefinitionKey(),
