@@ -214,7 +214,7 @@ const VariableEditor: React.FC<Props> = ({
                           )}
                           addExtraDelay={Boolean(
                             !dirtyFields?.[nameFieldName] &&
-                              dirtyFields?.[valueFieldName],
+                            dirtyFields?.[valueFieldName],
                           )}
                         >
                           {({input, meta}) => (
@@ -243,7 +243,7 @@ const VariableEditor: React.FC<Props> = ({
                           validate={validateValueComplete}
                           addExtraDelay={Boolean(
                             dirtyFields?.[nameFieldName] &&
-                              !dirtyFields?.[valueFieldName],
+                            !dirtyFields?.[valueFieldName],
                           )}
                         >
                           {({input, meta}) => (
