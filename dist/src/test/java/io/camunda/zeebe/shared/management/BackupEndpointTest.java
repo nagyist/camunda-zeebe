@@ -955,5 +955,52 @@ final class BackupEndpointTest {
                                       Instant.ofEpochMilli(30L), ZoneId.of("UTC")))
                               .checkpointType(BackupType.MANUAL_BACKUP))));
     }
+
+    @Test
+    void shouldHandleNullType() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      final var endpoint = new BackupEndpoint(api, config);
+
+      final var stateResponse = new CheckpointStateResponse();
+      stateResponse.setCheckpointStates(
+          Set.of(new CheckpointStateResponse.PartitionCheckpointState(1, 1L, null, 20L, 10L)));
+      stateResponse.setBackupStates(
+          Set.of(new CheckpointStateResponse.PartitionCheckpointState(1, 1L, null, 20L, 10L)));
+
+      when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
+      when(api.getBackupRanges())
+          .thenReturn(CompletableFuture.completedFuture(new BackupRangesResponse()));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.query(new String[] {BackupApi.STATE});
+
+      // then
+      assertThat(response.getBody())
+          .isInstanceOf(CheckpointState.class)
+          .isEqualTo(
+              new CheckpointState()
+                  .checkpointStates(
+                      List.of(
+                          new PartitionCheckpointState()
+                              .partitionId(1)
+                              .checkpointId(1L)
+                              .checkpointPosition(10L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
+                              .checkpointType(null)))
+                  .backupStates(
+                      List.of(
+                          new PartitionBackupState()
+                              .partitionId(1)
+                              .checkpointId(1L)
+                              .checkpointPosition(10L)
+                              .checkpointTimestamp(
+                                  OffsetDateTime.ofInstant(
+                                      Instant.ofEpochMilli(20L), ZoneId.of("UTC")))
+                              .checkpointType(null))));
+    }
   }
 }
