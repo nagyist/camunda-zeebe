@@ -17,7 +17,6 @@ import static org.springframework.http.HttpStatus.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.Writer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,14 +26,8 @@ import org.springframework.mock.web.MockHttpServletResponse;
 @ExtendWith(MockitoExtension.class)
 public class WebappRedirectStrategyTest {
 
-  private ObjectMapper objectMapper;
-  private WebappRedirectStrategy redirectStrategy;
-
-  @BeforeEach
-  void setUp() {
-    objectMapper = new ObjectMapper();
-    redirectStrategy = new WebappRedirectStrategy(objectMapper);
-  }
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private final WebappRedirectStrategy redirectStrategy = new WebappRedirectStrategy(OBJECT_MAPPER);
 
   @Test
   void shouldSetNoContentWhenUrlIsNull() throws IOException {
@@ -67,7 +60,7 @@ public class WebappRedirectStrategyTest {
     assertThat(response.getStatus()).isEqualTo(OK.value());
     assertThat(response.getHeader("Content-Type")).isEqualTo("application/json");
 
-    assertThat(objectMapper.readTree(response.getContentAsString()).get("url").asText())
+    assertThat(OBJECT_MAPPER.readTree(response.getContentAsString()).get("url").asText())
         .isEqualTo(url);
   }
 

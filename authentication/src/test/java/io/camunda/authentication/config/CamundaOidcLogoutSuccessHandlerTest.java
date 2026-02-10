@@ -37,7 +37,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 @ExtendWith(MockitoExtension.class)
 public class CamundaOidcLogoutSuccessHandlerTest {
 
-  public static final String ALLOWED_REFERER = "https://camunda.com/component/ui/page";
+  private static final String ALLOWED_REFERER = "https://camunda.com/component/ui/page";
   @Mock ClientRegistrationRepository clientRegistrationRepository;
   private CamundaOidcLogoutSuccessHandler handler;
 

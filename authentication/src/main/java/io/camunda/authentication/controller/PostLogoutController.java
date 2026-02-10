@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.controller;
 
+import static io.camunda.authentication.utils.RequestValidationUtils.isAllowedRedirect;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
@@ -30,16 +32,19 @@ public class PostLogoutController {
 
     if (session != null) {
       final Object postLogoutRedirect = session.getAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE);
+      // clean up
+      session.removeAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE);
+
       if (postLogoutRedirect instanceof String) {
         redirect = (String) postLogoutRedirect;
       }
-      // clean up
-      session.removeAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE);
     }
 
-    if (redirect == null || redirect.isBlank()) {
+    if (!isAllowedRedirect(request, redirect)) {
       LOG.trace(
-          "No post-logout redirect URL found in session, falling back to default: {}",
+          """
+          No valid post-logout redirect URL found in session, falling back to default: '{}'
+          """,
           DEFAULT_REDIRECT_PATH);
       redirect = DEFAULT_REDIRECT_PATH;
     }

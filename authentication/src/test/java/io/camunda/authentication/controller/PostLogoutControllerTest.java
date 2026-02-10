@@ -7,87 +7,75 @@
  */
 package io.camunda.authentication.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-@ExtendWith(MockitoExtension.class)
 public class PostLogoutControllerTest {
 
   private static final String POST_LOGOUT_REDIRECT_ATTRIBUTE = "postLogoutRedirect";
+  private static final String POST_LOGOUT_URL = "https://camunda.test:443/post-logout";
 
   private final PostLogoutController controller = new PostLogoutController();
 
-  @Mock private HttpServletRequest request;
-  @Mock private HttpSession session;
+  private MockMvc mockMvc;
 
-  @Test
-  void shouldRedirectToDefaultWhenSessionIsNotPresent() {
-    // given
-    when(request.getSession(false)).thenReturn(null);
-
-    // when
-    final String postLogoutRedirectUrl = controller.postLogout(request);
-
-    // then
-    assertThat(postLogoutRedirectUrl).isEqualTo("redirect:/");
+  @BeforeEach
+  void setUp() {
+    mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
   }
 
   @Test
-  void shouldFallbackToDefaultWhenNonStringAttribute() {
-    // given a session with a non-string postLogoutRedirect attribute
-    when(request.getSession(false)).thenReturn(session);
-    when(session.getAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE)).thenReturn(111);
-
-    // when
-    final String postLogoutRedirectUrl = controller.postLogout(request);
-
-    // then
-    assertThat(postLogoutRedirectUrl).isEqualTo("redirect:/");
+  void shouldRedirectToDefaultWhenSessionIsNotPresent() throws Exception {
+    // when/then
+    mockMvc
+        .perform(get(POST_LOGOUT_URL))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/"));
   }
 
   @Test
-  void shouldFallbackToDefaultWhenBlankStringAttribute() {
-    // given a session with a blank postLogoutRedirect attribute
-    when(request.getSession(false)).thenReturn(session);
-    when(session.getAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE)).thenReturn("   ");
-
-    // when
-    final String postLogoutRedirectUrl = controller.postLogout(request);
-
-    // then
-    assertThat(postLogoutRedirectUrl).isEqualTo("redirect:/");
+  void shouldFallbackToDefaultWhenNonStringAttribute() throws Exception {
+    // when/then
+    mockMvc
+        .perform(get(POST_LOGOUT_URL).sessionAttr(POST_LOGOUT_REDIRECT_ATTRIBUTE, 111))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/"));
   }
 
   @Test
-  void shouldFallbackToDefaultWhenAttributeMissing() {
-    // given
-    when(request.getSession(false)).thenReturn(session);
-    when(session.getAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE)).thenReturn(null);
-
-    // when
-    final String postLogoutRedirectUrl = controller.postLogout(request);
-
-    // then
-    assertThat(postLogoutRedirectUrl).isEqualTo("redirect:/");
+  void shouldFallbackToDefaultWhenBlankStringAttribute() throws Exception {
+    // when/then
+    mockMvc
+        .perform(get(POST_LOGOUT_URL).sessionAttr(POST_LOGOUT_REDIRECT_ATTRIBUTE, "   "))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/"));
   }
 
   @Test
-  void shouldRedirectToPostLogoutRedirectWhenPresent() {
-    // given a session with a valid postLogoutRedirect attribute
-    when(request.getSession(false)).thenReturn(session);
-    when(session.getAttribute(POST_LOGOUT_REDIRECT_ATTRIBUTE)).thenReturn("/after-logout");
+  void shouldFallbackToDefaultWhenWrongHostname() throws Exception {
+    // when/then
+    mockMvc
+        .perform(
+            get(POST_LOGOUT_URL)
+                .sessionAttr(POST_LOGOUT_REDIRECT_ATTRIBUTE, "https://dangerous.site/some-page"))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("/"));
+  }
 
-    // when
-    final String postLogoutRedirectUrl = controller.postLogout(request);
-
-    // then
-    assertThat(postLogoutRedirectUrl).isEqualTo("redirect:/after-logout");
+  @Test
+  void shouldRedirectToPostLogoutRedirectWhenPresent() throws Exception {
+    // when/then
+    mockMvc
+        .perform(
+            get(POST_LOGOUT_URL)
+                .sessionAttr(POST_LOGOUT_REDIRECT_ATTRIBUTE, "https://camunda.test/after-logout"))
+        .andExpect(status().is3xxRedirection())
+        .andExpect(redirectedUrl("https://camunda.test/after-logout"));
   }
 }
