@@ -26,11 +26,13 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -63,43 +65,35 @@ public class RaftServerReceiverSubjectsTest {
         meterRegistry);
   }
 
-  private RaftPartitionConfig createRaftPartitionConfig(final boolean disableLegacyReceiver) {
-    final var raftPartitionConfig = new RaftPartitionConfig();
-    final var raftStorageConfig = new RaftStorageConfig();
-
-    raftPartitionConfig.setLegacyReceiverSubjectsDisabled(disableLegacyReceiver);
-    raftPartitionConfig.setStorageConfig(raftStorageConfig);
-
-    return raftPartitionConfig;
-  }
-
   @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void shouldRegisterSubjects(final boolean disableLegacyReceiver, @TempDir final Path tempDir) {
+  @MethodSource("provideConfigurations")
+  void shouldRegisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
     // given
-    final var config = createRaftPartitionConfig(disableLegacyReceiver);
+    final var legacyReceiverSubjectsDisabled = config.isLegacyReceiverSubjectsDisabled();
+    final var engineName = config.getEngineName();
 
     // when
     createRaftPartitionServer(config, tempDir);
 
     // then
-    assertLegacySubjectsRegistered(disableLegacyReceiver);
-    assertEngineAwareSubjectsRegistered(config.getEngineName());
+    assertLegacySubjectsRegistered(legacyReceiverSubjectsDisabled);
+    assertEngineAwareSubjectsRegistered(engineName);
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = {false, true})
-  void shouldUnregisterSubjects(final boolean disableLegacyReceiver, @TempDir final Path tempDir) {
+  @MethodSource("provideConfigurations")
+  void shouldUnregisterSubjects(final RaftPartitionConfig config, @TempDir final Path tempDir) {
     // given
-    final var config = createRaftPartitionConfig(disableLegacyReceiver);
     final var server = createRaftPartitionServer(config, tempDir);
+    final var legacyReceiverSubjectsDisabled = config.isLegacyReceiverSubjectsDisabled();
+    final var engineName = config.getEngineName();
 
     // when
     server.stop().join();
 
     // then
-    assertLegacySubjectsUnregistered(disableLegacyReceiver);
-    assertEngineAwareSubjectsUnregistered(config.getEngineName());
+    assertLegacySubjectsUnregistered(legacyReceiverSubjectsDisabled);
+    assertEngineAwareSubjectsUnregistered(engineName);
   }
 
   void assertLegacySubjectsRegistered(final boolean isLegacyReceiverDisabled) {
@@ -172,5 +166,45 @@ public class RaftServerReceiverSubjectsTest {
         .unsubscribe(eq(partitionName.formatted("vote")));
     verify(clusterCommunicationService, expectedNumberOfInvocations)
         .unsubscribe(eq(partitionName.formatted("transfer")));
+  }
+
+  static Stream<Arguments> provideConfigurations() {
+    return Stream.of(
+        Arguments.of(createDefaultConfig()),
+        Arguments.of(createRaftWithDisabledLegacyReceiverSubjects()),
+        Arguments.of(createConfigWithEngineName()),
+        Arguments.of(createConfigWithEngineNameAndDisabledLegacyReceiverSubjects()));
+  }
+
+  static RaftPartitionConfig createDefaultConfig() {
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    final var raftStorageConfig = new RaftStorageConfig();
+    raftPartitionConfig.setStorageConfig(raftStorageConfig);
+    return raftPartitionConfig;
+  }
+
+  static RaftPartitionConfig createRaftWithDisabledLegacyReceiverSubjects() {
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    final var raftStorageConfig = new RaftStorageConfig();
+    raftPartitionConfig.setLegacyReceiverSubjectsDisabled(true);
+    raftPartitionConfig.setStorageConfig(raftStorageConfig);
+    return raftPartitionConfig;
+  }
+
+  static RaftPartitionConfig createConfigWithEngineName() {
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    final var raftStorageConfig = new RaftStorageConfig();
+    raftPartitionConfig.setEngineName("foo");
+    raftPartitionConfig.setStorageConfig(raftStorageConfig);
+    return raftPartitionConfig;
+  }
+
+  static RaftPartitionConfig createConfigWithEngineNameAndDisabledLegacyReceiverSubjects() {
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    final var raftStorageConfig = new RaftStorageConfig();
+    raftPartitionConfig.setEngineName("foo");
+    raftPartitionConfig.setLegacyReceiverSubjectsDisabled(true);
+    raftPartitionConfig.setStorageConfig(raftStorageConfig);
+    return raftPartitionConfig;
   }
 }
