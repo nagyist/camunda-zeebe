@@ -273,17 +273,18 @@ public final class CreateProcessInstanceTest {
 
   @Test
   public void shouldCreateProcessInstanceWithBusinessId() {
+    final var processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
     // given
     ENGINE
         .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
         .deploy();
-
-    final String businessId = "biz-123";
 
     // when
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withBusinessId(businessId).create();
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
 
     // then
     final Record<ProcessInstanceRecordValue> processActivated =
