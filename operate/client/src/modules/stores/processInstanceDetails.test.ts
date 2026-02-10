@@ -182,7 +182,7 @@ describe('stores/currentInstance', () => {
       {
         batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
         errorMessage: 'string',
-        id: 'id_27',
+        id: 'id_17',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
         completedDate: null,
@@ -201,7 +201,7 @@ describe('stores/currentInstance', () => {
       {
         batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
         errorMessage: 'string',
-        id: 'id_27',
+        id: 'id_17',
         state: 'SENT',
         type: 'RESOLVE_INCIDENT',
         completedDate: null,
