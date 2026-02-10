@@ -30,6 +30,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
+            .elementInstanceKey(5L)
             .build();
 
     // then
@@ -45,6 +46,7 @@ public class VariableDbModelTest {
     assertThat(model.processInstanceKey()).isEqualTo(3L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
   }
 
   @Test
@@ -63,6 +65,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
+            .elementInstanceKey(5L)
             .build();
 
     // then
@@ -78,6 +81,7 @@ public class VariableDbModelTest {
     assertThat(model.processInstanceKey()).isEqualTo(3L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
   }
 
   @Test
@@ -96,6 +100,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
+            .elementInstanceKey(5L)
             .build();
 
     // then
@@ -111,6 +116,7 @@ public class VariableDbModelTest {
     assertThat(model.processInstanceKey()).isEqualTo(3L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
   }
 
   @Test
@@ -129,6 +135,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
+            .elementInstanceKey(5L)
             .build();
 
     // then
@@ -144,6 +151,7 @@ public class VariableDbModelTest {
     assertThat(model.processInstanceKey()).isEqualTo(3L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
   }
 
   @Test
@@ -162,6 +170,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
+            .elementInstanceKey(5L)
             .build();
 
     // then
@@ -177,6 +186,7 @@ public class VariableDbModelTest {
     assertThat(model.processInstanceKey()).isEqualTo(3L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
   }
 
   @Test
@@ -197,6 +207,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
+            .elementInstanceKey(5L)
             .build()
             .truncateValue(variableSizeThreshold, null);
 
@@ -213,6 +224,7 @@ public class VariableDbModelTest {
     assertThat(model.processInstanceKey()).isEqualTo(3L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
   }
 
   @Test
@@ -234,6 +246,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .rootProcessInstanceKey(4L)
             .tenantId("tenant1")
+            .elementInstanceKey(5L)
             .build()
             .truncateValue(variableSizeThreshold, maxBytesThreshold);
 
@@ -250,5 +263,6 @@ public class VariableDbModelTest {
     assertThat(model.processInstanceKey()).isEqualTo(3L);
     assertThat(model.rootProcessInstanceKey()).isEqualTo(4L);
     assertThat(model.tenantId()).isEqualTo("tenant1");
+    assertThat(model.elementInstanceKey()).isEqualTo(5L);
   }
 }

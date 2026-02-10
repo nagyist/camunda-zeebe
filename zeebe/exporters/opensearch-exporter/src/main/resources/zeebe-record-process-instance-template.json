@@ -71,7 +71,7 @@
               "type": "keyword"
             },
             "elementInstanceKey": {
-              "type": "long"
+              "enabled": "false"
             }
           }
         }
