@@ -363,10 +363,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       final long processDefinitionKey,
       final String tenantId,
       final long processInstanceKey) {
-    if (businessId == null || businessId.isEmpty()) {
-      return;
-    }
-
     this.businessId.wrapString(businessId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.tenantId.wrapString(tenantId);
