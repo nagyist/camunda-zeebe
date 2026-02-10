@@ -127,20 +127,29 @@ public abstract class PositionBasedImportMediator<
       importService.executeImport(
           entitiesNextPage,
           () -> {
-            final OffsetDateTime endTime = LocalDateUtil.getCurrentDateTime();
-            final long took =
-                endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli();
-            final Timer indexingDurationTimer = getIndexingDurationTimer();
-            indexingDurationTimer.record(took, MILLISECONDS);
+            try {
+              final OffsetDateTime endTime = LocalDateUtil.getCurrentDateTime();
+              final long took =
+                  endTime.toInstant().toEpochMilli() - startTime.toInstant().toEpochMilli();
+              final Timer indexingDurationTimer = getIndexingDurationTimer();
+              indexingDurationTimer.record(took, MILLISECONDS);
 
-            importIndexHandler.updateLastPersistedEntityPositionAndSequence(
-                currentPageLastEntityPosition, currentPageLastEntitySequence);
-            importIndexHandler.updateTimestampOfLastPersistedEntity(
-                OffsetDateTime.ofInstant(
-                    Instant.ofEpochMilli(lastImportedEntity.getTimestamp()),
-                    ZoneId.systemDefault()));
-            OptimizeMetrics.recordOverallEntitiesImportTime(entitiesNextPage);
-            importCompleteCallback.run();
+              importIndexHandler.updateLastPersistedEntityPositionAndSequence(
+                  currentPageLastEntityPosition, currentPageLastEntitySequence);
+              importIndexHandler.updateTimestampOfLastPersistedEntity(
+                  OffsetDateTime.ofInstant(
+                      Instant.ofEpochMilli(lastImportedEntity.getTimestamp()),
+                      ZoneId.systemDefault()));
+              OptimizeMetrics.recordOverallEntitiesImportTime(entitiesNextPage);
+            } catch (final Exception e) {
+              logger.error(
+                  "Error during post-import callback for record type {} from partition {}",
+                  getRecordType(),
+                  getPartitionId(),
+                  e);
+            } finally {
+              importCompleteCallback.run();
+            }
           });
       importIndexHandler.updatePendingLastEntityPositionAndSequence(
           currentPageLastEntityPosition, currentPageLastEntitySequence);
