@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
@@ -53,6 +55,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleMa
 import io.camunda.zeebe.protocol.record.value.ImmutableClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
@@ -526,6 +529,28 @@ public class RecordFixtures {
                 .withProcessInstanceKey(processInstanceKey)
                 .withRootProcessInstanceKey(rootProcessInstanceKey)
                 .withElementInstancePath(List.of(List.of(processInstanceKey, elementInstanceKey)))
+                .build())
+        .build();
+  }
+
+  public ImmutableRecord<RecordValue> getHistoryDeletionRecord(
+      final HistoryDeletionIntent intent,
+      final long resourceKey,
+      final HistoryDeletionType deletionType) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.HISTORY_DELETION);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withKey(resourceKey)
+        .withIntent(intent)
+        .withPosition(nextPosition())
+        .withPartitionId(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableHistoryDeletionRecordValue.builder()
+                .from((ImmutableHistoryDeletionRecordValue) recordValueRecord.getValue())
+                .withResourceKey(resourceKey)
+                .withResourceType(deletionType)
                 .build())
         .build();
   }

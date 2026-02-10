@@ -34,11 +34,7 @@
                       {
                         "name": "health",
                         "type": "string",
-                        "enumValues": [
-                          "healthy",
-                          "unhealthy",
-                          "dead"
-                        ]
+                        "enumValues": ["healthy", "unhealthy", "dead"]
                       },
                       {
                         "name": "partitionId",
@@ -47,11 +43,7 @@
                       {
                         "name": "role",
                         "type": "string",
-                        "enumValues": [
-                          "leader",
-                          "follower",
-                          "inactive"
-                        ]
+                        "enumValues": ["leader", "follower", "inactive"]
                       }
                     ],
                     "optional": []
@@ -1675,11 +1667,7 @@
           {
             "name": "state",
             "type": "string",
-            "enumValues": [
-              "ACTIVE",
-              "COMPLETED",
-              "TERMINATED"
-            ],
+            "enumValues": ["ACTIVE", "COMPLETED", "TERMINATED"],
             "underlyingPrimitive": "string",
             "rawRefName": "ProcessInstanceStateEnum",
             "wrapper": true
@@ -1847,11 +1835,7 @@
                 {
                   "name": "state",
                   "type": "string",
-                  "enumValues": [
-                    "ACTIVE",
-                    "COMPLETED",
-                    "TERMINATED"
-                  ],
+                  "enumValues": ["ACTIVE", "COMPLETED", "TERMINATED"],
                   "underlyingPrimitive": "string",
                   "rawRefName": "ProcessInstanceStateEnum",
                   "wrapper": true
@@ -2020,12 +2004,7 @@
                 {
                   "name": "state",
                   "type": "string",
-                  "enumValues": [
-                    "ACTIVE",
-                    "MIGRATED",
-                    "RESOLVED",
-                    "PENDING"
-                  ]
+                  "enumValues": ["ACTIVE", "MIGRATED", "RESOLVED", "PENDING"]
                 },
                 {
                   "name": "tenantId",
@@ -2870,12 +2849,7 @@
           {
             "name": "state",
             "type": "string",
-            "enumValues": [
-              "EVALUATED",
-              "FAILED",
-              "UNSPECIFIED",
-              "UNKNOWN"
-            ],
+            "enumValues": ["EVALUATED", "FAILED", "UNSPECIFIED", "UNKNOWN"],
             "underlyingPrimitive": "string",
             "rawRefName": "DecisionInstanceStateEnum",
             "wrapper": true
@@ -4259,9 +4233,7 @@
           {
             "name": "camunda.document.type",
             "type": "string",
-            "enumValues": [
-              "camunda"
-            ]
+            "enumValues": ["camunda"]
           },
           {
             "name": "contentHash",
@@ -4332,9 +4304,7 @@
                 {
                   "name": "camunda.document.type",
                   "type": "string",
-                  "enumValues": [
-                    "camunda"
-                  ]
+                  "enumValues": ["camunda"]
                 },
                 {
                   "name": "contentHash",
@@ -4425,9 +4395,7 @@
                 {
                   "name": "camunda.document.type",
                   "type": "string",
-                  "enumValues": [
-                    "camunda"
-                  ]
+                  "enumValues": ["camunda"]
                 },
                 {
                   "name": "contentHash",
@@ -4781,12 +4749,7 @@
                 {
                   "name": "state",
                   "type": "string",
-                  "enumValues": [
-                    "ACTIVE",
-                    "MIGRATED",
-                    "RESOLVED",
-                    "PENDING"
-                  ]
+                  "enumValues": ["ACTIVE", "MIGRATED", "RESOLVED", "PENDING"]
                 },
                 {
                   "name": "tenantId",
@@ -4866,12 +4829,7 @@
           {
             "name": "state",
             "type": "string",
-            "enumValues": [
-              "ACTIVE",
-              "MIGRATED",
-              "RESOLVED",
-              "PENDING"
-            ]
+            "enumValues": ["ACTIVE", "MIGRATED", "RESOLVED", "PENDING"]
           },
           {
             "name": "tenantId",
@@ -5216,10 +5174,7 @@
                 {
                   "name": "type",
                   "type": "string",
-                  "enumValues": [
-                    "QUERY_FAILED",
-                    "RESULT_BUFFER_SIZE_EXCEEDED"
-                  ]
+                  "enumValues": ["QUERY_FAILED", "RESULT_BUFFER_SIZE_EXCEEDED"]
                 }
               ]
             }

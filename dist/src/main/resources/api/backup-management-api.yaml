@@ -684,6 +684,8 @@ components:
       type: string
       enum:
         - MARKER
+        - SCHEDULED_BACKUP
+        - MANUAL_BACKUP
       example: MARKER
     CheckpointId:
       title: Checkpoint ID

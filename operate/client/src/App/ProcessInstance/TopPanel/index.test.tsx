@@ -567,7 +567,7 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render modification info banner when move modification requires an ancestor', async () => {
+  it('should pass the ancestor type if move modification requires an ancestor', async () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('subprocessInsideMultiInstance.bpmn'),
     );
@@ -628,11 +628,12 @@ describe('TopPanel', () => {
 
     await user.click(await screen.findByTestId('task-2'));
 
-    expect(
-      await screen.findByText(
-        /Target flow node has multiple parent scopes. Please select parent node from Instance History to move./i,
-      ),
-    ).toBeInTheDocument();
+    const modifications = modificationsStore.state.modifications;
+    expect(modifications).toHaveLength(1);
+    expect(modifications[0].payload).toMatchObject({
+      operation: 'MOVE_TOKEN',
+      ancestorScopeType: 'sourceParent',
+    });
   });
 
   /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */

@@ -201,4 +201,4 @@ function isRequestError(error: unknown): error is RequestError {
 }
 
 export {request, requestAndParse, requestWithThrow, isRequestError};
-export type {RequestError, RequestResult};
+export type {RequestError};

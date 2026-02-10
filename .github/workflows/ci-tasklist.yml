@@ -76,7 +76,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run ts-check
@@ -110,7 +110,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run eslint
@@ -144,7 +144,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run stylelint
@@ -178,7 +178,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run test:ci -- --no-file-parallelism --maxWorkers 1
@@ -217,7 +217,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
@@ -266,7 +266,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
