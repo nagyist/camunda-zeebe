@@ -222,7 +222,7 @@
             <configuration>
               <skip>${skip.fe.build}</skip>
               <nodeVersion>v24.13.0</nodeVersion>
-              <npmVersion>11.6.2</npmVersion>
+              <npmVersion>11.9.0</npmVersion>
             </configuration>
           </execution>
           <!-- Install dependencies -->
