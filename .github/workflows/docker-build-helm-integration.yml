@@ -399,35 +399,53 @@ jobs:
           GH_TOKEN: ${{ steps.github-token.outputs.token }}
           TRIGGER_TIME: ${{ steps.trigger-time.outputs.trigger_time }}
         run: |
-          set -e
+          set -euo pipefail
           echo "Waiting for E2E workflow to complete in camunda/c8-cross-component-e2e-tests triggered after $TRIGGER_TIME"
 
           TARGET_REPO="camunda/c8-cross-component-e2e-tests"
           WORKFLOW_FILE="playwright_saas_pr_trigger_monorepo.yml"
 
-          # Wait up to 40 min (80 x 30s)
-          for _ in {1..80}; do
-            # Grab the first run created after the trigger event
-            RUN_ID=$(gh api "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=5" \
-              --jq ".workflow_runs[] | select(.created_at > \"$TRIGGER_TIME\") | .id" | head -n1)
+          RUN_ID=""
 
-            if [[ -n "$RUN_ID" ]]; then
+          for _ in {1..80}; do
+            if [[ -z "$RUN_ID" ]]; then
+              # Find the first downstream run created after we triggered (do this ONCE, then lock onto it)
+              RUN_ID=$(
+                gh api "/repos/$TARGET_REPO/actions/workflows/$WORKFLOW_FILE/runs?event=repository_dispatch&per_page=20" \
+                  --jq ".workflow_runs
+                        | map(select(.created_at > \"$TRIGGER_TIME\"))
+                        | sort_by(.created_at)
+                        | last
+                        | .id // empty"
+              )
+
+              if [[ -z "$RUN_ID" ]]; then
+                echo "No downstream workflow run found yet. Sleeping..."
+                sleep 30
+                continue
+              fi
+
+              echo "Locked onto downstream run id: $RUN_ID"
               echo "downstream_run_url=https://github.com/$TARGET_REPO/actions/runs/$RUN_ID" >> "$GITHUB_OUTPUT"
-              STATUS=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .status)
-              CONCLUSION=$(gh api /repos/$TARGET_REPO/actions/runs/"$RUN_ID" --jq .conclusion)
-              echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
-              if [[ "$STATUS" == "completed" ]]; then
-                if [[ "$CONCLUSION" == "success" ]]; then
-                  echo "Downstream workflow succeeded!"
-                  exit 0
-                else
-                  echo "Downstream workflow failed: $CONCLUSION"
-                  exit 1
-                fi
+            fi
+
+            STATUS=$(gh api "/repos/$TARGET_REPO/actions/runs/$RUN_ID" --jq .status)
+            CONCLUSION=$(gh api "/repos/$TARGET_REPO/actions/runs/$RUN_ID" --jq .conclusion)
+            echo "Workflow run $RUN_ID status: $STATUS ($CONCLUSION)"
+
+            if [[ "$STATUS" == "completed" ]]; then
+              if [[ "$CONCLUSION" == "success" ]]; then
+                echo "Downstream workflow succeeded!"
+                exit 0
+              else
+                echo "Downstream workflow failed: $CONCLUSION"
+                exit 1
               fi
             fi
+
             sleep 30
           done
+
           echo "Timed out waiting for downstream workflow to complete."
           exit 1
 
