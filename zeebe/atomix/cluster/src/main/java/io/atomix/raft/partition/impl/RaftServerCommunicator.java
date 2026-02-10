@@ -86,67 +86,69 @@ public class RaftServerCommunicator implements RaftServerProtocol {
   @Override
   public CompletableFuture<ConfigureResponse> configure(
       final MemberId memberId, final ConfigureRequest request) {
-    return sendAndReceive(sendingSubject.configureSubject, request, memberId);
+    return sendAndReceive(sendingSubject.getConfigureSubject(), request, memberId);
   }
 
   @Override
   public CompletableFuture<ReconfigureResponse> reconfigure(
       final MemberId memberId, final ReconfigureRequest request) {
     return sendAndReceive(
-        sendingSubject.reconfigureSubject, request, memberId, configurationChangeTimeout);
+        sendingSubject.getReconfigureSubject(), request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<ForceConfigureResponse> forceConfigure(
       final MemberId memberId, final ForceConfigureRequest request) {
-    return sendAndReceive(sendingSubject.forceConfigureSubject, request, memberId, requestTimeout);
+    return sendAndReceive(
+        sendingSubject.getForceConfigureSubject(), request, memberId, requestTimeout);
   }
 
   @Override
   public CompletableFuture<JoinResponse> join(final MemberId memberId, final JoinRequest request) {
     return sendAndReceive(
-        sendingSubject.joinSubject, request, memberId, configurationChangeTimeout);
+        sendingSubject.getJoinSubject(), request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<LeaveResponse> leave(
       final MemberId memberId, final LeaveRequest request) {
     return sendAndReceive(
-        sendingSubject.leaveSubject, request, memberId, configurationChangeTimeout);
+        sendingSubject.getLeaveSubject(), request, memberId, configurationChangeTimeout);
   }
 
   @Override
   public CompletableFuture<InstallResponse> install(
       final MemberId memberId, final InstallRequest request) {
-    return sendAndReceive(sendingSubject.installSubject, request, memberId, snapshotRequestTimeout);
+    return sendAndReceive(
+        sendingSubject.getInstallSubject(), request, memberId, snapshotRequestTimeout);
   }
 
   @Override
   public CompletableFuture<TransferResponse> transfer(
       final MemberId memberId, final TransferRequest request) {
-    return sendAndReceive(sendingSubject.transferSubject, request, memberId);
+    return sendAndReceive(sendingSubject.getTransferSubject(), request, memberId);
   }
 
   @Override
   public CompletableFuture<PollResponse> poll(final MemberId memberId, final PollRequest request) {
-    return sendAndReceive(sendingSubject.pollSubject, request, memberId);
+    return sendAndReceive(sendingSubject.getPollSubject(), request, memberId);
   }
 
   @Override
   public CompletableFuture<VoteResponse> vote(final MemberId memberId, final VoteRequest request) {
-    return sendAndReceive(sendingSubject.voteSubject, request, memberId);
+    return sendAndReceive(sendingSubject.getVoteSubject(), request, memberId);
   }
 
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final AppendRequest request) {
-    return sendAndReceive(sendingSubject.appendV1subject, request, memberId);
+    return sendAndReceive(sendingSubject.getAppendV1Subject(), request, memberId);
   }
 
   @Override
   public CompletableFuture<AppendResponse> append(
       final MemberId memberId, final VersionedAppendRequest request) {
-    return sendAndReceive(sendingSubject.appendV2subject, request, memberId);
+    return sendAndReceive(sendingSubject.getAppendV2Subject(), request, memberId);
   }
 
   @Override
