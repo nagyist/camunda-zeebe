@@ -107,7 +107,7 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
           currentListeners.add(record);
         });
     currentListeners.sort(GlobalListenerRecord.PRIORITY_COMPARATOR);
-    currentListeners.forEach(currentConfig::addTaskListener);
+    currentListeners.forEach(currentConfig::addListener);
 
     return currentConfig;
   }

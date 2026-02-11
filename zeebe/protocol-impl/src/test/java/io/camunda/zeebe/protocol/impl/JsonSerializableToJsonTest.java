@@ -4424,13 +4424,13 @@ final class JsonSerializableToJsonTest {
             () ->
                 new GlobalListenerBatchRecord()
                     .setGlobalListenerBatchKey(1)
-                    .addTaskListener(
+                    .addListener(
                         new GlobalListenerRecord()
                             .setId("listener1")
                             .setType("global1")
                             .setEventTypes(List.of("creating", "assigning"))
                             .setRetries(5))
-                    .addTaskListener(
+                    .addListener(
                         new GlobalListenerRecord()
                             .setId("listener2")
                             .setType("global2")
@@ -4441,7 +4441,7 @@ final class JsonSerializableToJsonTest {
         """
       {
         "globalListenerBatchKey": 1,
-        "taskListeners": [
+        "listeners": [
           {
             "globalListenerKey": -1,
             "id": "listener1",
@@ -4474,7 +4474,7 @@ final class JsonSerializableToJsonTest {
         """
       {
         "globalListenerBatchKey": -1,
-        "taskListeners": []
+        "listeners": []
       }
       """
       },

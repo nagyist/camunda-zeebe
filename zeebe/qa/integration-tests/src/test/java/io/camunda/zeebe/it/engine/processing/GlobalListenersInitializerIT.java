@@ -102,7 +102,7 @@ final class GlobalListenersInitializerIT {
                 .globalListenerBatchRecords()
                 .withIntent(GlobalListenerBatchIntent.CONFIGURE))
         .hasSize(PARTITIONS_COUNT)
-        .allMatch(record -> record.getValue().getTaskListeners().isEmpty())
+        .allMatch(record -> record.getValue().getListeners().isEmpty())
         .extracting(Record::getPartitionId)
         .containsAll(PARTITION_IDS);
   }
@@ -157,7 +157,7 @@ final class GlobalListenersInitializerIT {
   private boolean containsTypes(
       final Record<GlobalListenerBatchRecordValue> record, final String... types) {
     final var recordTypes =
-        record.getValue().getTaskListeners().stream()
+        record.getValue().getListeners().stream()
             .map(GlobalListenerRecordValue::getType)
             .toList();
     return List.of(types).equals(recordTypes);

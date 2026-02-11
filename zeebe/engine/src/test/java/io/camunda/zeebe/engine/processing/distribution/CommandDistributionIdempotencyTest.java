@@ -760,7 +760,7 @@ public class CommandDistributionIdempotencyTest {
                 () ->
                     ENGINE
                         .globalListenerBatch()
-                        .withTaskListener(
+                        .withListener(
                             new GlobalListenerRecord()
                                 .setId("GlobalListener_global1")
                                 .setType("global1")
