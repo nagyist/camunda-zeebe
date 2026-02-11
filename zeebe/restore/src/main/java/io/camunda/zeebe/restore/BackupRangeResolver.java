@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -170,15 +171,21 @@ public final class BackupRangeResolver {
                     CheckpointPattern.ofInterval(statusInterval.map(s -> s.id().checkpointId()))))
             .join();
 
-    final var completedBackups =
+    final var completedBackupsMap =
         backups.stream()
             .filter(
                 bs -> bs.statusCode() == BackupStatusCode.COMPLETED && bs.descriptor().isPresent())
-            .sorted()
-            .toList();
+            .collect(
+                Collectors.toMap(bs -> bs.id().checkpointId(), Function.identity(), (a, b) -> a));
     // From a sequence of N BackupStatus, generate a List of N-1 Interval<BackupStatus>
+    final var completedBackups = completedBackupsMap.values().stream().sorted().toList();
     final var backupsIntervals = Interval.fromPoints(completedBackups, Interval::closedOpen);
-    final var cover = interval.smallestCover(backupsIntervals, BackupStatus::createdOrThrow);
+    final var cover =
+        interval.smallestCover(
+            backupsIntervals,
+            s ->
+                // we filtered out backups w/o descriptor
+                s.descriptor().get().checkpointTimestamp());
     // Use Interval::values to get all the BackupStatus that make up the intervals and remove
     // duplicates
     return cover.stream().flatMap(i -> i.points().stream()).distinct().sorted().toList();

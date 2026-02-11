@@ -424,19 +424,21 @@ final class BackupRangeResolverTest {
   }
 
   @Test
-  void shouldReturnLargestCheckpointBelowExportedPosition() {
-    // given - backups with checkpointPositions [100, 200, 300]
-    final var backups =
-        List.of(
-            createBackupStatus(1, 1, 100, 1), // checkpointId=1, checkpointPosition=100
-            createBackupStatus(1, 2, 200, 101), // checkpointId=2, checkpointPosition=200
-            createBackupStatus(1, 3, 300, 201)); // checkpointId=3, checkpointPosition=300
+  void shouldNotReturnDuplicatedBackupsWhenMultipleNodes() {
+    // given - partition with multiple backups for the same checkpoint (different nodes)
+    store
+        .forPartition(1)
+        .withRange(100, 200)
+        .addBackup(100, 1000, 1, minutesAfterBase(0))
+        .addBackup(new BackupIdentifierImpl(NODE_ID + 1, 1, 100L), 1000, 1, minutesAfterBase(0))
+        .addBackup(200, 2000, 1001, minutesAfterBase(30));
 
     // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
-    final var result = BackupRangeResolver.findSafeStartCheckpoint(250L, backups);
+    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(30), Map.of(1, 2500L));
 
     // then
-    assertThat(result).contains(2L);
+    // backup 100 is not included as 200 is already before safeStart
+    assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {200});
   }
 
   private GlobalRestoreInfo resolve(
@@ -457,14 +459,10 @@ final class BackupRangeResolverTest {
   }
 
   private static BackupStatus createBackupStatus(
-      final int partitionId,
-      final long checkpointId,
-      final long checkpointPosition,
-      final long firstLogPosition) {
-    final BackupIdentifier id = new BackupIdentifierImpl(NODE_ID, partitionId, checkpointId);
+      final BackupIdentifier id, final long checkpointPosition, final long firstLogPosition) {
     final BackupDescriptor descriptor =
         new BackupDescriptorImpl(
-            Optional.of("snapshot-" + checkpointId),
+            Optional.of("snapshot-" + id.checkpointId()),
             OptionalLong.of(firstLogPosition),
             checkpointPosition,
             3,
@@ -478,6 +476,15 @@ final class BackupRangeResolverTest {
         Optional.empty(),
         Optional.of(Instant.now()),
         Optional.of(Instant.now()));
+  }
+
+  private static BackupStatus createBackupStatus(
+      final int partitionId,
+      final long checkpointId,
+      final long checkpointPosition,
+      final long firstLogPosition) {
+    final BackupIdentifier id = new BackupIdentifierImpl(NODE_ID, partitionId, checkpointId);
+    return createBackupStatus(id, checkpointPosition, firstLogPosition);
   }
 
   /**
@@ -500,6 +507,26 @@ final class BackupRangeResolverTest {
 
     PartitionBuilder forPartition(final int partitionId) {
       return new PartitionBuilder(this, partitionId);
+    }
+
+    private void addBackup(
+        final BackupIdentifier id,
+        final long checkpointPosition,
+        final long firstLogPosition,
+        final Instant timestamp) {
+      final BackupDescriptor descriptor =
+          new BackupDescriptorImpl(
+              Optional.of("snapshot-" + id.checkpointId()),
+              OptionalLong.of(firstLogPosition),
+              checkpointPosition,
+              3,
+              "8.7.0",
+              timestamp,
+              CheckpointType.SCHEDULED_BACKUP);
+      backups.put(
+          id,
+          new BackupImpl(
+              id, descriptor, new NamedFileSetImpl(Map.of()), new NamedFileSetImpl(Map.of())));
     }
 
     private void addBackup(
@@ -639,6 +666,15 @@ final class BackupRangeResolverTest {
       }
 
       PartitionBuilder addBackup(
+          final BackupIdentifier id,
+          final long checkpointPosition,
+          final long firstLogPosition,
+          final Instant timestamp) {
+        store.addBackup(id, checkpointPosition, firstLogPosition, timestamp);
+        return this;
+      }
+
+      PartitionBuilder addBackup(
           final long checkpointId,
           final long checkpointPosition,
           final long firstLogPosition,
@@ -673,6 +709,22 @@ final class BackupRangeResolverTest {
 
       // then
       assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnLargestCheckpointBelowExportedPosition() {
+      // given - backups with checkpointPositions [100, 200, 300]
+      final var backups =
+          List.of(
+              createBackupStatus(1, 1, 100, 1), // checkpointId=1, checkpointPosition=100
+              createBackupStatus(1, 2, 200, 101), // checkpointId=2, checkpointPosition=200
+              createBackupStatus(1, 3, 300, 201)); // checkpointId=3, checkpointPosition=300
+
+      // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
+      final var result = BackupRangeResolver.findSafeStartCheckpoint(250L, backups);
+
+      // then
+      assertThat(result).contains(2L);
     }
   }
 }
