@@ -8,28 +8,22 @@
 package io.camunda.appint.exporter.dispatch;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Dispatcher implementation that uses a single-threaded {@link ThreadPoolExecutor} with a {@link
- * PriorityBlockingQueue} to manage job execution. It ensures that only a specified number of jobs
- * are in-flight at any given time using a {@link Semaphore}. If a job fails, it is re-queued with
- * high priority to be retried before any regular priority jobs.
+ * Implementation of the {@link Dispatcher} interface that manages the execution of jobs with a
+ * specified maximum number of concurrent jobs. It uses a single-threaded executor to execute jobs
+ * sequentially and a semaphore to limit the number of jobs in flight. If a job fails, it is retried
+ * until executed successfully.
  */
 public class DispatcherImpl implements Dispatcher {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
 
-  // Single-threaded executor to ensure jobs are executed sequentially, while allowing for
-  // prioritization. We go with one thread to make sure batches are sent in order.
-  private final PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<>();
-  private final ExecutorService executor =
-      new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
+  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final Semaphore semaphore;
   private final int maxJobsInFlight;
 
@@ -43,7 +37,7 @@ public class DispatcherImpl implements Dispatcher {
     try {
       semaphore.acquire();
       log.trace("Dispatching job {}", job);
-      executor.execute(PriorityJob.regular(() -> executeJob(job)));
+      executorService.execute(() -> executeJob(job));
     } catch (final InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -56,12 +50,15 @@ public class DispatcherImpl implements Dispatcher {
    * @param job, the job to execute
    */
   private void executeJob(final Runnable job) {
-    try {
-      job.run();
-      semaphore.release();
-    } catch (final Exception e) {
-      log.debug("Failed to run job, re-queuing with high priority. Error: " + e.getMessage());
-      executor.execute(PriorityJob.high(() -> executeJob(job)));
+    boolean success = false;
+    while (!success) {
+      try {
+        job.run();
+        success = true;
+        semaphore.release();
+      } catch (final Exception e) {
+        log.debug("Failed to run the job. Restarting. Error: " + e.getMessage());
+      }
     }
   }
 
@@ -72,16 +69,10 @@ public class DispatcherImpl implements Dispatcher {
   @Override
   public void close() {
     try {
-      executor.shutdown();
-      executor.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
+      executorService.shutdown();
+      executorService.awaitTermination(10, java.util.concurrent.TimeUnit.SECONDS);
     } catch (final InterruptedException e) {
       throw new RuntimeException(e);
     }
   }
-
-  public ExecutorService getExecutor() {
-    return executor;
-  }
-
-  public static void main(final String[] args) {}
 }
