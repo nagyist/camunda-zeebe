@@ -8,9 +8,7 @@
 package io.camunda.zeebe.backup.api;
 
 import java.util.Objects;
-import java.util.SequencedCollection;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public sealed interface BackupRange {
   long firstCheckpointId();
@@ -18,9 +16,6 @@ public sealed interface BackupRange {
   long lastCheckpointId();
 
   boolean contains(Interval<Long> other);
-
-  /** Returns the checkpoints range extremes in order */
-  SequencedCollection<Long> checkpoints();
 
   /** A complete backup range without deletions. */
   record Complete(Interval<Long> checkpointInterval) implements BackupRange {
@@ -41,11 +36,6 @@ public sealed interface BackupRange {
     @Override
     public boolean contains(final Interval<Long> other) {
       return checkpointInterval().contains(other);
-    }
-
-    @Override
-    public SequencedCollection<Long> checkpoints() {
-      return checkpointInterval().values();
     }
   }
 
@@ -87,14 +77,6 @@ public sealed interface BackupRange {
     @Override
     public boolean contains(final Interval<Long> other) {
       return checkpointInterval.contains(other) && !isInDeletionRange(other);
-    }
-
-    @Override
-    public SequencedCollection<Long> checkpoints() {
-      return Stream.concat(checkpointInterval.values().stream(), deletedCheckpointIds.stream())
-          .sorted()
-          .distinct()
-          .toList();
     }
   }
 }
