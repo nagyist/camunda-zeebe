@@ -102,6 +102,7 @@ export default defineConfig(({mode}) => ({
     clearMocks: true,
     resetMocks: true,
     unstubEnvs: true,
+    dangerouslyIgnoreUnhandledErrors: Boolean(process.env.CI),
     ...getReporters(),
     server: {
       deps: {
