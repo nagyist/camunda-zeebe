@@ -193,11 +193,6 @@ public class DeleteProcessInstanceHistoryIT {
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
-    assertThat(result.getBatchOperationKey()).isNotNull();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, result.getBatchOperationKey(), 1);
-    waitForBatchOperationCompleted(camundaClient, result.getBatchOperationKey(), 1, 0);
-
-    // and - process instance should be deleted
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
   }
 
@@ -219,11 +214,6 @@ public class DeleteProcessInstanceHistoryIT {
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
-    assertThat(result.getBatchOperationKey()).isNotNull();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, result.getBatchOperationKey(), 1);
-    waitForBatchOperationCompleted(camundaClient, result.getBatchOperationKey(), 1, 0);
-
-    // and - first process instance should be deleted
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey1);
 
     // and - second process instance should still exist with all its data
@@ -246,31 +236,22 @@ public class DeleteProcessInstanceHistoryIT {
     final long piKey = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
     waitForProcessInstances(camundaClient, f -> f.processInstanceKey(piKey), 1);
 
-    // when - try to delete active process instance
-    final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+    // when
+    final var resultFuture = camundaClient.newDeleteInstanceCommand(piKey).send();
 
-    // then - command should succeed but batch operation should fail
-    assertThat(result).isNotNull();
-    assertThat(result.getBatchOperationKey()).isNotNull();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, result.getBatchOperationKey(), 1);
-
-    Awaitility.await("batch operation should complete with failure")
-        .atMost(DELETION_TIMEOUT)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var batch =
-                  camundaClient
-                      .newBatchOperationGetRequest(result.getBatchOperationKey())
-                      .send()
-                      .join();
-              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
-              assertThat(batch.getOperationsFailedCount()).isEqualTo(1);
-              assertThat(batch.getOperationsCompletedCount()).isEqualTo(0);
+    // then
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(resultFuture::join)
+        .satisfies(
+            ex -> {
+              final var details = ex.details();
+              assertThat(details.getTitle()).isEqualTo("INVALID_STATE");
+              assertThat(details.getStatus()).isEqualTo(409);
+              assertThat(details.getDetail())
+                  .contains(
+                      "Expected to delete history for process instance with key '%d', but it is still active"
+                          .formatted(piKey));
             });
-
-    // and - process instance should still exist
     waitForProcessInstances(camundaClient, f -> f.processInstanceKey(piKey), 1);
   }
 
@@ -294,11 +275,6 @@ public class DeleteProcessInstanceHistoryIT {
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
-    assertThat(result.getBatchOperationKey()).isNotNull();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, result.getBatchOperationKey(), 1);
-    waitForBatchOperationCompleted(camundaClient, result.getBatchOperationKey(), 1, 0);
-
-    // and - process instance should be deleted
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
   }
 
@@ -328,11 +304,6 @@ public class DeleteProcessInstanceHistoryIT {
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
-    assertThat(result.getBatchOperationKey()).isNotNull();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, result.getBatchOperationKey(), 1);
-    waitForBatchOperationCompleted(camundaClient, result.getBatchOperationKey(), 1, 0);
-
-    // and - process instance should be deleted
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
   }
 
@@ -357,11 +328,6 @@ public class DeleteProcessInstanceHistoryIT {
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
-    assertThat(result.getBatchOperationKey()).isNotNull();
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, result.getBatchOperationKey(), 1);
-    waitForBatchOperationCompleted(camundaClient, result.getBatchOperationKey(), 1, 0);
-
-    // and - process instance should be deleted
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
   }
 
