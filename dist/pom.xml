@@ -184,7 +184,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>app-integrations-exporter</artifactId>
-      <scope>runtime</scope>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -1051,6 +1050,9 @@
             <!-- Micrometer Exporters/Registries -->
             <dependency>io.micrometer:micrometer-registry-otlp</dependency>
             <dependency>org.springframework.boot:spring-boot-opentelemetry</dependency>
+
+            <!-- App Integrations Exporter -->
+            <dependency>io.camunda:app-integrations-exporter</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
