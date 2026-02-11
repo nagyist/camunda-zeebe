@@ -64,6 +64,7 @@ Additional configuration options:
 - `maxBatchesInFlight` (integer, optional): Maximum number of batches that are in-flight for sending (default: 2).
 
 ### Authentication
+
 The exporter supports API key authentication. You can provide the API key via the `apiKey` configuration property. The exporter will include the API key in the `Authorization` header of each HTTP request as a Bearer token:
 
 ```Authorization: Bearer myAPIKey```
