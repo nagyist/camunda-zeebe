@@ -14,7 +14,8 @@ describe('hasEmbeddedForm', () => {
     const businessObject: BusinessObject = {
       $type: 'bpmn:ServiceTask',
       id: 'task1',
-    } as BusinessObject;
+      name: 'Task 1',
+    };
 
     expect(hasEmbeddedForm(businessObject)).toBe(false);
   });
@@ -23,6 +24,7 @@ describe('hasEmbeddedForm', () => {
     const businessObject: BusinessObject = {
       $type: 'bpmn:UserTask',
       id: 'task1',
+      name: 'Task 1',
       extensionElements: {
         values: [
           {
@@ -30,7 +32,7 @@ describe('hasEmbeddedForm', () => {
           },
         ],
       },
-    } as BusinessObject;
+    };
 
     expect(hasEmbeddedForm(businessObject)).toBe(false);
   });
@@ -39,6 +41,7 @@ describe('hasEmbeddedForm', () => {
     const businessObject: BusinessObject = {
       $type: 'bpmn:UserTask',
       id: 'task1',
+      name: 'Task 1',
       extensionElements: {
         values: [
           {
@@ -50,13 +53,13 @@ describe('hasEmbeddedForm', () => {
           },
         ],
       },
-    } as BusinessObject;
+    };
 
     expect(hasEmbeddedForm(businessObject)).toBe(false);
   });
 
   it('should return true for job-based user tasks with embedded form', () => {
-    const businessObject = {
+    const businessObject: BusinessObject = {
       $type: 'bpmn:UserTask',
       id: 'task1',
       name: 'Task 1',
@@ -68,7 +71,7 @@ describe('hasEmbeddedForm', () => {
           },
         ],
       },
-    } as unknown as BusinessObject;
+    };
 
     expect(hasEmbeddedForm(businessObject)).toBe(true);
   });
@@ -77,6 +80,7 @@ describe('hasEmbeddedForm', () => {
     const businessObject: BusinessObject = {
       $type: 'bpmn:UserTask',
       id: 'task1',
+      name: 'Task 1',
       extensionElements: {
         values: [
           {
@@ -85,7 +89,7 @@ describe('hasEmbeddedForm', () => {
           },
         ],
       },
-    } as BusinessObject;
+    };
 
     expect(hasEmbeddedForm(businessObject)).toBe(false);
   });
@@ -94,7 +98,8 @@ describe('hasEmbeddedForm', () => {
     const businessObject: BusinessObject = {
       $type: 'bpmn:UserTask',
       id: 'task1',
-    } as BusinessObject;
+      name: 'Task 1',
+    };
 
     expect(hasEmbeddedForm(businessObject)).toBe(false);
   });

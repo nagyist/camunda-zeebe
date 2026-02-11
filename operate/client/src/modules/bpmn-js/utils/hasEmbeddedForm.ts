@@ -30,7 +30,7 @@ const hasEmbeddedForm = (businessObject?: BusinessObject): boolean => {
 
   const formDefinition = businessObject.extensionElements?.values?.find(
     (element) => element.$type === 'zeebe:formDefinition',
-  ) as {formKey?: string} | undefined;
+  );
 
   return formDefinition?.formKey !== undefined;
 };
