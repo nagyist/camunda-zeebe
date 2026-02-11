@@ -54,6 +54,7 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
       case PROCESS_INSTANCE -> deleteProcessInstance(command);
       case PROCESS_DEFINITION -> deleteProcessDefinition(command);
       case DECISION_INSTANCE -> deleteDecisionInstance(command);
+      case DECISION_DEFINITION -> deleteDecisionDefinition(command);
       default ->
           throw new UnsupportedOperationException(
               "Unsupported resource type: " + command.getValue().getResourceType());
@@ -121,6 +122,11 @@ public class HistoryDeletionDeleteProcessor implements TypedRecordProcessor<Hist
     return authCheckBehavior
         .isAuthorizedOrInternalCommand(request)
         .map(ignored -> command.getValue());
+  }
+
+  private void deleteDecisionDefinition(final TypedRecord<HistoryDeletionRecord> command) {
+    final var recordValue = command.getValue();
+    writeHistoryDeletionEvent(recordValue, command);
   }
 
   private Either<Rejection, HistoryDeletionRecord> validateProcessInstanceDoesNotExist(
