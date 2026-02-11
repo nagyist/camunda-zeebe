@@ -152,6 +152,8 @@ public class WebSecurityConfig {
           "/ready",
           "/health",
           "/startup",
+          // post logout decision endpoint
+          "/post-logout",
           // swagger-ui endpoint
           "/swagger/**",
           "/swagger-ui/**",
@@ -872,6 +874,29 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public WebappRedirectStrategy webappRedirectStrategy() {
+      return new WebappRedirectStrategy();
+    }
+
+    @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public LogoutSuccessHandler oidcLogoutSuccessHandler(
+        final WebappRedirectStrategy redirectStrategy,
+        final ClientRegistrationRepository repository,
+        final SecurityConfiguration config) {
+      final var oidcConfig = config.getAuthentication().getOidc();
+      if (!oidcConfig.isIdpLogoutEnabled()) {
+        return new NoContentResponseHandler();
+      }
+
+      final var handler = new CamundaOidcLogoutSuccessHandler(repository);
+      handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
+      handler.setRedirectStrategy(redirectStrategy);
+      return handler;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
@@ -887,6 +912,7 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
+        final CamundaOidcLogoutSuccessHandler logoutSuccessHandler,
         final OidcUserService oidcUserService)
         throws Exception {
       final var filterChainBuilder =
@@ -940,8 +966,9 @@ public class WebSecurityConfig {
                   (logout) ->
                       logout
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(new NoContentResponseHandler())
-                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                          .invalidateHttpSession(true)
+                          .logoutSuccessHandler(logoutSuccessHandler))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
