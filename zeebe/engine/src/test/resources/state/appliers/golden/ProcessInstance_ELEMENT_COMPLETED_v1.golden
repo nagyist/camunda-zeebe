@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
 /** Applies state changes for `ProcessInstance:Element_Completed` */
-final class ProcessInstanceElementCompletedApplier
+final class ProcessInstanceElementCompletedV1Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
@@ -31,7 +31,7 @@ final class ProcessInstanceElementCompletedApplier
   private final MutableMultiInstanceState multiInstanceState;
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
-  public ProcessInstanceElementCompletedApplier(
+  public ProcessInstanceElementCompletedV1Applier(
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableVariableState variableState,
