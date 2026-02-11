@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -109,6 +110,7 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    *
    * @return the agent information associated with this record, or {@code null} if no agent
    */
+  @Nullable
   Agent getAgent();
 
   /**
