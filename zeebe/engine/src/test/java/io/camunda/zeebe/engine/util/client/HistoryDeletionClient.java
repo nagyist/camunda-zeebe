@@ -54,6 +54,12 @@ public class HistoryDeletionClient {
     return this;
   }
 
+  public HistoryDeletionClient decisionDefinition(final long decisionRequirementsKey) {
+    record.setResourceType(HistoryDeletionType.DECISION_DEFINITION);
+    record.setResourceKey(decisionRequirementsKey);
+    return this;
+  }
+
   public Record<HistoryDeletionRecordValue> delete() {
     final long position = writer.writeCommand(HistoryDeletionIntent.DELETE, record);
     return expectation.apply(position);
