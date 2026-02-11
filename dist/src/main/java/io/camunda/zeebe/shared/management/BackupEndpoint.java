@@ -202,6 +202,7 @@ public final class BackupEndpoint {
     response.setPartitionId(state.partitionId());
     response.setCheckpointId(state.checkpointId());
     response.setCheckpointPosition(state.checkpointPosition());
+    response.setFirstLogPosition(state.firstLogPosition());
     response.setCheckpointTimestamp(
         OffsetDateTime.ofInstant(
             Instant.ofEpochMilli(state.checkpointTimestamp()), ZoneId.of("UTC")));
@@ -212,10 +213,21 @@ public final class BackupEndpoint {
   private PartitionBackupRange toRange(final BackupRangesResponse.PartitionBackupRange range) {
     final var response = new PartitionBackupRange();
     response.setPartitionId(range.partitionId());
-    response.setStart(range.first() == null ? null : range.first().checkpointId());
-    response.setEnd(range.last() == null ? null : range.last().checkpointId());
+    response.setStart(range.first() == null ? null : toBackupState(range.first()));
+    response.setEnd(range.last() == null ? null : toBackupState(range.last()));
     response.setMissingCheckpoints(range.missingCheckpoints().stream().toList());
     return response;
+  }
+
+  private PartitionBackupState toBackupState(final BackupRangesResponse.CheckpointInfo info) {
+    final var state = new PartitionBackupState();
+    state.setCheckpointId(info.checkpointId());
+    state.setCheckpointPosition(info.checkpointPosition());
+    state.setFirstLogPosition(info.firstLogPosition());
+    state.setCheckpointType(toBackupType(info.checkpointType()));
+    state.setCheckpointTimestamp(
+        OffsetDateTime.ofInstant(info.checkpointTimestamp(), ZoneId.of("UTC")));
+    return state;
   }
 
   private CheckpointType toCheckpointType(
