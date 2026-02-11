@@ -54,6 +54,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     notificationsStore.reset();
   });
 
+  // TODO: fix test with #45539
   it.skip('should select inner instance with first child as anchor when node is expanded and has children', async () => {
     const {user} = render(
       <ElementInstancesTree
@@ -102,6 +103,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     });
   });
 
+  // TODO: fix test with #45539
   it.skip('should fetch first child and select with anchor when clicking collapsed inner instance', async () => {
     const {user} = render(
       <ElementInstancesTree

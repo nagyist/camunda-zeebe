@@ -72,6 +72,7 @@ const getWrapper = (
   return Wrapper;
 };
 
+// TODO: fix test with #44450
 describe.skip('VariablePanel', () => {
   beforeEach(() => {
     const mockProcessInstance: ProcessInstance = {

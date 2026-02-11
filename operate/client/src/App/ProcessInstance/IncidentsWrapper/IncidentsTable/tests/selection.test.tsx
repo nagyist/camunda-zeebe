@@ -18,6 +18,7 @@ import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fe
 // falls back to undefined for the flowNodeInstanceId.
 const rootNode = {flowNodeInstanceId: undefined, isMultiInstance: false};
 
+// TODO: fix test with #45539
 describe.skip('Selection', () => {
   beforeEach(() => {
     mockFetchProcessInstanceV2().withSuccess(

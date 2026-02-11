@@ -45,6 +45,7 @@ const stats = {
   ],
 };
 
+// TODO: fix test with #44451
 describe.skip('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
     vi.stubGlobal(

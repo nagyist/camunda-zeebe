@@ -174,6 +174,7 @@ describe('MetadataPopover', () => {
     flowNodeSelectionStore.reset();
   });
 
+  // TODO: fix test with #44452
   it.skip('should render meta data for completed flow node', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
@@ -248,6 +249,7 @@ describe('MetadataPopover', () => {
     vi.useFakeTimers();
   });
 
+  // TODO: fix test with #44452
   it.skip('should render completed decision', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 

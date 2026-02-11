@@ -352,6 +352,7 @@ describe('TopPanel', () => {
     expect(screen.queryByText('Incidents - 1 result')).not.toBeInTheDocument();
   });
 
+  // TODO: fix test with #44452
   it.skip('should render metadata for default mode and modification dropdown for modification mode', async () => {
     mockFetchFlowNodeMetadata().withSuccess({
       ...calledInstanceMetadata,
@@ -451,6 +452,7 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
   });
 
+  // TODO: fix test with #44452
   it.skip('should display multiple instances banner when a flow node with multiple running instances is selected', async () => {
     processInstanceDetailsStore.init({id: 'active_instance'});
 
@@ -520,6 +522,7 @@ describe('TopPanel', () => {
     );
   });
 
+  // TODO: fix test with #44452
   it.skip('should display move token banner in moving mode', async () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
@@ -567,6 +570,7 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
+  // TODO: fix test with #44452
   it.skip('should pass the ancestor type if move modification requires an ancestor', async () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('subprocessInsideMultiInstance.bpmn'),
