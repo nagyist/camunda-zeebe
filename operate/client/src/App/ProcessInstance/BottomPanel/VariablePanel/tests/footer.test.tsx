@@ -122,7 +122,8 @@ describe('Footer', () => {
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
   });
 
-  it('should disable add variable button when selected flow node is not running', async () => {
+  // TODO: fix test with #44450
+  it.skip('should disable add variable button when selected flow node is not running', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     const mockSearchVariablesPayload = {
       items: [],

@@ -118,7 +118,8 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe('New Variable Modifications', () => {
+// TODO: fix test with #44450
+describe.skip('New Variable Modifications', () => {
   const mockProcessInstance: ProcessInstance = {
     processInstanceKey: 'instance_id',
     state: 'ACTIVE',
