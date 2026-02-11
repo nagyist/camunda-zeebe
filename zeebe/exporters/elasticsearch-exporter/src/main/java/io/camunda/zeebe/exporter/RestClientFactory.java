@@ -89,11 +89,25 @@ final class RestClientFactory {
 
   private void setupProxy(
       final HttpAsyncClientBuilder builder, final ProxyConfiguration proxyConfig) {
-    builder.setProxy(
-        new HttpHost(
-            proxyConfig.getHost(),
-            proxyConfig.getPort(),
-            proxyConfig.isSslEnabled() ? "https" : "http"));
+    final String host = proxyConfig.getHost();
+    final Integer port = proxyConfig.getPort();
+
+    if (host == null || host.trim().isEmpty()) {
+      throw new IllegalArgumentException(
+          "Elasticsearch exporter proxy is enabled but no proxy host is configured");
+    }
+
+    if (port == null) {
+      throw new IllegalArgumentException(
+          "Elasticsearch exporter proxy is enabled but no proxy port is configured");
+    }
+
+    if (port <= 0 || port > 65_535) {
+      throw new IllegalArgumentException(
+          "Elasticsearch exporter proxy port must be between 1 and 65535, but was: " + port);
+    }
+
+    builder.setProxy(new HttpHost(host, port, proxyConfig.isSslEnabled() ? "https" : "http"));
   }
 
   private void addPreemptiveProxyAuthInterceptor(

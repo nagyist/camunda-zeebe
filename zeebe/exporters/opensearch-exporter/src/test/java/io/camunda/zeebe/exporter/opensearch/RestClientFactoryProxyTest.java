@@ -152,9 +152,9 @@ final class RestClientFactoryProxyTest {
     try (final var client = RestClientFactory.of(config)) {
       final HttpAsyncClient httpClient = getHttpClient(client);
       final var context = new BasicHttpContext();
-      httpClient.execute(HttpHost.create("http://192.0.2.1:9200"), new HttpGet("/"), context, null);
-      // Give async client a moment to process
-      Thread.sleep(500);
+      httpClient
+          .execute(HttpHost.create("http://192.0.2.1:9200"), new HttpGet("/"), context, null)
+          .get();
     } catch (final Exception e) {
       // The request might fail with connection issues, but that's fine -
       // what matters is that it was routed through the proxy (WireMock)
