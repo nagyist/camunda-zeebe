@@ -794,7 +794,8 @@ components:
             deploy resources endpoint.
         processDefinitionVersion:
           description: |
-            The version of the process. By default, the latest version of the process is used.
+            As the version is already identified by the `processDefinitionKey`, the value of this field is ignored.
+            It's here for backwards-compatibility only as previous releases accepted it in request bodies.
           type: integer
           format: int32
           default: -1
