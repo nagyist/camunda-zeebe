@@ -98,4 +98,16 @@ class OidcClientRegistrationTest {
           .isNull();
     }
   }
+
+  @Test
+  public void shouldFallbackToValidDefaultRedirectUri() {
+    final var config = new OidcAuthenticationConfiguration();
+    config.setClientId("clientId");
+    config.setAuthorizationUri("authorizationUri");
+    config.setTokenUri("tokenUri");
+    config.setClientAuthenticationMethod("client_secret_basic");
+
+    Assertions.assertThat(ClientRegistrationFactory.createClientRegistration("foo", config))
+        .returns("{baseUrl}/sso-callback", ClientRegistration::getRedirectUri);
+  }
 }
