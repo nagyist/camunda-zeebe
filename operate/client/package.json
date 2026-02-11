@@ -108,7 +108,7 @@
     "resize-observer-polyfill": "1.5.1",
     "rollup-plugin-license": "3.6.0",
     "rollup-plugin-sbom": "3.0.2",
-    "sass": "1.89.2",
+    "sass": "1.97.3",
     "typescript": "5.9.3",
     "typescript-eslint": "8.55.0",
     "vite": "7.3.1",
