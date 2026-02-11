@@ -360,97 +360,179 @@ public class IntervalTest {
   class SmallestCover {
 
     @Test
-    void shouldThrowWhenIntervalsAreNotContiguous() {
+    void shouldReturnEmptyListForEmptyInput() {
       // given
       final var interval = Interval.closed(1, 10);
-      final var intervals = List.of(Interval.closedOpen(1, 3), Interval.closed(5, 10));
-
-      // when/then
-      assertThatThrownBy(() -> interval.smallestCover(intervals))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Expected intervals to be contiguous");
-    }
-
-    @Test
-    void shouldAcceptContiguousIntervalsWithMatchingBoundaries() {
-      // given - [1, 5) and [5, 10] are contiguous
-      final var interval = Interval.closed(1, 10);
-      final var intervals = List.of(Interval.closedOpen(1, 5), Interval.closed(5, 10));
 
       // when
-      final var result = interval.smallestCover(intervals);
+      final var result = interval.smallestCover(List.of());
 
       // then
-      assertThat(result).containsExactly(Interval.closedOpen(1, 5), Interval.closed(5, 10));
+      assertThat(result).isEmpty();
     }
 
     @Test
-    void shouldAcceptContiguousClosedIntervals() {
-      // given - [1, 5] and [5, 10] share point 5
+    void shouldReturnEmptyForSinglePointNotCoveringInterval() {
+      // given - single point at 5 can't cover [1, 10] (nothing at-or-after 10)
       final var interval = Interval.closed(1, 10);
-      final var intervals = List.of(Interval.closed(1, 5), Interval.closed(5, 10));
+
+      assertThat(interval.smallestCover(List.of(5))).isEmpty();
+    }
+
+    @Test
+    void shouldReturnSinglePointForPointInterval() {
+      // given - single point at 5 covers [5, 5]
+      final var interval = Interval.closed(5, 5);
+
+      assertThat(interval.smallestCover(List.of(5))).containsExactly(5);
+    }
+
+    @Test
+    void shouldReturnAllPointsWithinInterval() {
+      // given - [3, 7] with points [1, 3, 5, 7, 9]
+      final var interval = Interval.closed(3, 7);
 
       // when
-      final var result = interval.smallestCover(intervals);
+      final var result = interval.smallestCover(List.of(1, 3, 5, 7, 9));
 
-      // then
-      assertThat(result).containsExactly(Interval.closed(1, 5), Interval.closed(5, 10));
+      // then - 3, 5, 7 are within [3, 7]; no neighbor needed since exact matches at boundaries
+      assertThat(result).containsExactly(3, 5, 7);
     }
 
     @Test
-    void shouldThrowWhenIntervalsHaveGapDueToExclusiveBoundaries() {
-      // given - [1, 5) and (5, 10] have a gap at point 5
-      final var interval = Interval.closed(1, 10);
-      final var intervals = List.of(Interval.closedOpen(1, 5), Interval.openClosed(5, 10));
-
-      // when/then
-      assertThatThrownBy(() -> interval.smallestCover(intervals))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Expected intervals to be contiguous");
-    }
-
-    @Test
-    void shouldSkipNonOverlappingIntervalsAtBeginning() {
-      // given - [1, 5), [5, 10), [10, 15] are contiguous
-      // query [7, 12] only overlaps with [5, 10) and [10, 15]
-      final var query = Interval.closed(7, 12);
-      final var intervals =
-          List.of(Interval.closedOpen(1, 5), Interval.closedOpen(5, 10), Interval.closed(10, 15));
-
-      // when
-      final var result = query.smallestCover(intervals);
-
-      // then - should skip [1, 5) and return [5, 10), [10, 15]
-      assertThat(result).containsExactly(Interval.closedOpen(5, 10), Interval.closed(10, 15));
-    }
-
-    @Test
-    void shouldSkipNonOverlappingIntervalsAtEnd() {
-      // given - [1, 5), [5, 10), [10, 15] are contiguous
-      // query [2, 7] only overlaps with [1, 5) and [5, 10)
-      final var query = Interval.closed(2, 7);
-      final var intervals =
-          List.of(Interval.closedOpen(1, 5), Interval.closedOpen(5, 10), Interval.closed(10, 15));
-
-      // when
-      final var result = query.smallestCover(intervals);
-
-      // then - should return [1, 5), [5, 10) and skip [10, 15]
-      assertThat(result).containsExactly(Interval.closedOpen(1, 5), Interval.closedOpen(5, 10));
-    }
-
-    @Test
-    void shouldNotCreateCoverLargerThanNeeded() {
+    void shouldIncludeLastBeforeWhenNoExactStartMatch() {
       // given
-      final var intervals = Interval.fromPoints(List.of(1, 5, 10, 15), Interval::closedOpen);
-      final var query = Interval.closedOpen(5, 10);
+      final var interval = Interval.closed(4, 6);
+      final var points = List.of(1, 3, 5, 7, 9);
 
       // when
-      final var cover = query.smallestCover(intervals);
+      final var result = interval.smallestCover(points);
 
-      // then
-      assertThat(cover).hasSize(1);
-      assertThat(cover.getFirst()).isEqualTo(query);
+      // then - 3 is last before 4, 5 is within, 7 is first after 6
+      assertThat(result).containsExactly(3, 5, 7);
+    }
+
+    @Test
+    void shouldIncludeFirstAfterWhenNoExactEndMatch() {
+      // given
+      final var interval = Interval.closed(3, 6);
+      final var points = List.of(1, 3, 5, 7, 9);
+
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - 3 and 5 are within, 7 is first after 6
+      assertThat(result).containsExactly(3, 5, 7);
+    }
+
+    @Test
+    void shouldIncludeBothNeighborsWhenNoExactBoundaryMatches() {
+      // given
+      final var interval = Interval.closed(4, 8);
+      final var points = List.of(1, 3, 5, 7, 9, 11);
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - 3 is last before 4, 5 and 7 are within, 9 is first after 8
+      assertThat(result).containsExactly(3, 5, 7, 9);
+    }
+
+    @Test
+    void shouldNotIncludeNeighborWhenExactMatchAtStart() {
+      // given
+      final var interval = Interval.closed(3, 8);
+      final var points = List.of(1, 3, 5, 7, 9);
+
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - 3, 5, 7 within; 9 is first after 8 (no match at end)
+      assertThat(result).containsExactly(3, 5, 7, 9);
+    }
+
+    @Test
+    void shouldNotIncludeNeighborWhenExactMatchAtEnd() {
+      // given
+      final var interval = Interval.closed(4, 7);
+      final var points = List.of(1, 3, 5, 7, 9);
+
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - 3 is last before 4, 5 and 7 are within; no neighbor needed at end
+      assertThat(result).containsExactly(3, 5, 7);
+    }
+
+    @Test
+    void shouldReturnAllPointsWhenIntervalCoversAll() {
+      // given
+      final var interval = Interval.closed(1, 9);
+      final var points = List.of(1, 3, 5, 7, 9);
+
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - all points are within, exact matches at both boundaries
+      assertThat(result).containsExactly(1, 3, 5, 7, 9);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenAllPointsAreBeforeInterval() {
+      // given - all points before interval, no coverage at end
+      final var interval = Interval.closed(10, 20);
+      final var points = List.of(1, 3, 5);
+
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - no point at-or-after end, so no valid cover
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnEmptyWhenAllPointsAreAfterInterval() {
+      // given - all points after interval, no coverage at start
+      final var interval = Interval.closed(1, 5);
+      final var points = List.of(10, 15, 20);
+
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - no point at-or-before start, so no valid cover
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldReturnBothNeighborsWhenNoPointsWithin() {
+      // given - [4, 6] with points [1, 3, 7, 9] - no points within the interval
+      final var interval = Interval.closed(4, 6);
+      final var points = List.of(1, 3, 7, 9);
+
+      // when
+      final var result = interval.smallestCover(points);
+
+      // then - 3 is last before 4, 7 is first after 6
+      assertThat(result).containsExactly(3, 7);
+    }
+
+    @Test
+    void shouldThrowWhenPointsAreNotSorted() {
+      final var interval = Interval.closed(1, 10);
+      final var unsorted = List.of(1, 5, 3, 7, 9);
+
+      assertThatThrownBy(() -> interval.smallestCover(unsorted))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("strictly sorted in ascending order with no duplicates");
+    }
+
+    @Test
+    void shouldThrowWhenPointsContainDuplicates() {
+      final var interval = Interval.closed(1, 10);
+      final var duplicates = List.of(1, 3, 3, 7, 10);
+
+      assertThatThrownBy(() -> interval.smallestCover(duplicates))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("strictly sorted in ascending order with no duplicates");
     }
   }
 
@@ -458,92 +540,113 @@ public class IntervalTest {
   class SmallestCoverWithMapper {
 
     @Test
-    void shouldReturnOriginalIntervalsWhenMapped() {
-      // given - intervals of Event, query by Long timestamp
+    void shouldReturnOriginalPointsWhenMapped() {
+      // given - events with timestamps, query by Long timestamp
       final var event1 = new Event("a", 100L);
       final var event2 = new Event("b", 200L);
       final var event3 = new Event("c", 300L);
+      final var events = List.of(event1, event2, event3);
 
-      final var intervals =
-          List.of(Interval.closedOpen(event1, event2), Interval.closed(event2, event3));
-
-      final var query = Interval.closed(150L, 250L);
+      final var query = Interval.closed(100L, 300L);
 
       // when
-      final var result = query.smallestCover(intervals, Event::timestamp);
+      final var result = query.smallestCover(events, Event::timestamp);
 
-      // then - returns original Event intervals, not mapped Long intervals
-      assertThat(result)
-          .containsExactly(Interval.closedOpen(event1, event2), Interval.closed(event2, event3));
-
-      // verify they are the actual Event intervals
-      assertThat(result.getFirst().start().name()).isEqualTo("a");
-      assertThat(result.getLast().end().name()).isEqualTo("c");
+      // then - all events within range, returns original Event objects
+      assertThat(result).containsExactly(event1, event2, event3);
+      assertThat(result.getFirst().name()).isEqualTo("a");
+      assertThat(result.getLast().name()).isEqualTo("c");
     }
 
     @Test
-    void shouldSkipNonOverlappingIntervalsAtBeginning() {
+    void shouldIncludeLastBeforeWhenNoExactStartMatch() {
       final var event1 = new Event("a", 100L);
       final var event2 = new Event("b", 200L);
       final var event3 = new Event("c", 300L);
       final var event4 = new Event("d", 400L);
+      final var events = List.of(event1, event2, event3, event4);
 
-      final var intervals =
-          List.of(
-              Interval.closedOpen(event1, event2),
-              Interval.closedOpen(event2, event3),
-              Interval.closed(event3, event4));
+      // Query starts at 150, no exact match -> include last before (event1 at 100)
+      final var query = Interval.closed(150L, 300L);
 
-      // Query that only overlaps with last two intervals
-      final var query = Interval.closed(250L, 350L);
+      final var result = query.smallestCover(events, Event::timestamp);
 
-      final var result = query.smallestCover(intervals, Event::timestamp);
-
-      assertThat(result)
-          .containsExactly(Interval.closedOpen(event2, event3), Interval.closed(event3, event4));
+      assertThat(result).containsExactly(event1, event2, event3);
     }
 
     @Test
-    void shouldSkipNonOverlappingIntervalsAtEnd() {
+    void shouldIncludeFirstAfterWhenNoExactEndMatch() {
       final var event1 = new Event("a", 100L);
       final var event2 = new Event("b", 200L);
       final var event3 = new Event("c", 300L);
       final var event4 = new Event("d", 400L);
+      final var events = List.of(event1, event2, event3, event4);
 
-      final var intervals =
-          List.of(
-              Interval.closedOpen(event1, event2),
-              Interval.closedOpen(event2, event3),
-              Interval.closed(event3, event4));
+      // Query ends at 250, no exact match -> include first after (event3 at 300)
+      final var query = Interval.closed(100L, 250L);
 
-      // Query that only overlaps with first two intervals
-      final var query = Interval.closed(150L, 250L);
+      final var result = query.smallestCover(events, Event::timestamp);
 
-      final var result = query.smallestCover(intervals, Event::timestamp);
-
-      assertThat(result)
-          .containsExactly(
-              Interval.closedOpen(event1, event2), Interval.closedOpen(event2, event3));
+      assertThat(result).containsExactly(event1, event2, event3);
     }
 
     @Test
-    void shouldThrowWhenIntervalsAreNotContiguous() {
+    void shouldIncludeBothNeighborsWhenNoExactBoundaryMatches() {
       final var event1 = new Event("a", 100L);
       final var event2 = new Event("b", 200L);
       final var event3 = new Event("c", 300L);
       final var event4 = new Event("d", 400L);
+      final var events = List.of(event1, event2, event3, event4);
 
-      // Gap between intervals: [event1, event2) and [event3, event4] don't share a boundary
-      final var intervals =
-          List.of(
-              Interval.closedOpen(event1, event2),
-              Interval.closed(event3, event4)); // Not contiguous - gap at event2/event3
-
+      // Query [150, 350] - no exact match at either boundary
       final var query = Interval.closed(150L, 350L);
 
-      assertThatThrownBy(() -> query.smallestCover(intervals, Event::timestamp))
+      final var result = query.smallestCover(events, Event::timestamp);
+
+      // event1 is last before 150, event2/event3 are within, event4 is first after 350
+      assertThat(result).containsExactly(event1, event2, event3, event4);
+    }
+
+    @Test
+    void shouldReturnBothNeighborsWhenNoPointsWithin() {
+      final var event1 = new Event("a", 100L);
+      final var event2 = new Event("b", 200L);
+      final var event3 = new Event("c", 300L);
+      final var events = List.of(event1, event2, event3);
+
+      // Query [210, 290] - only event at 200 is before, event at 300 is after
+      final var query = Interval.closed(210L, 290L);
+
+      final var result = query.smallestCover(events, Event::timestamp);
+
+      assertThat(result).containsExactly(event2, event3);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenPointsCannotCoverInterval() {
+      final var event1 = new Event("a", 100L);
+      final var event2 = new Event("b", 200L);
+      final var events = List.of(event1, event2);
+
+      // Query [300, 400] - all events are before the interval, no coverage at end
+      final var query = Interval.closed(300L, 400L);
+
+      final var result = query.smallestCover(events, Event::timestamp);
+
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldThrowWhenMappedValuesAreNotSorted() {
+      final var event1 = new Event("a", 300L);
+      final var event2 = new Event("b", 100L);
+      final var events = List.of(event1, event2);
+
+      final var query = Interval.closed(100L, 300L);
+
+      assertThatThrownBy(() -> query.smallestCover(events, Event::timestamp))
           .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("Expected intervals to be contiguous");
+          .hasMessageContaining("strictly sorted in ascending order with no duplicates");
     }
 
     record Event(String name, long timestamp) implements Comparable<Event> {
@@ -551,20 +654,6 @@ public class IntervalTest {
       public int compareTo(final Event other) {
         return Long.compare(timestamp, other.timestamp);
       }
-    }
-  }
-
-  @Nested
-  class Values {
-
-    @ParameterizedTest
-    @MethodSource("io.camunda.zeebe.backup.api.IntervalTest#inclusivenessVariants")
-    void shouldReturnStartAndEnd(final boolean startInclusive, final boolean endInclusive) {
-      // given
-      final var interval = new Interval<>(1, startInclusive, 10, endInclusive);
-
-      // when/then
-      assertThat(interval.values()).containsExactly(1, 10);
     }
   }
 
@@ -645,61 +734,6 @@ public class IntervalTest {
       final var result = Interval.intersection(List.of(first, second));
 
       assertThat(result.isPresent()).isEqualTo(hasResult);
-    }
-  }
-
-  @Nested
-  class FromPoints {
-
-    @Test
-    void shouldReturnEmptyListForEmptyInput() {
-      final List<Integer> emptyPoints = List.of();
-      final var result = Interval.fromPoints(emptyPoints, Interval::closed);
-
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    void shouldReturnEmptyListForSinglePoint() {
-      final var result = Interval.fromPoints(List.of(1), Interval::closed);
-
-      assertThat(result).isEmpty();
-    }
-
-    @Test
-    void shouldCreateSingleIntervalFromTwoPoints() {
-      final var result = Interval.fromPoints(List.of(1, 5), Interval::closed);
-
-      assertThat(result).containsExactly(Interval.closed(1, 5));
-    }
-
-    @Test
-    void shouldCreateIntervalsFromMultiplePoints() {
-      final var result = Interval.fromPoints(List.of(1, 3, 5, 7), Interval::closedOpen);
-
-      assertThat(result)
-          .containsExactly(
-              Interval.closedOpen(1, 3),
-              Interval.closedOpen(3, 5),
-              Interval.closedOpen(5, 7),
-              Interval.point(7));
-    }
-
-    @Test
-    void shouldUseProvidedIntervalFactory() {
-      // Using closed intervals
-      final var closedResult = Interval.fromPoints(List.of(1, 2, 3), Interval::closed);
-      assertThat(closedResult).containsExactly(Interval.closed(1, 2), Interval.closed(2, 3));
-
-      // Using half-open intervals
-      final var halfOpenResult = Interval.fromPoints(List.of(1, 2, 3), Interval::closedOpen);
-      assertThat(halfOpenResult)
-          .containsExactly(Interval.closedOpen(1, 2), Interval.closedOpen(2, 3), Interval.point(3));
-
-      // Using open-closed intervals
-      final var openClosedResult = Interval.fromPoints(List.of(1, 2, 3), Interval::openClosed);
-      assertThat(openClosedResult)
-          .containsExactly(Interval.point(1), Interval.openClosed(1, 2), Interval.openClosed(2, 3));
     }
   }
 

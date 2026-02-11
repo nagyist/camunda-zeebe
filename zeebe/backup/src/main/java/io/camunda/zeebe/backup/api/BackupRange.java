@@ -20,7 +20,7 @@ public sealed interface BackupRange {
   /** A complete backup range without deletions. */
   record Complete(Interval<Long> checkpointInterval) implements BackupRange {
     public Complete(final long startCheckpointId, final long endCheckpointId) {
-      this(new Interval<>(startCheckpointId, endCheckpointId));
+      this(Interval.closed(startCheckpointId, endCheckpointId));
     }
 
     @Override
