@@ -57,6 +57,8 @@ import org.springframework.test.json.JsonCompareMode;
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final String PROCESS_DEFINITION_URL = "/v2/process-definitions/";
   static final String PROCESS_DEFINITION_SEARCH_URL = PROCESS_DEFINITION_URL + "search";
+  static final String PROCESS_DEFINITION_VERSION_STATISTICS_URL =
+      PROCESS_DEFINITION_URL + "statistics/process-instances-by-version";
 
   static final ProcessDefinitionEntity PROCESS_DEFINITION_ENTITY =
       new ProcessDefinitionEntity(
@@ -731,7 +733,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances-by-version")
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -756,5 +758,105 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .isEqualTo(sort.getFieldSortings().getFirst().field());
     assertThat(io.camunda.search.sort.SortOrder.DESC)
         .isEqualTo(sort.orderings().getFirst().order());
+  }
+
+  @Test
+  void shouldRejectVersionStatisticsRequestWithoutBody() {
+    // given
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400,
+                  "detail": "Required request body is missing",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_VERSION_STATISTICS_URL);
+    // when/then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectVersionStatisticsRequestWithEmptyBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "No filter provided.",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_VERSION_STATISTICS_URL);
+
+    // when/then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectVersionStatisticsRequestWithEmptyFilter() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {}
+            }
+        """;
+
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "No filter.processDefinitionId provided.",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_VERSION_STATISTICS_URL);
+
+    // when/then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 }

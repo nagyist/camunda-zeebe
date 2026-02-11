@@ -30,6 +30,15 @@ public interface ProcessDefinitionInstanceVersionStatisticsFilter extends Statis
   ProcessDefinitionInstanceVersionStatisticsFilter processDefinitionId(final String value);
 
   /**
+   * Filters by process definition ID, provided via a consumer. This filter is mandatory for this
+   * statistic and defines the process definition for which version statistics are calculated.
+   *
+   * @param fn consumer used to supply the process definition ID
+   * @return the updated filter
+   */
+  ProcessDefinitionInstanceVersionStatisticsFilter processDefinitionId(final Consumer<String> fn);
+
+  /**
    * Filters process definition by tenant id.
    *
    * @param value the id of tenant
