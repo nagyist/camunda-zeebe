@@ -111,6 +111,8 @@ public class AuditLogSearchClientIT {
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getProcessInstanceKey())
         .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
+    assertThat(auditLog.getRootProcessInstanceKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
   }
 
   @Test

@@ -123,6 +123,8 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+        rootProcessInstanceKey:
+          $ref: 'keys.yaml#/components/schemas/RootProcessInstanceKey'
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
