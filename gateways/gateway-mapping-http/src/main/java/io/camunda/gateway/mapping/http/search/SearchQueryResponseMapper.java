@@ -799,6 +799,7 @@ public final class SearchQueryResponseMapper {
             warnIfNull(entity, BatchOperationItemEntity::processInstanceKey, "processInstanceKey")
                 .map(Object::toString)
                 .orElse(null))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage())
         .state(
