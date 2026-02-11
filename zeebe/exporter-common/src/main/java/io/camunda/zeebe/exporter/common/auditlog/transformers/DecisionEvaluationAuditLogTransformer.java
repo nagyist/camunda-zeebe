@@ -40,13 +40,5 @@ public class DecisionEvaluationAuditLogTransformer
     if (record.getIntent() == DecisionEvaluationIntent.FAILED) {
       log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
     }
-    final long processInstanceKey = value.getProcessInstanceKey();
-    if (processInstanceKey > 0) {
-      log.setProcessInstanceKey(processInstanceKey);
-    }
-    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      log.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
   }
 }
