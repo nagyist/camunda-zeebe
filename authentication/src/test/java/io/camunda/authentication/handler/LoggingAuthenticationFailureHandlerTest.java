@@ -65,7 +65,6 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "logging.level.org.springframework.security=TRACE",
     })
 @ActiveProfiles("consolidated-auth")
-@ExtendWith(OutputCaptureExtension.class)
 class LoggingAuthenticationFailureHandlerTest {
   @RegisterExtension
   static WireMockExtension wireMock =
@@ -107,6 +106,7 @@ class LoggingAuthenticationFailureHandlerTest {
   }
 
   @Test
+  @ExtendWith(OutputCaptureExtension.class)
   void shouldNotLogOnErrorLevel(final CapturedOutput capturedOutput) {
     // Given: a random access token
     final String accessToken = accessToken();
@@ -121,8 +121,9 @@ class LoggingAuthenticationFailureHandlerTest {
             .exchange();
     // Then:
     assertThat(apiResult).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-    assertThat(capturedOutput.getOut()).contains("A technical authentication problem occurred");
-    assertThat(capturedOutput.getOut()).doesNotContain("ERROR");
+    assertThat(capturedOutput.getOut())
+        .contains("A technical authentication problem occurred")
+        .doesNotContain("ERROR");
   }
 
   private static String wellKnownResponse() {
