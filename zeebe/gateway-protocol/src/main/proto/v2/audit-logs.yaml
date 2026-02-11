@@ -169,15 +169,20 @@ components:
         relatedEntityKey:
           allOf:
             - $ref: '#/components/schemas/AuditLogEntityKey'
-          description: The key of the related entity.
+          description: |
+            The key of the related entity. The content depends on the operation type and entity type.
+            For example, for authorization operations, this will contain the ID of the owner (e.g., user or group) the authorization belongs to.
         relatedEntityType:
           allOf:
             - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
-          description: The type of the related entity.
+          description: |
+            The type of the related entity. The content depends on the operation type and entity type.
+            For example, for authorization operations, this will contain the type of the owner (e.g., USER or GROUP) the authorization belongs to.
         entityDescription:
           type: string
-          description: Additional description of the entity affected by the operation.
-
+          description: |
+            Additional description of the entity affected by the operation.
+            For example, for variable operations, this will contain the variable name.
     AuditLogSearchQuerySortRequest:
       type: object
       additionalProperties: false
