@@ -86,13 +86,6 @@ export default defineConfig(({mode}) => ({
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
     legalComments: 'none',
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        silenceDeprecations: ['mixed-decls', 'global-builtin'],
-      },
-    },
-  },
   resolve: {alias: {src: path.resolve(__dirname, './src')}},
   test: {
     globals: true,
