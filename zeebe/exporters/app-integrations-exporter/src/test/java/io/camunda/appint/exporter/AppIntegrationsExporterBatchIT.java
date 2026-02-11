@@ -267,8 +267,7 @@ final class AppIntegrationsExporterBatchIT {
 
     // when
     final var records = export(generateRecords().limit(25));
-
-    Awaitility.await().until(() -> !exporter.getSubscription().isActive());
+    waitForBatchesToComplete();
 
     // then
     assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
@@ -306,6 +305,6 @@ final class AppIntegrationsExporterBatchIT {
   }
 
   private void waitForBatchesToComplete() {
-    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
+    Awaitility.await().until(() -> exporter.getSubscription().hasActiveBatch());
   }
 }

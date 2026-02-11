@@ -184,6 +184,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>app-integrations-exporter</artifactId>
+      <scope>runtime</scope>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>

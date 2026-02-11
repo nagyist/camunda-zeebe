@@ -53,8 +53,7 @@ public class Subscription<T> {
     } else {
       doWithLock(
           () -> {
-            if (!hasBatchesInFlight()) {
-              // An empty batch allows us to save the exported record position
+            if (hasActiveBatch()) {
               positionConsumer.accept(record.getPosition());
             }
           });
@@ -123,16 +122,12 @@ public class Subscription<T> {
     return currentBatch;
   }
 
-  public boolean isActive() {
-    return dispatcher.isActive();
-  }
-
   public void close() {
     transport.close();
     dispatcher.close();
   }
 
-  public boolean hasBatchesInFlight() {
-    return !currentBatch.isEmpty() || dispatcher.isActive();
+  public boolean hasActiveBatch() {
+    return currentBatch.isEmpty() && !dispatcher.isActive();
   }
 }
