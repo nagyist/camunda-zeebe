@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
@@ -261,8 +262,9 @@ public class BackupRetention extends Actor {
     final var deletableBackups = new ArrayList<BackupIdentifier>();
     long firstAvailableBackupInNewRange = -1L;
 
-    final long maxBackupCheckpointId =
+    final long latestCompletedBackupCheckpointId =
         backups.stream()
+            .filter(f -> f.statusCode() == BackupStatusCode.COMPLETED)
             .max(MAX_BACKUP_COMPARATOR)
             .map(status -> status.id().checkpointId())
             // In the extreme case where the checkpointId cannot be determined for any
@@ -283,8 +285,14 @@ public class BackupRetention extends Actor {
       }
 
       final var timestamp = refTimestampOpt.get().toEpochMilli();
-      if (timestamp < window && backup.id().checkpointId() != maxBackupCheckpointId) {
-        deletableBackups.add(backup.id());
+      if (timestamp < window) {
+        if (backup.id().checkpointId() != latestCompletedBackupCheckpointId) {
+          deletableBackups.add(backup.id());
+        } else {
+          // If the backup is the latest completed backup it should not be deleted and the marker
+          // should be moved to that backup id.
+          firstAvailableBackupInNewRange = backup.id().checkpointId();
+        }
       } else {
         firstAvailableBackupInNewRange = backup.id().checkpointId();
         break;
