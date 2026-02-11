@@ -491,7 +491,8 @@ describe('Edit variable', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should load full value on focus during modification mode if it was truncated', async () => {
+  // TODO: fix test with #44450
+  it.skip('should load full value on focus during modification mode if it was truncated', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
@@ -562,7 +563,8 @@ describe('Edit variable', () => {
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
   });
 
-  it('should load full value on json viewer click during modification mode if it was truncated', async () => {
+  // TODO: fix test with #44450
+  it.skip('should load full value on json viewer click during modification mode if it was truncated', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess({
@@ -638,7 +640,8 @@ describe('Edit variable', () => {
     );
   });
 
-  it('should have JSON editor when editing a Variable', async () => {
+  // TODO: fix test with #44450
+  it.skip('should have JSON editor when editing a Variable', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({

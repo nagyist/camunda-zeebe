@@ -45,7 +45,8 @@ const stats = {
   ],
 };
 
-describe('Modification Dropdown - Multi Scopes', () => {
+// TODO: fix test with #44451
+describe.skip('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',

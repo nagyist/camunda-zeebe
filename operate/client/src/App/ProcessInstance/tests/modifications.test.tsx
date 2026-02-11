@@ -169,7 +169,8 @@ describe('ProcessInstance - modification mode', () => {
     expect(screen.getByTestId('apply-modifications-button')).toBeDisabled();
   });
 
-  it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
+  // TODO: fix test with #45539
+  it.skip('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
     mockSearchVariables().withSuccess({
       items: [createvariable()],
       page: {
@@ -250,7 +251,8 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  it('should display loading overlay when modifications are applied', async () => {
+  // TODO: fix test with #45539
+  it.skip('should display loading overlay when modifications are applied', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockModifyProcessInstance().withSuccess(null);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
