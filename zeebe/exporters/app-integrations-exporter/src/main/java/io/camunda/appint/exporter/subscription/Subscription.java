@@ -8,6 +8,7 @@
 package io.camunda.appint.exporter.subscription;
 
 import io.camunda.appint.exporter.config.BatchConfig;
+import io.camunda.appint.exporter.dispatch.Dispatcher;
 import io.camunda.appint.exporter.dispatch.DispatcherImpl;
 import io.camunda.appint.exporter.mapper.RecordMapper;
 import io.camunda.appint.exporter.transport.Transport;
@@ -23,7 +24,7 @@ public class Subscription<T> {
   private final Transport<T> transport;
   private final RecordMapper<T> mapper;
   private final ReentrantLock lock = new ReentrantLock();
-  private final DispatcherImpl dispatcher;
+  private final Dispatcher dispatcher;
   private final BatchConfig batchConfig;
   private final Consumer<Long> positionConsumer;
 
@@ -48,18 +49,22 @@ public class Subscription<T> {
 
   public void exportRecord(final Record<?> record) {
     if (mapper.supports(record)) {
-      // Record matches the filter criteria, we can add it to the batch
-      batchRecord(record);
-    } else if (!hasBatchesInFlight()) {
-      // An empty batch allows us to save the exported record position
-      positionConsumer.accept(record.getPosition());
+      doWithLock(() -> verifyAndAddToBatch(record));
+    } else {
+      doWithLock(
+          () -> {
+            if (!hasBatchesInFlight()) {
+              // An empty batch allows us to save the exported record position
+              positionConsumer.accept(record.getPosition());
+            }
+          });
     }
   }
 
-  private void batchRecord(final Record<?> record) {
+  private void doWithLock(final Runnable runnable) {
     lock.lock();
     try {
-      verifyAndAddToBatch(record);
+      runnable.run();
     } finally {
       lock.unlock();
     }
@@ -69,7 +74,6 @@ public class Subscription<T> {
     if (currentBatch.shouldFlush()) {
       flush();
     }
-
     if (currentBatch.addRecord(record, this::mapForBatch) && currentBatch.shouldFlush()) {
       flush();
     }

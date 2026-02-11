@@ -11,4 +11,6 @@ import io.camunda.zeebe.util.CloseableSilently;
 
 public interface Dispatcher extends CloseableSilently {
   void dispatch(Runnable job);
+
+  boolean isActive();
 }

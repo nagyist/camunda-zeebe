@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 public class DispatcherImpl implements Dispatcher {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
-
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final Semaphore semaphore;
   private final int maxJobsInFlight;
@@ -43,9 +42,14 @@ public class DispatcherImpl implements Dispatcher {
     }
   }
 
+  @Override
+  public boolean isActive() {
+    return semaphore.availablePermits() != maxJobsInFlight;
+  }
+
   /**
    * Executes the given job and releases a permit from the semaphore upon completion. If an
-   * exception occurs during execution, the job is re-queued with high priority to be retried again.
+   * exception occurs during execution, the job is retried until it succeeds.
    *
    * @param job, the job to execute
    */
@@ -57,13 +61,9 @@ public class DispatcherImpl implements Dispatcher {
         success = true;
         semaphore.release();
       } catch (final Exception e) {
-        log.debug("Failed to run the job. Restarting. Error: " + e.getMessage());
+        log.debug("Failed to run the job. Restarting.", e);
       }
     }
-  }
-
-  public boolean isActive() {
-    return semaphore.availablePermits() != maxJobsInFlight;
   }
 
   @Override

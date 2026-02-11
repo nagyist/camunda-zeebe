@@ -87,7 +87,7 @@ final class AppIntegrationsExporterBatchIT {
 
     // when
     exporter.export(record);
-    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
+    waitForBatchesToComplete();
     final var expectedJson =
         SubscriptionFactory.createJsonMapper()
             .toJson(
@@ -129,7 +129,7 @@ final class AppIntegrationsExporterBatchIT {
 
     final var records = export(generateRecords().limit(100));
 
-    Awaitility.await().until(() -> exporter.getSubscription().getBatch().getSize() == 0);
+    waitForBatchesToComplete();
 
     assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
     wireMock.verify(exactly(100), postRequestedFor(urlEqualTo("/")));
@@ -143,7 +143,7 @@ final class AppIntegrationsExporterBatchIT {
 
     final var records = export(generateRecords().limit(100));
 
-    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
+    waitForBatchesToComplete();
 
     assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
     wireMock.verify(moreThanOrExactly(10), postRequestedFor(urlEqualTo("/")));
@@ -180,7 +180,7 @@ final class AppIntegrationsExporterBatchIT {
 
     // when
     final var records = export(generateRecords().limit(1));
-    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
+    waitForBatchesToComplete();
 
     // then
     assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
@@ -216,7 +216,7 @@ final class AppIntegrationsExporterBatchIT {
 
     // when
     final var records = export(generateRecords().limit(1));
-    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
+    waitForBatchesToComplete();
 
     // then
     assertThat(controller.getPosition()).isEqualTo(records.getLast().getPosition());
@@ -245,7 +245,7 @@ final class AppIntegrationsExporterBatchIT {
 
     // when
     export(generateRecords().limit(1));
-    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
+    waitForBatchesToComplete();
 
     // then
     wireMock.verify(exactly(1), postRequestedFor(urlEqualTo("/")));
@@ -303,5 +303,9 @@ final class AppIntegrationsExporterBatchIT {
               .withValue(record.getValue())
               .withValueType(record.getValueType());
         });
+  }
+
+  private void waitForBatchesToComplete() {
+    Awaitility.await().until(() -> !exporter.getSubscription().hasBatchesInFlight());
   }
 }
