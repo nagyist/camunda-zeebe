@@ -12,8 +12,11 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -177,5 +180,134 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
                 .getValue())
         .hasBusinessId(businessId)
         .hasProcessInstanceKey(secondInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithBusinessIdNoLongerInUseDueToCompletion() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given a process instance with a business id that has completed
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // when
+    final var secondProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTags("secondInstance")
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(secondProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithBusinessIdNoLongerInUseDueToCancellation() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given a process instance with a business id that has completed
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .await();
+
+    // when
+    final var secondProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTags("secondInstance")
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(secondProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithBusinessIdNoLongerInUseDueToBanning() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given a process instance with a business id that has completed
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
+    ENGINE.banInstanceInNewTransaction(1, processInstanceKey);
+    RecordingExporter.errorRecords().withRecordKey(processInstanceKey).await();
+
+    // when
+    final var secondProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTags("secondInstance")
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(secondProcessInstanceKey);
   }
 }
