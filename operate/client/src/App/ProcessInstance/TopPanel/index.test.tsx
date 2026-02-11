@@ -389,54 +389,6 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
   });
 
-  it('should display multiple instances banner when a flow node with multiple running instances is selected', async () => {
-    mockSearchElementInstances().withSuccess(searchResult([]));
-    mockSearchElementInstances().withSuccess(searchResult([]));
-
-    modificationsStore.enableModificationMode();
-
-    render(<TopPanel />, {
-      wrapper: getWrapper({elementId: 'service-task-7'}),
-    });
-
-    expect(
-      await screen.findByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i,
-      ),
-    ).toBeInTheDocument();
-
-    // Select single-instance element - banner should disappear
-    updateSearchParams({elementId: 'service-task-1'});
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText(
-          /Flow node has multiple instances. To select one, use the instance history tree below./i,
-        ),
-      ).not.toBeInTheDocument(),
-    );
-
-    // Re-select multi-instance element - banner should reappear
-    updateSearchParams({elementId: 'service-task-7'});
-
-    expect(
-      await screen.findByText(
-        /Flow node has multiple instances. To select one, use the instance history tree below./i,
-      ),
-    ).toBeInTheDocument();
-
-    // FIXME: In the new element selection, the "multiple instances" banner no longer disappears.
-    // Tracked here: https://github.com/camunda/camunda/issues/45557
-
-    // Select element instance - banner should disappear
-    // updateSearchParams({elementId: 'service-task-7', elementInstanceKey: 'some-instance-id'});
-    // await waitForElementToBeRemoved(() =>
-    //   screen.queryByText(
-    //     /Flow node has multiple instances. To select one, use the instance history tree below./i,
-    //   ),
-    // );
-  });
-
   it('should display move token banner in moving mode', async () => {
     mockSearchElementInstances().withSuccess(
       searchResult([mockElementInstance]),

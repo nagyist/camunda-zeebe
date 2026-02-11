@@ -314,10 +314,6 @@ const TopPanel: React.FC = observer(() => {
             }}
           />
         )}
-      {modificationsStore.isModificationModeEnabled &&
-        hasSelectedElementMultipleRunningInstances && (
-          <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
-        )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
           {processDefinitionData?.xml !== undefined &&
