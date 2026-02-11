@@ -10,7 +10,11 @@ package io.camunda.zeebe.util;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-public class Optionals {
+public final class Optionals {
+
+  // utility class
+  private Optionals() {}
+
   public static Optional<Long> boxed(final OptionalLong optionalLong) {
     if (optionalLong.isPresent()) {
       return Optional.of(optionalLong.getAsLong());
