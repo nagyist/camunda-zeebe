@@ -33,12 +33,15 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import java.time.InstantSource;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -79,17 +82,47 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   @Override
   public void processRecord(final TypedRecord<JobBatchRecord> record) {
     final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(record);
-    final var validationResult = isValid(record, authorizedTenantIds);
-    if (validationResult.isRight()) {
-      activateJobs(record, authorizedTenantIds);
-    } else {
+    final var value = record.getValue();
+
+    final var validationResult = validateRequest(record, authorizedTenantIds);
+    if (validationResult.isLeft()) {
       rejectCommand(record, validationResult.getLeft());
+      return;
     }
+
+    final var tenantIds = determineTenantIds(value, authorizedTenantIds);
+    activateJobs(record, tenantIds);
   }
 
-  private Either<Rejection, Void> isValid(
-      final TypedRecord<JobBatchRecord> command, final AuthorizedTenants authorizedTenantIds) {
-    final var record = command.getValue();
+  private List<String> determineTenantIds(
+      final JobBatchRecord value, final AuthorizedTenants authorizedTenantIds) {
+    if (value.getTenantFilter() == TenantFilter.ASSIGNED) {
+      return authorizedTenantIds.getAuthorizedTenantIds();
+    }
+
+    final var providedTenantIds = value.getTenantIds();
+    return providedTenantIds.isEmpty()
+        ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        : providedTenantIds;
+  }
+
+  private Either<Rejection, Void> validateRequest(
+      final TypedRecord<JobBatchRecord> record, final AuthorizedTenants authorizedTenantIds) {
+    final var value = record.getValue();
+
+    // Skip tenant authorization check when using ASSIGNED filter
+    if (TenantFilter.PROVIDED.equals(value.getTenantFilter())) {
+      final var tenantAuthResult = validateTenantAuthorization(value, authorizedTenantIds);
+      if (tenantAuthResult.isLeft()) {
+        return tenantAuthResult;
+      }
+    }
+
+    return validateCommandFields(value);
+  }
+
+  private Either<Rejection, Void> validateTenantAuthorization(
+      final JobBatchRecord record, final AuthorizedTenants authorizedTenantIds) {
     final var tenantIds = record.getTenantIds();
 
     if (!authorizedTenantIds.isAuthorizedForTenantIds(tenantIds)) {
@@ -99,6 +132,11 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
               "Expected to activate job batch for tenants '%s', but user is not authorized. Authorized tenants are '%s'"
                   .formatted(tenantIds, authorizedTenantIds.getAuthorizedTenantIds())));
     }
+
+    return Either.right(null);
+  }
+
+  private Either<Rejection, Void> validateCommandFields(final JobBatchRecord record) {
     if (record.getMaxJobsToActivate() <= 0) {
       return Either.left(
           new Rejection(
@@ -123,12 +161,12 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private void activateJobs(
-      final TypedRecord<JobBatchRecord> record, final AuthorizedTenants authorizedTenants) {
+      final TypedRecord<JobBatchRecord> record, final List<String> tenantIds) {
     final JobBatchRecord value = record.getValue();
     final long jobBatchKey = keyGenerator.nextKey();
 
     final Either<TooLargeJob, Map<JobKind, Integer>> result =
-        jobBatchCollector.collectJobs(record, authorizedTenants);
+        jobBatchCollector.collectJobs(record, tenantIds);
     final var activatedJobCountPerJobKind = result.getOrElse(Collections.emptyMap());
     result.ifLeft(
         largeJob ->
