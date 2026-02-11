@@ -378,6 +378,13 @@ public final class BackupRangeResolver {
             "Partition %d: first backup checkpoint %d is after safe start %d."
                 .formatted(partition, backupStatuses.getFirst().id().checkpointId(), safeStart));
       }
+
+      final var firstCheckpointId = backupStatuses.getFirst().id().checkpointId();
+      if (firstCheckpointId > safeStart) {
+        throw new IllegalStateException(
+            "Partition %d: first backup at checkpoint %d is after safe start %d"
+                .formatted(partition, firstCheckpointId, safeStart));
+      }
     }
 
     private void validateGlobalCheckpointConsistency(final long globalCheckpointId) {
@@ -385,15 +392,6 @@ public final class BackupRangeResolver {
         throw new IllegalStateException(
             "Partition %d has no backups in range [%d, %d]"
                 .formatted(partition, safeStart, globalCheckpointId));
-      }
-
-      final var firstCheckpointId = backupStatuses.getFirst().id().checkpointId();
-      final var lastCheckpointId = backupStatuses.getLast().id().checkpointId();
-
-      if (firstCheckpointId > safeStart) {
-        throw new IllegalStateException(
-            "Partition %d: first backup at checkpoint %d is after safe start %d"
-                .formatted(partition, firstCheckpointId, safeStart));
       }
 
       if (backupStatuses.getLast().id().checkpointId() != globalCheckpointId) {
