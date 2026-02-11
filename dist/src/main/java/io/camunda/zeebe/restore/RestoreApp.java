@@ -10,22 +10,22 @@ package io.camunda.zeebe.restore;
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.RestoreProperties;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,10 @@ import org.springframework.context.annotation.Import;
       UnifiedConfiguration.class,
       BrokerBasedPropertiesOverride.class,
       RestorePropertiesOverride.class,
-      WorkingDirectoryConfiguration.class
+      WorkingDirectoryConfiguration.class,
+      // RDBMS Configuration - conditional on secondary storage type being RDBMS.
+      // When active, provides ExporterPositionMapper for RDBMS-aware restore.
+      RdbmsConfiguration.class,
     })
 public class RestoreApp implements ApplicationRunner {
 
@@ -66,6 +69,7 @@ public class RestoreApp implements ApplicationRunner {
   // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, requires --from)
   private Instant to;
 
+  private final ExporterPositionMapper exporterPositionMapper;
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
   private final PostRestoreAction postRestoreAction;
@@ -75,6 +79,7 @@ public class RestoreApp implements ApplicationRunner {
   public RestoreApp(
       final BrokerBasedProperties configuration,
       final BackupStore backupStore,
+      @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
       final RestoreProperties restoreConfiguration,
       final MeterRegistry meterRegistry,
       final NodeIdProvider nodeIdProvider,
@@ -85,6 +90,7 @@ public class RestoreApp implements ApplicationRunner {
       final PreRestoreAction preRestoreAction) {
     this.configuration = configuration;
     this.backupStore = backupStore;
+    this.exporterPositionMapper = exporterPositionMapper;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
     this.postRestoreAction = postRestoreAction;
@@ -118,54 +124,53 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   @Override
-  public void run(final ApplicationArguments args)
-      throws IOException, ExecutionException, InterruptedException {
+  public void run(final ApplicationArguments args) throws Exception {
     validateParameters();
-
-    final var restoreManager = new RestoreManager(configuration, backupStore, meterRegistry);
 
     final var restoreId = getRestoreId();
     final var preRestoreActionResult =
         preRestoreAction.beforeRestore(restoreId, configuration.getCluster().getNodeId());
 
-    final PostRestoreActionContext postRestoreActionContext;
-    if (!preRestoreActionResult.skipRestore()) {
-      if (backupId != null) {
-        LOG.info(
-            "Starting to restore from backup {} with the following configuration: {}",
-            backupId,
-            restoreConfiguration);
-        restoreManager.restore(
-            backupId,
-            restoreConfiguration.validateConfig(),
-            restoreConfiguration.ignoreFilesInTarget());
-        LOG.info("Successfully restored broker from backup {}", backupId);
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, exporterPositionMapper, meterRegistry)) {
+
+      final PostRestoreActionContext postRestoreActionContext;
+      if (!preRestoreActionResult.skipRestore()) {
+        if (backupId != null) {
+          LOG.info(
+              "Starting to restore from backup {} with the following configuration: {}",
+              backupId,
+              restoreConfiguration);
+          restoreManager.restore(
+              backupId,
+              restoreConfiguration.validateConfig(),
+              restoreConfiguration.ignoreFilesInTarget());
+          LOG.info("Successfully restored broker from backup {}", backupId);
+        } else {
+          LOG.info(
+              "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+              from,
+              to,
+              restoreConfiguration);
+          restoreManager.restore(
+              from,
+              to,
+              restoreConfiguration.validateConfig(),
+              restoreConfiguration.ignoreFilesInTarget());
+          LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+        }
+        postRestoreActionContext =
+            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
       } else {
-        LOG.info(
-            "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-            from,
-            to,
-            restoreConfiguration);
-        restoreManager.restore(
-            from,
-            to,
-            restoreConfiguration.validateConfig(),
-            restoreConfiguration.ignoreFilesInTarget());
-        LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+        LOG.info("Skipping restore: {}", preRestoreActionResult.message());
+        postRestoreActionContext =
+            new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), true);
       }
-
-      postRestoreActionContext =
-          new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
-    } else {
-      LOG.info("Skipping restore: {}", preRestoreActionResult.message());
-      postRestoreActionContext =
-          new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), true);
+      // We have to run post restore anyway even if post restore action decided to skip restore,
+      // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
+      // complete restore.
+      postRestoreAction.restored(postRestoreActionContext);
     }
-
-    // We have to run post restore anyway even if post restore action decided to skip restore,
-    // because in some cases, like when using dynamic node ids, we need to wait for other nodes to
-    // complete restore.
-    postRestoreAction.restored(postRestoreActionContext);
   }
 
   private void validateParameters() {
