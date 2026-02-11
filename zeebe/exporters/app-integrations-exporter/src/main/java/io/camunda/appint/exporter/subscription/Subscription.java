@@ -29,6 +29,7 @@ public class Subscription<T> {
   private final Consumer<Long> positionConsumer;
 
   private Batch<T> currentBatch;
+  private volatile boolean closed = false;
 
   public Subscription(
       final Transport<T> transport,
@@ -48,12 +49,15 @@ public class Subscription<T> {
   }
 
   public void exportRecord(final Record<?> record) {
+    if (closed) {
+      throw new IllegalStateException("Cannot export record as subscription is already closed.");
+    }
     if (mapper.supports(record)) {
       doWithLock(() -> verifyAndAddToBatch(record));
     } else {
       doWithLock(
           () -> {
-            if (hasActiveBatch()) {
+            if (hasNoActiveBatch()) {
               positionConsumer.accept(record.getPosition());
             }
           });
@@ -79,10 +83,18 @@ public class Subscription<T> {
   }
 
   private T mapForBatch(final Record<?> record) {
-    return mapper.map(record);
+    final T mapped = mapper.map(record);
+    if (mapped == null) {
+      throw new IllegalStateException(
+          "Mapper returned null for record at position " + record.getPosition());
+    }
+    return mapped;
   }
 
   public void attemptFlush() {
+    if (closed) {
+      throw new IllegalStateException("Cannot flush subscription as it is already closed.");
+    }
     if (lock.tryLock()) {
       try {
         if (currentBatch.shouldFlush()) {
@@ -95,9 +107,18 @@ public class Subscription<T> {
   }
 
   private void flush() {
-    final var lastPosition = currentBatch.getLastLogPosition();
-    final var entries = currentBatch.getEntries();
+    try {
+      dispatch(currentBatch);
+      currentBatch = new Batch<>(batchConfig.batchSize(), batchConfig.batchIntervalMs());
+    } catch (final Exception e) {
+      log.error("Failed to dispatch batch. Batch will be retained and retried.", e);
+      throw e;
+    }
+  }
 
+  private void dispatch(final Batch<T> batch) {
+    final var lastPosition = batch.getLastLogPosition();
+    final var entries = batch.getEntries();
     dispatcher.dispatch(
         () -> {
           try {
@@ -114,8 +135,6 @@ public class Subscription<T> {
           }
           positionConsumer.accept(lastPosition);
         });
-
-    currentBatch = new Batch<>(batchConfig.batchSize(), batchConfig.batchIntervalMs());
   }
 
   public Batch<T> getBatch() {
@@ -123,11 +142,16 @@ public class Subscription<T> {
   }
 
   public void close() {
-    transport.close();
-    dispatcher.close();
+    log.debug("Closing subscription.");
+    doWithLock(
+        () -> {
+          closed = true;
+          transport.close();
+          dispatcher.close();
+        });
   }
 
-  public boolean hasActiveBatch() {
+  public boolean hasNoActiveBatch() {
     return currentBatch.isEmpty() && !dispatcher.isActive();
   }
 }

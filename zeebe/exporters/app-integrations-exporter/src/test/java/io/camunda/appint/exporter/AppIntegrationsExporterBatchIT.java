@@ -305,6 +305,6 @@ final class AppIntegrationsExporterBatchIT {
   }
 
   private void waitForBatchesToComplete() {
-    Awaitility.await().until(() -> exporter.getSubscription().hasActiveBatch());
+    Awaitility.await().until(() -> exporter.getSubscription().hasNoActiveBatch());
   }
 }
