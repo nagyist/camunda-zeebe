@@ -101,7 +101,7 @@
     "globals": "17.3.0",
     "jsdom": "26.1.0",
     "knip": "5.83.1",
-    "monaco-editor": "0.52.2",
+    "monaco-editor": "0.55.1",
     "msw": "2.12.10",
     "playwright": "1.58.2",
     "prettier": "3.8.1",
