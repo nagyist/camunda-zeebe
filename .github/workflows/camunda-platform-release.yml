@@ -348,7 +348,7 @@ jobs:
           
           echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: ${{ steps.release-artifacts.outputs.dir }}
@@ -442,7 +442,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Zeebe Docker Image
@@ -547,7 +547,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Operate Docker Image
@@ -655,7 +655,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Tasklist Docker Image
@@ -764,7 +764,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Optimize Docker Image
@@ -872,7 +872,7 @@ jobs:
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
       - name: Build Camunda Docker Image
@@ -1048,7 +1048,7 @@ jobs:
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
       - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: release-artifacts-${{ inputs.releaseVersion }}
           path: release-artifacts

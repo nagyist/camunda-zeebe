@@ -219,7 +219,7 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: C8 Orchestration Cluster API Test Result
@@ -433,7 +433,7 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E Test Result (Tasklist ${{ matrix.tasklist_mode }} mode)
