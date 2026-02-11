@@ -244,7 +244,7 @@ class UserTaskToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("User task key must be a positive number."));
+                      .isEqualTo("userTaskKey: User task key must be a positive number."));
     }
   }
 
@@ -696,7 +696,7 @@ class UserTaskToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("User task key must be a positive number."));
+                      .isEqualTo("userTaskKey: User task key must be a positive number."));
     }
   }
 
@@ -867,7 +867,7 @@ class UserTaskToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("User task key must be a positive number."));
+                      .isEqualTo("userTaskKey: User task key must be a positive number."));
     }
   }
 }
