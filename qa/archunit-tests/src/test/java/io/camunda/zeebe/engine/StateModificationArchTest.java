@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 
 import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -56,6 +55,16 @@ public class StateModificationArchTest {
    */
   private static final Set<String> WHITELISTED_METHODS =
       Set.of(
+          /*
+           * Helper classes in 'state.appliers' that do NOT implement TypedEventApplier directly.
+           * These are used exclusively by TypedEventApplier implementations to extract
+           * reusable event-applying logic. They are safe because:
+           * - They live in the state.appliers package (part of the event applier infrastructure)
+           * - They are only called from actual TypedEventApplier implementations
+           */
+          "io.camunda.zeebe.engine.state.appliers.BufferedStartMessageEventStateApplier.removeProcessInstanceMessageLock",
+          "io.camunda.zeebe.engine.state.appliers.EventSubProcessInterruptionMarker.markInstanceIfInterrupted",
+
           /*
            * ProcessInstanceCreationCreateWithAwaitingResultProcessor.createProcessInstance():
            * Stores request metadata (requestId, streamId) for CREATE_WITH_AWAITING_RESULT.
@@ -115,7 +124,7 @@ public class StateModificationArchTest {
    * <p>The following are allowed to call state-modifying methods:
    *
    * <ul>
-   *   <li>Event appliers in {@code io.camunda.zeebe.engine.state.appliers}
+   *   <li>Event appliers implementing {@code TypedEventApplier}
    *   <li>Migration classes in {@code io.camunda.zeebe.engine.state.migration}
    *   <li>Explicitly whitelisted methods with documented exceptions
    * </ul>
@@ -126,22 +135,11 @@ public class StateModificationArchTest {
         public boolean test(final JavaMethod method) {
           final var owner = method.getOwner();
           // Allowed if method is from an event applier class
-          return isEventApplier(owner)
+          return owner.isAssignableTo(TypedEventApplier.class)
               // or if it's from a migration class
               || owner.getPackageName().startsWith("io.camunda.zeebe.engine.state.migration")
               // or if it's a whitelisted method
               || WHITELISTED_METHODS.contains(owner.getFullName() + "." + method.getName());
-        }
-
-        /**
-         * Checks if a class is an event applier.
-         *
-         * <p>Event appliers are located in the {@code io.camunda.zeebe.engine.state.appliers}
-         * package or implement the {@link TypedEventApplier} interface.
-         */
-        private boolean isEventApplier(final JavaClass owner) {
-          return owner.getPackageName().startsWith("io.camunda.zeebe.engine.state.appliers")
-              || owner.isAssignableTo(TypedEventApplier.class);
         }
       };
 
