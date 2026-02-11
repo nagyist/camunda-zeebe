@@ -788,6 +788,13 @@ components:
           description: |
             The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint.
+        processDefinitionVersion:
+          description: |
+            As the version is already identified by the `processDefinitionKey`, the value of this field is ignored.
+            It's here for backwards-compatibility only as previous releases accepted it in request bodies.
+          type: integer
+          format: int32
+          default: -1
         variables:
           description: |
             JSON object that will instantiate the variables for the root variable scope
