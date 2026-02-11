@@ -41,7 +41,7 @@ jobs:
       TEST_TYPE: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Print metadata
         uses: ./.github/actions/print-metadata
