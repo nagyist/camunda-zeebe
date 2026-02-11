@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.exporter;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.NO_PARENT_EXISTS_KEY;
+import static java.time.ZoneOffset.UTC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.LiquibaseSchemaManager;
@@ -36,6 +37,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
+import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.UserQuery;
@@ -58,6 +60,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -79,6 +82,10 @@ import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecord
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableStatusMetricsValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.StatusMetricsValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsExportState;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
@@ -97,6 +104,8 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.util.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -761,6 +770,116 @@ class RdbmsExporterIT {
     assertThat(incident2.state()).isEqualTo(IncidentState.RESOLVED);
     assertThat(incident2.processInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(incident2.rootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldExportJobBatchMetrics() {
+    // given
+    final var startTime = OffsetDateTime.now(UTC).truncatedTo(ChronoUnit.MILLIS);
+    final var lastCreatedAt = startTime.plusSeconds(1);
+    final var lastFailedAt = startTime.plusSeconds(2);
+    final var lastCompletedAt = startTime.plusSeconds(3);
+    final var endTime = startTime.plusSeconds(4);
+    final var encodedStrings =
+        List.of("tenant1", "worker1", "jobType1", "tenant2", "worker2", "jobType2");
+    // Create array of StatusMetricsValue sized for all states
+    final StatusMetricsValue[] metricsArray = new StatusMetricsValue[3];
+
+    metricsArray[JobMetricsExportState.CREATED.getIndex()] =
+        ImmutableStatusMetricsValue.builder()
+            .withCount(3)
+            .withLastUpdatedAt(lastCreatedAt.toInstant().toEpochMilli())
+            .build();
+    metricsArray[JobMetricsExportState.FAILED.getIndex()] =
+        ImmutableStatusMetricsValue.builder()
+            .withCount(5)
+            .withLastUpdatedAt(lastFailedAt.toInstant().toEpochMilli())
+            .build();
+    metricsArray[JobMetricsExportState.COMPLETED.getIndex()] =
+        ImmutableStatusMetricsValue.builder()
+            .withCount(10)
+            .withLastUpdatedAt(lastCompletedAt.toInstant().toEpochMilli())
+            .build();
+
+    final var statusMetrics = List.of(metricsArray);
+
+    // Create second set of metrics for the other tenant/worker/jobType
+    final StatusMetricsValue[] metricsArray2 = new StatusMetricsValue[3];
+
+    metricsArray2[JobMetricsExportState.CREATED.getIndex()] =
+        ImmutableStatusMetricsValue.builder()
+            .withCount(7)
+            .withLastUpdatedAt(lastCreatedAt.toInstant().toEpochMilli())
+            .build();
+    metricsArray2[JobMetricsExportState.FAILED.getIndex()] =
+        ImmutableStatusMetricsValue.builder()
+            .withCount(2)
+            .withLastUpdatedAt(lastFailedAt.toInstant().toEpochMilli())
+            .build();
+    metricsArray2[JobMetricsExportState.COMPLETED.getIndex()] =
+        ImmutableStatusMetricsValue.builder()
+            .withCount(15)
+            .withLastUpdatedAt(lastCompletedAt.toInstant().toEpochMilli())
+            .build();
+
+    final var statusMetrics2 = List.of(metricsArray2);
+
+    final var metrics =
+        List.of(
+            ImmutableJobMetricsValue.builder()
+                .withTenantIdIndex(0)
+                .withWorkerNameIndex(1)
+                .withJobTypeIndex(2)
+                .withStatusMetrics(statusMetrics)
+                .build(),
+            ImmutableJobMetricsValue.builder()
+                .withTenantIdIndex(3)
+                .withWorkerNameIndex(4)
+                .withJobTypeIndex(5)
+                .withStatusMetrics(statusMetrics2)
+                .build());
+    final var jobBatchRecord =
+        FIXTURES.getJobMetricsBatchRecord(
+            JobMetricsBatchIntent.EXPORTED,
+            startTime.toInstant().toEpochMilli(),
+            endTime.toInstant().toEpochMilli(),
+            encodedStrings,
+            metrics,
+            false);
+
+    // when
+    exporter.export(jobBatchRecord);
+
+    // then
+    assertGetGlobalJobStatistics(startTime, endTime, lastCreatedAt, lastFailedAt, lastCompletedAt);
+  }
+
+  private void assertGetGlobalJobStatistics(
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final OffsetDateTime lastCreatedAt,
+      final OffsetDateTime lastFailedAt,
+      final OffsetDateTime lastCompletedAt) {
+    final var jobBatchMetrics =
+        rdbmsService
+            .getJobMetricsBatchDbReader()
+            .getGlobalJobStatistics(
+                GlobalJobStatisticsQuery.of(
+                    b ->
+                        b.filter(
+                            f -> f.from(startTime.minusSeconds(1)).to(endTime.plusSeconds(1)))),
+                ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+    assertThat(jobBatchMetrics).isNotNull();
+    assertThat(jobBatchMetrics.isIncomplete()).isFalse();
+    final var createdJobMetrics = jobBatchMetrics.created();
+    assertThat(createdJobMetrics.count()).isEqualTo(10); // 3 + 7
+    assertThat(createdJobMetrics.lastUpdatedAt()).isEqualTo(lastCreatedAt);
+    final var failedJobMetrics = jobBatchMetrics.failed();
+    assertThat(failedJobMetrics.count()).isEqualTo(7); // 5 + 2
+    assertThat(failedJobMetrics.lastUpdatedAt()).isEqualTo(lastFailedAt);
+    final var completedJobMetrics = jobBatchMetrics.completed();
+    assertThat(completedJobMetrics.count()).isEqualTo(25); // 10 + 15
+    assertThat(completedJobMetrics.lastUpdatedAt()).isEqualTo(lastCompletedAt);
   }
 
   @Test

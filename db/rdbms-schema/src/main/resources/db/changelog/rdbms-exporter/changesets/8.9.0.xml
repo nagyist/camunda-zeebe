@@ -1088,6 +1088,23 @@
       <column name="WORKER" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
+    <!-- Index for global job statistics queries filtering by tenant and time range -->
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_TENANT_TIME">
+      <column name="TENANT_ID"/>
+      <column name="START_TIME"/>
+      <column name="END_TIME"/>
+    </createIndex>
+
+    <!-- Index for cleanup operations filtering by end time -->
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_END_TIME">
+      <column name="END_TIME"/>
+    </createIndex>
+
+    <!-- Index for filtering by job type -->
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_JOB_TYPE">
+      <column name="JOB_TYPE"/>
+    </createIndex>
+
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
