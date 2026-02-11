@@ -61,6 +61,12 @@ Additional configuration options:
 - `requestTimeoutMs` (duration, optional): Total timeout for export request, including retries (default: 5000).
 - `batchSize` (integer, optional): Number of events to batch before sending (default: 50).
 - `batchIntervalMs` (duration, optional): Time interval to flush events if batch size is not reached (default: 2000).
+- `maxBatchesInFlight` (integer, optional): Maximum number of batches that are in-flight for sending (default: 2).
+
+### Authentication
+The exporter supports API key authentication. You can provide the API key via the `apiKey` configuration property. The exporter will include the API key in the `Authorization` header of each HTTP request as a Bearer token:
+
+```Authorization: Bearer myAPIKey```
 
 ## Development
 
