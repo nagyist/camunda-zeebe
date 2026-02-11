@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -820,6 +821,12 @@ public final class ProcessingStateMachine {
 
           if (command.getAuthorizations() != null && !command.getAuthorizations().isEmpty()) {
             metadata.authorization(new AuthInfo().setClaims(command.getAuthorizations()));
+          }
+
+          // make sure the agent information is forwarded also to follow up commands/events that
+          // will be processed in a separate batch
+          if (command.getAgent() != null) {
+            metadata.agent(AgentInfo.of(command.getAgent()));
           }
         });
   }
