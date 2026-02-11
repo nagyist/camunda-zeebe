@@ -33,6 +33,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -1936,6 +1938,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               {
                 "sequenceFlowId": "pi1_sequenceFlow1",
                 "processInstanceKey": "1",
+                "rootProcessInstanceKey": "37",
                 "processDefinitionKey": "1",
                 "processDefinitionId": "pd1",
                 "elementId": "node1",
@@ -2003,6 +2006,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "incidentKey": "2251799814751259",
                 "processDefinitionKey": "2251799814751221",
                 "processInstanceKey": "2251799814751255",
+                "rootProcessInstanceKey": "3751799814751237",
                 "elementInstanceKey": "2251799814751258",
                 "jobKey": "1"
             }
@@ -2693,9 +2697,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldDeleteProcessInstance() {
     // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    final var record = new HistoryDeletionRecord();
+    record.setResourceKey(123L);
+    record.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 
     when(processInstanceServices.deleteProcessInstance(1L, 123L))
         .thenReturn(CompletableFuture.completedFuture(record));
@@ -2715,23 +2719,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
+        .isNoContent();
   }
 
   @Test
   void shouldDeleteProcessInstanceWithNoBody() {
     // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    final var record = new HistoryDeletionRecord();
+    record.setResourceKey(123L);
+    record.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 
     when(processInstanceServices.deleteProcessInstance(1L, null))
         .thenReturn(CompletableFuture.completedFuture(record));
@@ -2743,23 +2739,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
+        .isNoContent();
   }
 
   @Test
   void shouldDeleteProcessInstanceWithEmptyBody() {
     // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    final var record = new HistoryDeletionRecord();
+    record.setResourceKey(123L);
+    record.setResourceType(HistoryDeletionType.PROCESS_INSTANCE);
 
     when(processInstanceServices.deleteProcessInstance(1L, null))
         .thenReturn(CompletableFuture.completedFuture(record));
@@ -2777,15 +2765,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_PROCESS_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
+        .isNoContent();
   }
 
   @Test

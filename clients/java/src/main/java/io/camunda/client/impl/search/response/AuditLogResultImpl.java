@@ -42,6 +42,7 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String processDefinitionId;
   private String processDefinitionKey;
   private String processInstanceKey;
+  private String rootProcessInstanceKey;
   private String elementInstanceKey;
   private String jobKey;
   private String userTaskKey;
@@ -71,6 +72,7 @@ public class AuditLogResultImpl implements AuditLogResult {
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
+    rootProcessInstanceKey = item.getRootProcessInstanceKey();
     elementInstanceKey = item.getElementInstanceKey();
     jobKey = item.getJobKey();
     userTaskKey = item.getUserTaskKey();
@@ -218,6 +220,15 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setProcessInstanceKey(final String processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+  }
+
+  @Override
+  public String getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public void setRootProcessInstanceKey(final String rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
   @Override

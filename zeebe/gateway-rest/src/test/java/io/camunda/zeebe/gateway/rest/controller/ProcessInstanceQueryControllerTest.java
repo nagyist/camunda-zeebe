@@ -75,7 +75,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
-          null,
+          37L,
           "demoProcess",
           "Demo Process",
           5,
@@ -94,6 +94,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       """
             {
             "processInstanceKey": "123",
+            "rootProcessInstanceKey": "37",
             "processDefinitionId": "demoProcess",
             "processDefinitionName": "Demo Process",
             "processDefinitionVersion": 5,
@@ -114,6 +115,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "items": [
                 {
                   "processInstanceKey": "123",
+                  "rootProcessInstanceKey": "37",
                   "processDefinitionId": "demoProcess",
                   "processDefinitionName": "Demo Process",
                   "processDefinitionVersion": 5,
@@ -168,6 +170,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionId": "Test_Process",
                   "errorMessage": "Process crashed",
                   "processInstanceKey": "789",
+                  "rootProcessInstanceKey": "37",
                   "errorType": "CALLED_DECISION_ERROR",
                   "elementId": "elementId",
                   "elementInstanceKey": "234",

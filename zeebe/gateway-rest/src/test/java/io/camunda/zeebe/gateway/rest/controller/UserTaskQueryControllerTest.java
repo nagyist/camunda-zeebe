@@ -65,6 +65,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "tenantId": "t",
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
+                        "rootProcessInstanceKey": "37",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -105,6 +106,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "value":"value",
                     "scopeKey":"1",
                     "processInstanceKey":"2",
+                    "rootProcessInstanceKey":"3",
                     "tenantId":"<default>",
                     "isTruncated":false
                 },
@@ -114,6 +116,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "value":"value",
                     "scopeKey":"1",
                     "processInstanceKey":"2",
+                    "rootProcessInstanceKey":"3",
                     "tenantId":"<default>",
                     "isTruncated":true
                 }
@@ -137,6 +140,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "value":"value",
               "scopeKey":"1",
               "processInstanceKey":"2",
+              "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
               "isTruncated":false
           },
@@ -146,6 +150,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "value":"valueLong",
               "scopeKey":"1",
               "processInstanceKey":"2",
+              "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
               "isTruncated":false
           }
@@ -187,6 +192,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "tenantId": "t",
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
+                        "rootProcessInstanceKey": "37",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",

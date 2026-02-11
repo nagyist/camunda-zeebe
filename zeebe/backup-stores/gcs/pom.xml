@@ -88,6 +88,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup-testkit</artifactId>
       <classifier>tests</classifier>
@@ -138,6 +143,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
       <scope>test</scope>
@@ -164,7 +175,18 @@
             -->
             <ignoredUsedUndeclaredDependency>com.google.auth:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.google.apis:*</ignoredUsedUndeclaredDependency>
+            <ignoredUsedUndeclaredDependency>com.google.api:*</ignoredUsedUndeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <!--
+                Google libraries are used in whatever version was pulled through the main dependency
+                on google-cloud-core.
+                Explicitly defining dependencies on these libraries doesn't help and only increases
+                the risk that our definitions drift from what google-cloud-core wants to use whenever
+                dependabot updates one of these versions.
+              -->
+            <ignoredNonTestScopedDependency>com.google.api:api-common</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>
