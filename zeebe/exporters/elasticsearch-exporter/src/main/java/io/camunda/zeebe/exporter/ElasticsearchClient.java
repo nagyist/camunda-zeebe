@@ -7,10 +7,11 @@
  */
 package io.camunda.zeebe.exporter;
 
-import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
-import co.elastic.clients.elasticsearch._helpers.bulk.BulkListener;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.util.BinaryData;
+import co.elastic.clients.util.ContentType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
@@ -182,20 +183,57 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   private void exportBulk() {
-    final var operations = bulkIndexRequest.toBulkOperations();
-    final var errorCollector = new BulkErrorCollector();
+    final var indexOperations = bulkIndexRequest.bulkOperations();
+    final long memoryLimit = configuration.bulk.memoryLimit;
+    final var allErrors = new ArrayList<String>();
 
-    try (final BulkIngester<Void> ingester =
-        BulkIngester.of(
-            b ->
-                b.client(esClient)
-                    .maxOperations(operations.size())
-                    .maxSize(configuration.bulk.memoryLimit)
-                    .listener(errorCollector))) {
-      operations.forEach(ingester::add);
+    var chunk = new ArrayList<BulkOperation>();
+    long chunkSize = 0;
+
+    for (final var op : indexOperations) {
+      final long opSize = op.source().length;
+
+      if (!chunk.isEmpty() && chunkSize + opSize > memoryLimit) {
+        flushBulkChunk(chunk, allErrors);
+        chunk = new ArrayList<>();
+        chunkSize = 0;
+      }
+
+      chunk.add(toBulkOperation(op));
+      chunkSize += opSize;
     }
 
-    errorCollector.throwIfError();
+    if (!chunk.isEmpty()) {
+      flushBulkChunk(chunk, allErrors);
+    }
+
+    if (!allErrors.isEmpty()) {
+      throw new ElasticsearchExporterException("Failed to flush bulk request: " + allErrors);
+    }
+  }
+
+  private BulkOperation toBulkOperation(final BulkIndexRequest.IndexOperation op) {
+    return BulkOperation.of(
+        b ->
+            b.index(
+                i ->
+                    i.index(op.metadata().index())
+                        .id(op.metadata().id())
+                        .routing(op.metadata().routing())
+                        .document(BinaryData.of(op.source(), ContentType.APPLICATION_JSON))));
+  }
+
+  private void flushBulkChunk(
+      final List<BulkOperation> operations, final List<String> errorCollector) {
+    try {
+      final var request = new BulkRequest.Builder().operations(operations).build();
+      final var response = esClient.bulk(request);
+      if (response.errors()) {
+        errorCollector.addAll(collectBulkErrors(response));
+      }
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to flush bulk chunk", e);
+    }
   }
 
   private boolean putIndexTemplate(final String templateName, final Template template) {
@@ -286,43 +324,5 @@ class ElasticsearchClient implements AutoCloseable {
                         "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
                         errors.size(), errorType, errors.get(0).error().reason())));
     return collectedErrors;
-  }
-
-  private static final class BulkErrorCollector implements BulkListener<Void> {
-    private ElasticsearchExporterException error;
-
-    @Override
-    public void beforeBulk(
-        final long executionId, final BulkRequest request, final List<Void> contexts) {
-      // no-op
-    }
-
-    @Override
-    public void afterBulk(
-        final long executionId,
-        final BulkRequest request,
-        final List<Void> contexts,
-        final BulkResponse response) {
-      if (response.errors()) {
-        error =
-            new ElasticsearchExporterException(
-                "Failed to flush bulk request: " + collectBulkErrors(response));
-      }
-    }
-
-    @Override
-    public void afterBulk(
-        final long executionId,
-        final BulkRequest request,
-        final List<Void> contexts,
-        final Throwable failure) {
-      error = new ElasticsearchExporterException("Failed to flush bulk", failure);
-    }
-
-    void throwIfError() {
-      if (error != null) {
-        throw error;
-      }
-    }
   }
 }
