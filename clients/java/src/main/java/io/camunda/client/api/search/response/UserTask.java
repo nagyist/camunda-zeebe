@@ -58,7 +58,15 @@ public interface UserTask {
   /** Key of the process instance */
   Long getProcessInstanceKey();
 
-  /** Key of the root process instance (the top-level ancestor) */
+  /**
+   * Returns the key of the root process instance. The root process instance is the top-level
+   * ancestor in the process instance hierarchy.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for process instance hierarchies created
+   * before version 8.9.
+   *
+   * @return the root process instance key, or {@code null} for data created before version 8.9
+   */
   Long getRootProcessInstanceKey();
 
   /** Key of the form */
