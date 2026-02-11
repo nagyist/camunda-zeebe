@@ -30,7 +30,7 @@ jobs:
           # ${#var} will return the length of the string
           if [[ ${#var} -eq 0 ]]; then
             echo "Creating new weekly test tag"
-            echo "test=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+            echo "test=medic-$(date +%Y)-$(date +%V)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           else
             # Example:
             # $ echo ${var%?}
