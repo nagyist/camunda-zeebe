@@ -108,7 +108,7 @@ jobs:
   fe-unit-tests:
     if: inputs.runFeTests
     name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     strategy:
@@ -133,6 +133,8 @@ jobs:
         name: Install dependencies
       - run: npm run test -- --no-file-parallelism --maxWorkers 1 --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         name: Unit & Integration tests
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
       - name: Upload blob report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -157,7 +159,7 @@ jobs:
     if: ${{ !cancelled() && inputs.runFeTests }}
     needs: [fe-unit-tests]
     name: "Unit - Front End - Merge Reports"
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
