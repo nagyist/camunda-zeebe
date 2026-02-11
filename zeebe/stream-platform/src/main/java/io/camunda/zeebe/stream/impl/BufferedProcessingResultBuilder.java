@@ -138,6 +138,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     return mutableRecordBatch.canAppendRecordOfLength(eventLength);
   }
 
+  @Override
+  public void appendMetadataToAllFollowUps(final Consumer<RecordMetadata> decorator) {
+    metadataDecorators.add(decorator);
+  }
+
   record ProcessingResponseImpl(RecordBatchEntry responseValue, long requestId, int requestStreamId)
       implements ProcessingResponse {}
 }
