@@ -177,18 +177,9 @@ public final class BackupRangeResolver {
                 bs -> bs.statusCode() == BackupStatusCode.COMPLETED && bs.descriptor().isPresent())
             .collect(
                 Collectors.toMap(bs -> bs.id().checkpointId(), Function.identity(), (a, b) -> a));
-    // From a sequence of N BackupStatus, generate a List of N-1 Interval<BackupStatus>
     final var completedBackups = completedBackupsMap.values().stream().sorted().toList();
-    final var backupsIntervals = Interval.fromPoints(completedBackups, Interval::closedOpen);
-    final var cover =
-        interval.smallestCover(
-            backupsIntervals,
-            s ->
-                // we filtered out backups w/o descriptor
-                s.descriptor().get().checkpointTimestamp());
-    // Use Interval::values to get all the BackupStatus that make up the intervals and remove
-    // duplicates
-    return cover.stream().flatMap(i -> i.points().stream()).distinct().sorted().toList();
+    return interval.smallestCover(
+        completedBackups, bs -> bs.descriptor().get().checkpointTimestamp());
   }
 
   /**
