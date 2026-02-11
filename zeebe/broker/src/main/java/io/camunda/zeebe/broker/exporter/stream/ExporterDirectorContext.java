@@ -155,14 +155,13 @@ public final class ExporterDirectorContext {
     return this;
   }
 
-  public ExporterDirectorContext sendOnLegacySubject(final boolean legacySenderSubjectDisabled) {
-    sendOnLegacySubject = legacySenderSubjectDisabled;
+  public ExporterDirectorContext sendOnLegacySubject(final boolean sendOnLegacySubject) {
+    this.sendOnLegacySubject = sendOnLegacySubject;
     return this;
   }
 
-  public ExporterDirectorContext receiveOnLegacySubject(
-      final boolean legacyReceiverSubjectDisabled) {
-    receiveOnLegacySubject = legacyReceiverSubjectDisabled;
+  public ExporterDirectorContext receiveOnLegacySubject(final boolean receiveOnLegacySubject) {
+    this.receiveOnLegacySubject = receiveOnLegacySubject;
     return this;
   }
 
