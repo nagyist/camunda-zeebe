@@ -229,8 +229,8 @@ public record Interval<T extends Comparable<T>>(
    * <ul>
    *   <li>Interval [3, 7], points [1, 3, 5, 7, 9] &rarr; [3, 5, 7] (exact matches at both
    *       boundaries)
-   *   <li>Interval [4, 6], points [1, 3, 5, 7, 9] &rarr; [3, 5, 7] (3 is last before 4, 7 is first
-   *       after 6)
+   *   <li>Interval [4, 6], points [1, 3, 5, 7, 9] &rarr; [3, 5, 7] (3 is last before 4, 7 is
+   *       first after 6)
    *   <li>Interval [4, 6], points [1, 3, 7, 9] &rarr; [3, 7] (no points within, neighbors cover)
    *   <li>Interval [10, 20], points [1, 3, 5] &rarr; [] (no coverage at end)
    * </ul>
