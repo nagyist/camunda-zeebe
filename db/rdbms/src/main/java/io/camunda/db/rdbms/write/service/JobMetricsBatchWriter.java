@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -18,9 +20,12 @@ import java.util.Map;
 public class JobMetricsBatchWriter implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
+  private final JobMetricsBatchMapper mapper;
 
-  public JobMetricsBatchWriter(final ExecutionQueue executionQueue) {
+  public JobMetricsBatchWriter(
+      final ExecutionQueue executionQueue, final JobMetricsBatchMapper mapper) {
     this.executionQueue = executionQueue;
+    this.mapper = mapper;
   }
 
   public void create(final JobMetricsBatchDbModel dbModel) {
@@ -41,5 +46,10 @@ public class JobMetricsBatchWriter implements RdbmsWriter {
             null,
             "io.camunda.db.rdbms.sql.JobMetricsBatchMapper.cleanupMetrics",
             Map.of("cleanupDate", cleanupDate, "limit", limit)));
+  }
+
+  public int cleanupMetrics(final OffsetDateTime cleanupDate, final int rowsToRemove) {
+    return mapper.cleanupMetrics(
+        new CleanupHistoryDto.Builder().cleanupDate(cleanupDate).limit(rowsToRemove).build());
   }
 }

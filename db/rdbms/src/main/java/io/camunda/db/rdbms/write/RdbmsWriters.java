@@ -18,6 +18,7 @@ import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -91,6 +92,7 @@ public class RdbmsWriters {
       final VendorDatabaseProperties vendorDatabaseProperties,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
+      final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
@@ -148,7 +150,9 @@ public class RdbmsWriters {
     writers.put(
         JobWriter.class,
         new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties, config));
-    writers.put(JobMetricsBatchWriter.class, new JobMetricsBatchWriter(executionQueue));
+    writers.put(
+        JobMetricsBatchWriter.class,
+        new JobMetricsBatchWriter(executionQueue, jobMetricsBatchMapper));
     writers.put(
         SequenceFlowWriter.class, new SequenceFlowWriter(executionQueue, sequenceFlowMapper));
     writers.put(UsageMetricWriter.class, new UsageMetricWriter(executionQueue, usageMetricMapper));
