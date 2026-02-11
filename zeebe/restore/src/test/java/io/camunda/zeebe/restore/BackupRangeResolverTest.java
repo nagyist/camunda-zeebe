@@ -74,11 +74,11 @@ final class BackupRangeResolverTest {
         .addBackup(300, 3000, 2001, minutesAfterBase(60));
 
     // when - time interval covers all backups [0, 60]
-    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(60), Map.of(1, 3500L));
+    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(60), Map.of(1, 2500L));
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(300L);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(300L);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L);
   }
 
   @Test
@@ -428,17 +428,32 @@ final class BackupRangeResolverTest {
     // given - partition with multiple backups for the same checkpoint (different nodes)
     store
         .forPartition(1)
-        .withRange(100, 200)
+        .withRange(100, 300)
         .addBackup(100, 1000, 1, minutesAfterBase(0))
         .addBackup(new BackupIdentifierImpl(NODE_ID + 1, 1, 100L), 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30));
+        .addBackup(200, 2000, 1001, minutesAfterBase(30))
+        .addBackup(300, 3000, 2001, minutesAfterBase(45));
 
     // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
-    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(30), Map.of(1, 2500L));
+    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(40), Map.of(1, 2500L));
 
     // then
     // backup 100 is not included as 200 is already before safeStart
-    assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {200});
+    assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {200, 300});
+  }
+
+  @Test
+  void shouldReturnASingleBackupIfOnlyOneIsPresent() {
+    // given - partition with multiple backups for the same checkpoint (different nodes)
+    store.forPartition(1).withRange(100, 100).addBackup(100, 1000, 1, minutesAfterBase(0));
+
+    // when the interval is exactly the same as the backup (edge case) w/
+    // exporterPosition=checkpointPosition
+    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(0), Map.of(1, 1000L));
+
+    // then
+    // backup 100 is not included as 200 is already before safeStart
+    assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {100});
   }
 
   private GlobalRestoreInfo resolve(

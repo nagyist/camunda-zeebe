@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.SequencedCollection;
 import java.util.concurrent.CompletableFuture;
@@ -92,7 +93,7 @@ public final class BackupRangeResolver {
   }
 
   public PartitionRestoreInfo getInformationPerPartition(
-      final int partition, final Interval<Instant> interval, final long lastExportedPosition) {
+      final int partition, final Interval<Instant> interval, final long exporterPosition) {
     final var rangeMarkers = store.rangeMarkers(partition).join();
     final var ranges = BackupRanges.fromMarkers(rangeMarkers);
 
@@ -112,17 +113,17 @@ public final class BackupRangeResolver {
 
     // Find valid safe points using RDBMS exported positions
     final var safeStart =
-        findSafeStartCheckpoint(lastExportedPosition, backups)
+        findSafeStartCheckpoint(exporterPosition, backups)
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
                         "No safe start checkpoint found for partition %d with exported position %d"
-                            .formatted(partition, lastExportedPosition)));
+                            .formatted(partition, exporterPosition)));
 
     final var filteredBackups =
         backups.stream().filter(bs -> bs.id().checkpointId() >= safeStart).toList();
     return new PartitionRestoreInfo(
-        partition, safeStart, statusInterval.getLeft(), filteredBackups);
+        partition, safeStart, exporterPosition, statusInterval.getLeft(), filteredBackups);
   }
 
   /**
@@ -150,7 +151,13 @@ public final class BackupRangeResolver {
         // get the BackupStatuses from the store
         final Interval<BackupStatus> statusInterval =
             completeRange.checkpointInterval().map(c -> toBackupStatus(partitionId, c));
-        final Interval<Instant> timeInterval = statusInterval.map(BackupStatus::createdOrThrow);
+        final Interval<Instant> timeInterval;
+        try {
+          timeInterval = statusInterval.map(bs -> bs.descriptor().get().checkpointTimestamp());
+        } catch (final NoSuchElementException e) {
+          // ignore this backup
+          continue;
+        }
         if (timeInterval.contains(interval)) {
           return Optional.of(new Tuple<>(completeRange, statusInterval));
         }
@@ -275,7 +282,11 @@ public final class BackupRangeResolver {
    * @param backupStatuses The collection of backup statuses to restore for this partition
    */
   public record PartitionRestoreInfo(
-      int partition, long safeStart, BackupRange backupRange, List<BackupStatus> backupStatuses) {
+      int partition,
+      long safeStart,
+      long exporterPosition,
+      BackupRange backupRange,
+      List<BackupStatus> backupStatuses) {
 
     public void validate(final long globalCheckpointId) {
       if (safeStart > globalCheckpointId) {
@@ -319,9 +330,8 @@ public final class BackupRangeResolver {
 
       if (!failures.isEmpty()) {
         throw new IllegalStateException(
-            String.format(
-                "Cannot restore to global checkpoint %d. Failures:\n  - %s",
-                globalCheckpointId, String.join("\n  - ", failures)));
+            "Cannot restore to global checkpoint %d. Failures:\n  - %s"
+                .formatted(globalCheckpointId, String.join("\n  - ", failures)));
       }
     }
 
@@ -385,11 +395,21 @@ public final class BackupRangeResolver {
                 .formatted(partition, safeStart, globalCheckpointId));
       }
 
-      if (backupStatuses.getLast().id().checkpointId() != globalCheckpointId) {
+      final var lastBackup = backupStatuses.getLast();
+      if (lastBackup.id().checkpointId() != globalCheckpointId) {
         throw new IllegalStateException(
             "Partition %d: last backup checkpoint %d is not equal to global checkpoint %d."
                 .formatted(
                     partition, backupStatuses.getLast().id().checkpointId(), globalCheckpointId));
+      }
+
+      if (lastBackup.descriptor().get().checkpointPosition() < exporterPosition) {
+        throw new IllegalStateException(
+            "Partition %d: last backup checkpoint position %d is less than exporter position %d. Try restoring with a larger time range by increasing the `to` parameter."
+                .formatted(
+                    partition,
+                    lastBackup.descriptor().get().checkpointPosition(),
+                    exporterPosition));
       }
     }
 
