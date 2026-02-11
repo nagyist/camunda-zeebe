@@ -84,12 +84,12 @@ public class Subscription<T> {
 
   public void attemptFlush() {
     if (lock.tryLock()) {
-      if (currentBatch.shouldFlush()) {
-        try {
+      try {
+        if (currentBatch.shouldFlush()) {
           flush();
-        } finally {
-          lock.unlock();
         }
+      } finally {
+        lock.unlock();
       }
     }
   }
