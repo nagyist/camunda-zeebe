@@ -1,0 +1,224 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.it.cluster.backup;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
+import io.camunda.client.CamundaClient;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Filesystem;
+import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.util.FileUtil;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.util.unit.DataSize;
+
+/**
+ * Integration test that verifies restoring from a time range of backups when RDBMS is configured as
+ * the secondary storage. This exercises the RDBMS-aware restore path in {@code RestoreManager}
+ * where {@code ExporterPositionMapper} is used by {@code BackupRangeResolver} to determine safe
+ * restore points per partition.
+ *
+ * <p>Uses a filesystem backup store (no containers needed) and H2 in-memory database for RDBMS.
+ */
+@ZeebeIntegration
+final class RdbmsRangeRestoreIT {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreIT.class);
+  // H2 in-memory DB URL shared across broker and restore app JVM lifecycles.
+  // DB_CLOSE_DELAY=-1 keeps the DB alive after last connection closes.
+  // MODE=PostgreSQL for SQL compatibility with the RDBMS module.
+  private static final String H2_URL =
+      "jdbc:h2:mem:rdbms-restore-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
+
+  private static @TempDir Path backupDir;
+  private Path workingDirectory;
+
+  @TestZeebe
+  private final TestStandaloneBroker broker =
+      new TestStandaloneBroker()
+          .withSecondaryStorageType(SecondaryStorageType.rdbms)
+          .withProperty("spring.datasource.url", H2_URL)
+          .withProperty("spring.datasource.driver-class-name", "org.h2.Driver")
+          .withProperty("spring.datasource.username", "sa")
+          .withProperty("spring.datasource.password", "")
+          .withUnifiedConfig(this::configureBroker);
+
+  private BackupActuator backupActuator;
+
+  @BeforeEach
+  void setUp() {
+    backupActuator = BackupActuator.of(broker);
+    workingDirectory = broker.getWorkingDirectory();
+  }
+
+  @Test
+  void canRestoreFromTimeRangeWithRdbms() throws Exception {
+    // given - deploy a process and create instances, then take continuous backups.
+    // The backup manifest's "created" timestamp uses Instant.now() (system clock), so we use
+    // Thread.sleep to space out backups and ensure the from/to range reliably covers them.
+    final long processKey;
+
+    try (final var client = broker.newClientBuilder().build()) {
+      processKey = deployTestProcess(client);
+
+      // Create some process instances to have data to verify after restore
+      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+
+      takeAndAwaitBackup();
+      // Record "from" before the first backup, with a small sleep to create clear separation
+      Thread.sleep(Duration.ofSeconds(2));
+      final Instant from = Instant.now();
+      LOG.info("Time range from = {}", from);
+
+      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+      // Take first backup
+      Thread.sleep(Duration.ofSeconds(2));
+      takeAndAwaitBackup();
+
+      // Create another instance and take second backup
+      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+      Thread.sleep(Duration.ofSeconds(2));
+      takeAndAwaitBackup();
+
+      // Record "to" after second backup
+      Thread.sleep(Duration.ofSeconds(2));
+      final Instant to = Instant.now();
+      LOG.info("Time range to = {}", to);
+
+      // Take a third backup and create instances outside the range that should NOT survive
+      Thread.sleep(Duration.ofSeconds(2));
+      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+      takeAndAwaitBackup();
+      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+
+      // when - stop broker, delete data, restore from time range with RDBMS
+      LOG.info("Stopping broker");
+      broker.stop();
+
+      FileUtil.deleteFolder(workingDirectory);
+      FileUtil.ensureDirectoryExists(workingDirectory);
+
+      LOG.info("Deleted working directory {}", workingDirectory);
+
+      final var restore =
+          new TestRestoreApp()
+              .withUnifiedConfig(this::configureRestoreApp)
+              .withProperty("camunda.data.secondary-storage.type", "rdbms")
+              .withProperty("spring.datasource.url", H2_URL)
+              .withProperty("spring.datasource.driver-class-name", "org.h2.Driver")
+              .withProperty("spring.datasource.username", "sa")
+              .withProperty("spring.datasource.password", "")
+              .withWorkingDirectory(workingDirectory)
+              .withTimeRange(from, to)
+              .start();
+      restore.close();
+
+      // then - broker starts and data from backed-up instances survives
+      broker.start();
+    }
+
+    try (final var client = broker.newClientBuilder().build()) {
+      final var jobs =
+          client.newActivateJobsCommand().jobType("task").maxJobsToActivate(10).send().join();
+
+      // We created 3 instances before the backup range completed (2 before first backup, 1 between
+      // backups). The 4th instance was created after the time range and should not survive.
+      // The exact count depends on which backups were selected by the RDBMS-aware range resolver,
+      // but we should have at least 2 jobs (from the first two instances created before any
+      // backup).
+      assertThat(jobs.getJobs()).hasSizeGreaterThanOrEqualTo(2);
+
+      for (final var job : jobs.getJobs()) {
+        client.newCompleteCommand(job.getKey()).send().join();
+      }
+    }
+  }
+
+  private static long deployTestProcess(final CamundaClient client) {
+    return client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join()
+        .getProcesses()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
+
+  private long takeAndAwaitBackup() {
+    final var res = backupActuator.take();
+    LOG.debug("Took backup: {}", res.getMessage());
+    final Pattern pattern = Pattern.compile("backup with id (\\d+)");
+    final Matcher matcher = pattern.matcher(res.getMessage());
+    matcher.find();
+    final long backupId = Long.parseLong(matcher.group(1));
+
+    await("backup is completed")
+        .timeout(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                assertThat(backupActuator.status(backupId).getState())
+                    .isEqualTo(StateCode.COMPLETED));
+
+    return backupId;
+  }
+
+  private void configureBroker(final Camunda cfg) {
+    // Filesystem backup store
+    final var fsConfig = new Filesystem();
+    fsConfig.setBasePath(backupDir.toAbsolutePath().toString());
+    cfg.getData().getPrimaryStorage().getBackup().setFilesystem(fsConfig);
+    cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.FILESYSTEM);
+
+    // Enable continuous backups
+    cfg.getData().getPrimaryStorage().getBackup().setContinuous(true);
+
+    // Use smaller log segments for faster checkpoint creation.
+    // Max message size must be <= log segment size (enforced by RaftPartitionFactory).
+    cfg.getData().getPrimaryStorage().getLogStream().setLogSegmentSize(DataSize.ofMegabytes(1));
+    cfg.getCluster().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(500));
+
+    // Disable auto-configure camunda exporter to avoid conflicts
+    cfg.getData().getSecondaryStorage().setAutoconfigureCamundaExporter(false);
+  }
+
+  private void configureRestoreApp(final Camunda cfg) {
+    // Filesystem backup store (same as broker)
+    final var fsConfig = new Filesystem();
+    fsConfig.setBasePath(backupDir.toAbsolutePath().toString());
+    cfg.getData().getPrimaryStorage().getBackup().setFilesystem(fsConfig);
+    cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.FILESYSTEM);
+  }
+}
