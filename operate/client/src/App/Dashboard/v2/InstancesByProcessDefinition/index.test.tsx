@@ -71,7 +71,7 @@ describe('InstancesByProcessDefinition', () => {
   });
 
   it('should render items with more than one processes versions', async () => {
-    mockFetchProcessDefinitionVersionStatistics('orderProcess').withSuccess(
+    mockFetchProcessDefinitionVersionStatistics().withSuccess(
       mockOrderProcessVersions,
     );
 
