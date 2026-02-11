@@ -16,6 +16,7 @@ import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.Set;
 
 /**
@@ -95,26 +96,27 @@ public class StateModificationArchTest {
    *
    * <ul>
    *   <li>It belongs to a class in the {@code io.camunda.zeebe.engine.state.mutable} package
-   *   <li>It is NOT a getter method for accessing other state classes
-   *   <li>It is NOT the {@code getKeyGenerator()} method
+   *   <li>It is NOT defined in {@link MutableProcessingState}
    * </ul>
    *
-   * <p>Methods that return other state objects or utilities are excluded because they don't mutate
-   * state themselves - they provide access to other components that may mutate state.
+   * <p>{@link MutableProcessingState} methods are excluded because they are top-level accessors
+   * that provide references to individual mutable state classes and the key generator. These
+   * methods are used pervasively by processors, behaviors, and infrastructure code throughout the
+   * engine for both reading state and generating keys during command processing.
    */
   private static final DescribedPredicate<JavaMethod> METHODS_THAT_DIRECTLY_MODIFY_STATE =
       new DescribedPredicate<>("directly mutate state") {
         @Override
         public boolean test(final JavaMethod method) {
-          // Method must be in a mutable state interface
+          // method is from a mutable state class (from the 'state.mutable' package)
           return method
                   .getOwner()
                   .getPackageName()
                   .startsWith("io.camunda.zeebe.engine.state.mutable")
-              // Exclude getter methods that return other state classes (e.g., getJobState())
-              && !(method.getName().startsWith("get") && method.getName().endsWith("State"))
-              // Exclude the getKeyGenerator() method which returns a utility object
-              && !method.getName().equals("getKeyGenerator");
+              // but not from the MutableProcessingState interface, which is a special case
+              // of top-level accessor methods that are used widely across the engine and
+              // do not themselves mutate state
+              && !method.getOwner().isAssignableTo(MutableProcessingState.class);
         }
       };
 
