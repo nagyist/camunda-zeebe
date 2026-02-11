@@ -35,15 +35,25 @@ import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 final class FileSetManagerTest {
+  private final Storage storage;
+  private final TransferManager transferManager;
+  private final FileSetManager manager;
+
+  FileSetManagerTest(@Mock final Storage storage, @Mock final TransferManager transferManager) {
+    this.storage = storage;
+    this.transferManager = transferManager;
+    manager = new FileSetManager(storage, transferManager, BucketInfo.of("bucket"), "basePath");
+  }
+
   @Test
   void shouldSaveFileSet() throws IOException {
     // given
-    final var mockClient = mock(Storage.class);
-    final var mockTransferManager = mock(TransferManager.class);
-    final var manager =
-        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var namedFileSet =
         new NamedFileSetImpl(
@@ -54,23 +64,19 @@ final class FileSetManagerTest {
             .setParallelUploadConfig(
                 ParallelUploadConfig.newBuilder().setBucketName("bucket").build())
             .build();
-    when(mockTransferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
+    when(transferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
         .thenReturn(uploadJob);
 
     // when
     manager.save(backupIdentifier, "filesetName", namedFileSet);
 
     // then
-    verify(mockTransferManager).uploadFiles(anyList(), any(ParallelUploadConfig.class));
+    verify(transferManager).uploadFiles(anyList(), any(ParallelUploadConfig.class));
   }
 
   @Test
   void shouldThrowExceptionOnSaveFileSet() throws IOException {
     // given
-    final var mockClient = mock(Storage.class);
-    final var mockTransferManager = mock(TransferManager.class);
-    final var manager =
-        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var namedFileSet =
         new NamedFileSetImpl(
@@ -87,7 +93,7 @@ final class FileSetManagerTest {
             .setParallelUploadConfig(
                 ParallelUploadConfig.newBuilder().setBucketName("bucket").build())
             .build();
-    when(mockTransferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
+    when(transferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
         .thenReturn(uploadJob);
 
     // when throw
@@ -100,16 +106,12 @@ final class FileSetManagerTest {
   @Test
   void shouldDeleteFileSet() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var mockTransferManager = mock(TransferManager.class);
-    final var manager =
-        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final var mockBlob = mock(Blob.class);
     final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
-    when(mockClient.list(eq("bucket"), any())).thenReturn(mockPage);
+    when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
 
     // when
     manager.delete(backupIdentifier, "filesetName");
@@ -121,12 +123,8 @@ final class FileSetManagerTest {
   @Test
   void shouldThrowExceptionOnDeleteFileSetWhenListThrows() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var mockTransferManager = mock(TransferManager.class);
-    final var manager =
-        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-    when(mockClient.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
+    when(storage.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
 
     // when throw
     Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
@@ -138,17 +136,13 @@ final class FileSetManagerTest {
   @Test
   void shouldThrowExceptionOnDeleteFileSetWhenBlobDeleteThrows() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var mockTransferManager = mock(TransferManager.class);
-    final var manager =
-        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final Blob mockBlob = mock(Blob.class);
     when(mockBlob.delete()).thenThrow(new StorageException(412, "expected"));
     final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
-    when(mockClient.list(eq("bucket"), any())).thenReturn(mockPage);
+    when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
 
     // when throw
     Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
@@ -159,10 +153,6 @@ final class FileSetManagerTest {
   @Test
   void shouldRestoreFileSet() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var mockTransferManager = mock(TransferManager.class);
-    final var manager =
-        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
@@ -176,7 +166,7 @@ final class FileSetManagerTest {
                     .setDownloadDirectory(restorePath)
                     .build())
             .build();
-    when(mockTransferManager.downloadBlobs(anyList(), any(ParallelDownloadConfig.class)))
+    when(transferManager.downloadBlobs(anyList(), any(ParallelDownloadConfig.class)))
         .thenReturn(downloadJob);
 
     // when
@@ -189,16 +179,12 @@ final class FileSetManagerTest {
     Assertions.assertThat(namedFileSet.namedFiles())
         .isEqualTo(Map.of("snapshotFile", expectedPath1, "snapshotFile2", expectedPath2));
 
-    verify(mockTransferManager).downloadBlobs(anyList(), any(ParallelDownloadConfig.class));
+    verify(transferManager).downloadBlobs(anyList(), any(ParallelDownloadConfig.class));
   }
 
   @Test
   void shouldThrowRestoreFileSetWhenDownloadToFails() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var mockTransferManager = mock(TransferManager.class);
-    final var manager =
-        new FileSetManager(mockClient, mockTransferManager, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
@@ -218,7 +204,7 @@ final class FileSetManagerTest {
                     .setDownloadDirectory(restorePath)
                     .build())
             .build();
-    when(mockTransferManager.downloadBlobs(anyList(), any(ParallelDownloadConfig.class)))
+    when(transferManager.downloadBlobs(anyList(), any(ParallelDownloadConfig.class)))
         .thenReturn(downloadJob);
 
     // when - then throw
