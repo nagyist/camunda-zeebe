@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {computed} from 'mobx';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {type VariableFormValues} from 'modules/types/variables';
@@ -18,30 +17,29 @@ import {useIsPlaceholderSelected} from 'modules/hooks/flowNodeSelection';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {hasPendingAddOrMoveModification} from 'modules/utils/modifications';
 
+const useIsVariableModificationAllowed = () => {
+  const isPlaceholderSelected = useIsPlaceholderSelected();
+  const {hasSelection} = useProcessInstanceElementSelection();
+
+  switch (true) {
+    case !modificationsStore.isModificationModeEnabled:
+      return false;
+    case !hasSelection:
+      return hasPendingAddOrMoveModification();
+    default:
+      return isPlaceholderSelected;
+  }
+};
+
 const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
   ({handleSubmit, form, values}) => {
-    const isPlaceholderSelected = useIsPlaceholderSelected();
-    const {hasSelection} = useProcessInstanceElementSelection();
-    const hasEmptyNewVariable = (values?: VariableFormValues) =>
-      values?.newVariables?.some(
-        (variable) =>
-          variable === undefined ||
-          variable.name === undefined ||
-          variable.value === undefined,
-      );
-
-    const isVariableModificationAllowed = computed(() => {
-      switch (true) {
-        case !modificationsStore.isModificationModeEnabled:
-          return false;
-        case !hasSelection:
-          return hasPendingAddOrMoveModification();
-        default:
-          return isPlaceholderSelected;
-      }
-    });
-
-    const isModificationAllowed = isVariableModificationAllowed.get();
+    const isModificationAllowed = useIsVariableModificationAllowed();
+    const hasEmptyNewVariable = values?.newVariables?.some(
+      (variable) =>
+        variable === undefined ||
+        variable.name === undefined ||
+        variable.value === undefined,
+    );
 
     return (
       <Form onSubmit={handleSubmit}>
@@ -56,7 +54,7 @@ const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
               form.getState().submitting ||
               form.getState().hasValidationErrors ||
               form.getState().validating ||
-              hasEmptyNewVariable(values)
+              hasEmptyNewVariable
             }
           />
         )}
