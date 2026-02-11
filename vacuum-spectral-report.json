@@ -1,0 +1,147 @@
+[
+    {
+        "code": "oas3-api-servers",
+        "path": [
+            "servers"
+        ],
+        "message": "no servers defined for the specification",
+        "severity": 1,
+        "range": {
+            "start": {
+                "line": 1,
+                "character": 1
+            },
+            "end": {
+                "line": 1,
+                "character": 1
+            }
+        },
+        "source": "../../../../../tmp/test_standalone.yaml"
+    },
+    {
+        "code": "info-description",
+        "path": [
+            "info"
+        ],
+        "message": "`info` section must have a `description`",
+        "severity": 0,
+        "range": {
+            "start": {
+                "line": 2,
+                "character": 1
+            },
+            "end": {
+                "line": 2,
+                "character": 5
+            }
+        },
+        "source": "../../../../../tmp/test_standalone.yaml"
+    },
+    {
+        "code": "operation-description",
+        "path": [
+            "paths",
+            "/test",
+            "post"
+        ],
+        "message": "operation method `POST` at path `/test` is missing a description or summary",
+        "severity": 1,
+        "range": {
+            "start": {
+                "line": 7,
+                "character": 5
+            },
+            "end": {
+                "line": 7,
+                "character": 9
+            }
+        },
+        "source": "../../../../../tmp/test_standalone.yaml"
+    },
+    {
+        "code": "operation-operationId",
+        "path": [
+            "paths",
+            "/test",
+            "post"
+        ],
+        "message": "the `POST` operation does not contain an `operationId`",
+        "severity": 0,
+        "range": {
+            "start": {
+                "line": 7,
+                "character": 5
+            },
+            "end": {
+                "line": 7,
+                "character": 9
+            }
+        },
+        "source": "../../../../../tmp/test_standalone.yaml"
+    },
+    {
+        "code": "operation-tags",
+        "path": [
+            "paths",
+            "/test",
+            "post"
+        ],
+        "message": "tags for `POST` operation are missing",
+        "severity": 1,
+        "range": {
+            "start": {
+                "line": 7,
+                "character": 5
+            },
+            "end": {
+                "line": 7,
+                "character": 9
+            }
+        },
+        "source": "../../../../../tmp/test_standalone.yaml"
+    },
+    {
+        "code": "oas3-schema",
+        "path": [
+            "paths",
+            "/test",
+            "post",
+            "requestBody"
+        ],
+        "message": "schema invalid: `/paths//test/post/requestBody/content/application/json/schema/properties/deleteHistory/required` expected type `[array]`, got `boolean`",
+        "severity": 0,
+        "range": {
+            "start": {
+                "line": 8,
+                "character": 9
+            },
+            "end": {
+                "line": 8,
+                "character": 9
+            }
+        },
+        "source": "../../../../../tmp/test_standalone.yaml"
+    },
+    {
+        "code": "operation-description",
+        "path": [
+            "paths",
+            "/test",
+            "post",
+            "requestBody"
+        ],
+        "message": "operation method `POST` `requestBody` at path `/test` is missing a `description`",
+        "severity": 1,
+        "range": {
+            "start": {
+                "line": 8,
+                "character": 7
+            },
+            "end": {
+                "line": 8,
+                "character": 18
+            }
+        },
+        "source": "../../../../../tmp/test_standalone.yaml"
+    }
+]
