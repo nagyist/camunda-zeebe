@@ -30,7 +30,7 @@ jobs:
           # ${#var} will return the length of the string
           if [[ ${#var} -eq 0 ]]; then
             echo "Creating new weekly test tag"
-            echo "test=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-test" >> "$GITHUB_OUTPUT"
+            echo "test=medic-$(date +%Y)-$(date +%V)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           else
             # Example:
             # $ echo ${var%?}
@@ -55,14 +55,14 @@ jobs:
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: typical
-  setup-postgres-typical-load-test:
-    name: Typical load test
+  setup-rdbms-typical-load-test:
+    name: Postgres typical load test
     needs:
       - test-data
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.test-data.outputs.test }}-postgres-typical
+      name: ${{ needs.test-data.outputs.test }}-rdbms-typical
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       secondary-storage-type: 'postgresql'
@@ -93,7 +93,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-typical-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ setup-typical-load-test, setup-rdbms-typical-load-test, setup-realistic-test, setup-latency-test ]
     if: failure()
     steps:
       - uses: actions/checkout@v6
