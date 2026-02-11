@@ -22,12 +22,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class WebappRedirectStrategyTest {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private final WebappRedirectStrategy redirectStrategy = new WebappRedirectStrategy(OBJECT_MAPPER);
+  private final WebappRedirectStrategy redirectStrategy = new WebappRedirectStrategy();
 
   @Test
   void shouldSetNoContentWhenUrlIsNull() throws IOException {
@@ -67,7 +68,8 @@ public class WebappRedirectStrategyTest {
   @Test
   void shouldPropagateExceptionWhenObjectMapperFails() throws Exception {
     final ObjectMapper failingMapper = mock(ObjectMapper.class);
-    final WebappRedirectStrategy failingStrategy = new WebappRedirectStrategy(failingMapper);
+    final WebappRedirectStrategy failingStrategy = new WebappRedirectStrategy();
+    ReflectionTestUtils.setField(failingStrategy, "objectMapper", failingMapper);
 
     final MockHttpServletRequest request = new MockHttpServletRequest();
     final MockHttpServletResponse response = new MockHttpServletResponse();

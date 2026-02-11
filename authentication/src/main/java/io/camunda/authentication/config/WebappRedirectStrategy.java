@@ -34,11 +34,7 @@ import org.springframework.security.web.RedirectStrategy;
 public class WebappRedirectStrategy implements RedirectStrategy {
 
   private static final String DEFAULT_REDIRECT_URL = "/";
-  private final ObjectMapper objectMapper;
-
-  public WebappRedirectStrategy(final ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
   public void sendRedirect(

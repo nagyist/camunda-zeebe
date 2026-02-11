@@ -11,7 +11,6 @@ import static io.camunda.security.configuration.headers.ContentSecurityPolicyCon
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 import static java.util.stream.Collectors.toMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
@@ -876,8 +875,8 @@ public class WebSecurityConfig {
 
     @Bean
     @ConditionalOnSecondaryStorageEnabled
-    public WebappRedirectStrategy webappRedirectStrategy(final ObjectMapper objectMapper) {
-      return new WebappRedirectStrategy(objectMapper);
+    public WebappRedirectStrategy webappRedirectStrategy() {
+      return new WebappRedirectStrategy();
     }
 
     @Bean
