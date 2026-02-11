@@ -341,7 +341,7 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
 - ❌ No new features, scope extensions, or risky changes after this point
 - ✅ Bug fixes, stabilization work, and E2E testing continue
-- **Notification Process**: Send email to engineering teams with:
+- **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
 - **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
 - **Body**:
 
