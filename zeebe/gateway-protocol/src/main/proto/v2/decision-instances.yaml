@@ -257,6 +257,10 @@ components:
           description: The key of the root decision definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+        decisionRequirementsKey:
+          description: The key of the decision requirements definition.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKeyFilterProperty'
 
     DeleteDecisionInstanceRequest:
       type: object
