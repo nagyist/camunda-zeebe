@@ -76,4 +76,10 @@ public interface AuditLogResult {
   String getFormKey();
 
   String getResourceKey();
+
+  String getRelatedEntityKey();
+
+  AuditLogEntityTypeEnum getRelatedEntityType();
+
+  String getEntityDescription();
 }

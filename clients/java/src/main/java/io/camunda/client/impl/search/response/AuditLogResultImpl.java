@@ -53,6 +53,9 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String deploymentKey;
   private String formKey;
   private String resourceKey;
+  private String relatedEntityKey;
+  private AuditLogEntityTypeEnum relatedEntityType;
+  private String entityDescription;
 
   public AuditLogResultImpl(final io.camunda.client.protocol.rest.AuditLogResult item) {
     auditLogKey = item.getAuditLogKey();
@@ -82,6 +85,9 @@ public class AuditLogResultImpl implements AuditLogResult {
     deploymentKey = item.getDeploymentKey();
     formKey = item.getFormKey();
     resourceKey = item.getResourceKey();
+    relatedEntityKey = item.getRelatedEntityKey();
+    relatedEntityType = EnumUtil.convert(item.getRelatedEntityType(), AuditLogEntityTypeEnum.class);
+    entityDescription = item.getEntityDescription();
   }
 
   @Override
@@ -317,6 +323,33 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setResourceKey(final String resourceKey) {
     this.resourceKey = resourceKey;
+  }
+
+  @Override
+  public String getRelatedEntityKey() {
+    return relatedEntityKey;
+  }
+
+  public void setRelatedEntityKey(final String relatedEntityKey) {
+    this.relatedEntityKey = relatedEntityKey;
+  }
+
+  @Override
+  public AuditLogEntityTypeEnum getRelatedEntityType() {
+    return relatedEntityType;
+  }
+
+  public void setRelatedEntityType(final AuditLogEntityTypeEnum relatedEntityType) {
+    this.relatedEntityType = relatedEntityType;
+  }
+
+  @Override
+  public String getEntityDescription() {
+    return entityDescription;
+  }
+
+  public void setEntityDescription(final String entityDescription) {
+    this.entityDescription = entityDescription;
   }
 
   public void setTenantId(final String tenantId) {
