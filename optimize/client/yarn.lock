@@ -7758,10 +7758,10 @@ eslint-plugin-jsx-a11y@^6.5.1:
     safe-regex-test "^1.0.3"
     string.prototype.includes "^2.0.1"
 
-eslint-plugin-license-header@^0.8.0:
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.8.0.tgz#7e44c6d38048445cf2e06458619f355ef627407f"
-  integrity sha512-khTCz6G3JdoQfwrtY4XKl98KW4PpnWUKuFx8v+twIRhJADEyYglMDC0td8It75C1MZ88gcvMusWuUlJsos7gYg==
+eslint-plugin-license-header@^0.9.0:
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.9.0.tgz#b044d0114d776e5fcff2139d246aadc62d587186"
+  integrity sha512-Qd7cCljVC0h+uJjcIuYjpRFrdzwqBBDCi5U0ocr6Bt/5t3zuBkZSa1Igc4lBLEVBDoUUqIcok/UUNAAu6CtwmQ==
   dependencies:
     requireindex "^1.2.0"
 
