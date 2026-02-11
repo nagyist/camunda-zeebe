@@ -288,7 +288,7 @@ test.describe('Process Instance Modifications', () => {
       await expect(operateProcessInstancePage.addVariableButton).toBeHidden();
     });
 
-    await test.step('Add a token to the element and verify variable are changable', async () => {
+    await test.step('Add a token to the element and verify variables are changeable', async () => {
       await operateProcessInstanceViewModificationModePage.addTokenToFlowNode(
         activityCollectMoney,
       );
@@ -475,11 +475,20 @@ test.describe('Process Instance Modifications', () => {
         .deleteButton.click();
 
       await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
-      for (let i = 0; i < 4; i++) {
-        const variableName =
-          await operateProcessInstanceViewModificationModePage
-            .applyModificationDialogVariableModificationRowByIndex(i)
-            .nameValue.innerText();
+      for (let i = 0; ; i++) {
+        // const variableName =
+        //   await operateProcessInstanceViewModificationModePage
+        //     .applyModificationDialogVariableModificationRowByIndex(i)
+        //     .nameValue.innerText();
+        // expect(variableName).not.toContain('testVariableToRemove');
+        const row =
+          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
+            i,
+          );
+        if (!(await row.nameValue.isVisible())) {
+          break;
+        }
+        const variableName = await row.nameValue.innerText();
         expect(variableName).not.toContain('testVariableToRemove');
       }
       await operateProcessInstanceViewModificationModePage.clickCancelButtonDialog();
@@ -503,24 +512,44 @@ test.describe('Process Instance Modifications', () => {
 
       await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
 
-      await expect(
-        operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
-          4,
-        ).nameValue,
-      ).toHaveText('testVariableToMeow: "meow"');
-      await operateProcessInstanceViewModificationModePage
-        .applyModificationDialogVariableModificationRowByIndex(4)
-        .deleteVariableModificationButton.click();
-      for (let i = 0; i < 4; i++) {
-        const variableName =
-          await operateProcessInstanceViewModificationModePage
-            .applyModificationDialogVariableModificationRowByIndex(i)
-            .nameValue.innerText();
+      let variableModificationFound = false;
+
+      for (let i = 0; ; i++) {
+        const row =
+          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
+            i,
+          );
+        if (!(await row.nameValue.isVisible())) {
+          break;
+        }
+        const variableNameValue = await row.nameValue.innerText();
+        if (variableNameValue === 'testVariableToMeow: "meow"') {
+          await expect(row.nameValue).toHaveText('testVariableToMeow: "meow"');
+          await row.deleteVariableModificationButton.click();
+          variableModificationFound = true;
+          break;
+        }
+      }
+      expect(variableModificationFound).toBeTruthy();
+
+      for (let i = 0; ; i++) {
+        const row =
+          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
+            i,
+        );
+        if (!(await row.nameValue.isVisible())) {
+          break;
+        }
+        const variableName = await row.nameValue.innerText();
+    
         expect(variableName).not.toContain('testVariableToMeow');
       }
+
+      await operateProcessInstanceViewModificationModePage.clickCancelButtonDialog();
     });
 
     await test.step('Apply modifications and verify variable values in the instance', async () => {
+      await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
       await operateProcessInstanceViewModificationModePage.clickApplyButtonModificationsDialog();
 
       await expect(

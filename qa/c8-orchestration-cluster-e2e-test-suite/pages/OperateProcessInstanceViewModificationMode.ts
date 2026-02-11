@@ -241,55 +241,55 @@ export class OperateProcessInstanceViewModificationModePage {
       },
       valueErrorMessage: this.page
         .getByTestId(`variable-${name}`)
-        .locator(`[id="#${name}-error-msg"]`),
+        .locator(`[id="${name}-error-msg"]`),
     });
-    ((this.applyModificationDialog = this.page.getByRole('dialog', {
+    this.applyModificationDialog = this.page.getByRole('dialog', {
       name: 'Apply Modifications',
-    })),
-      (this.applyModificationDialogFlowNodeModificationRowByIndex = (
-        index: number,
-      ) => ({
-        operation: this.applyModificationDialog
-          .getByRole('table')
-          .nth(0)
-          .locator('tbody')
-          .getByRole('row')
-          .nth(index)
-          .getByRole('cell')
-          .nth(1),
-        flowNode: this.applyModificationDialog
-          .getByRole('table')
-          .nth(0)
-          .locator('tbody')
-          .getByRole('row')
-          .nth(index)
-          .getByRole('cell')
-          .nth(2),
-        instanceKey: this.applyModificationDialog
-          .getByRole('table')
-          .nth(0)
-          .locator('tbody')
-          .getByRole('row')
-          .nth(index)
-          .getByRole('cell')
-          .nth(3),
-        affectedTokens: this.applyModificationDialog
-          .getByRole('table')
-          .nth(0)
-          .locator('tbody')
-          .getByRole('row')
-          .nth(index)
-          .getByTestId('affected-token-count'),
-        deleteFlowNodeModificationButton: this.applyModificationDialog
-          .getByRole('table')
-          .nth(0)
-          .locator('tbody')
-          .getByRole('row')
-          .nth(index)
-          .getByRole('cell')
-          .nth(5)
-          .getByRole('button', {name: 'Delete flow node modification'}),
-      })));
+    });
+    this.applyModificationDialogFlowNodeModificationRowByIndex = (
+      index: number,
+    ) => ({
+      operation: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(1),
+      flowNode: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(2),
+      instanceKey: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(3),
+      affectedTokens: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByTestId('affected-token-count'),
+      deleteFlowNodeModificationButton: this.applyModificationDialog
+        .getByRole('table')
+        .nth(0)
+        .locator('tbody')
+        .getByRole('row')
+        .nth(index)
+        .getByRole('cell')
+        .nth(5)
+        .getByRole('button', {name: 'Delete flow node modification'}),
+    });
     this.applyModificationDialogVariableModificationRowByIndex = (
       index: number,
     ) => ({
@@ -333,7 +333,8 @@ export class OperateProcessInstanceViewModificationModePage {
         .locator('tr[data-parent-row="true"]')
         .nth(index)
         .getByRole('cell')
-        .nth(5),
+        .nth(5)
+        .getByRole('button', {name: 'Delete variable modification'}),
     });
   }
 
@@ -427,7 +428,7 @@ export class OperateProcessInstanceViewModificationModePage {
 
   async getModificationOverlayLocatorByElementName(elementName: string) {
     return this.page
-      .locator(`[data-container-id=${elementName}]`)
+      .locator(`[data-container-id="${elementName}"]`)
       .getByTestId('modifications-overlay');
   }
 
@@ -621,7 +622,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await jsonEditorModal.inputField.fill(json);
     await jsonEditorModal.applyButton.click();
     await this.editableExistingVariableByName(
-      'testVariableString',
+      variableName,
     ).value.click();
     await this.page.keyboard.press('Tab');
   }
