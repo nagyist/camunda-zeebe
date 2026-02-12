@@ -682,7 +682,7 @@ class BatchOperationStatusHandlerTest {
       final var record = createSuccessRecord();
       final var processInstanceKey = handler.getProcessInstanceKey(record);
 
-      assertThat(processInstanceKey).isEqualTo(record.getValue().getResourceKey());
+      assertThat(processInstanceKey).isEqualTo(-1L);
     }
 
     @Override
