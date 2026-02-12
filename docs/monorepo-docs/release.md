@@ -289,10 +289,20 @@ Minor releases happen less often than other release types, so not all steps are 
    * This can be done with the following command `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
 2. Create the `stable/8.x` release branch from latest `release-8.x.0-alphaN`, to enforce code freeze
    * Ensure all expected SNAPSHOT artifacts are produced correctly.
-3. [Configure `unified-ci-merges-stable-branches` branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
-   * This may need temporary admin permissions for the initial manual push of the new branch.
-4. Bump configured versions in upgrade tests of the previous minor version to `8.x`
-   * TODO: add references to known upgrade tests if possible
+
+> ![NOTE]
+>
+>> For 8.9.0 we would like to try this other approach
+>> - **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/> <minor>` branch from `main` early, then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
+>> - This allows non-critical bug fixes to be merged into `stable/<minor>` while the alpha release candidate is being processed
+>> - Critical fixes can still be backported to the active alpha release branch if a new RC is needed
+>> - **Bug Fix Handling During Alpha Release**:
+>> - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
+>> - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
+>> 3. [Configure `unified-ci-merges-stable-branches` branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
+>> * This may need temporary admin permissions for the initial manual push of the new branch.
+>> 4. Bump configured versions in upgrade tests of the previous minor version to `8.x`
+>> * TODO: add references to known upgrade tests if possible
 
 Also, we have to do similar steps for the [ZPT repository](https://github.com/camunda/zeebe-process-test) in coordination with stakeholders from Camunda Ex team:
 
@@ -341,12 +351,6 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
 - ❌ No new features, scope extensions, or risky changes after this point
 - ✅ Bug fixes, stabilization work, and E2E testing continue
-- **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/<minor>` branch from `main` early, then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
-  - This allows non-critical bug fixes to be merged into `stable/<minor>` while the alpha release candidate is being processed
-  - Critical fixes can still be backported to the active alpha release branch if a new RC is needed
-- **Bug Fix Handling During Alpha Release**:
-  - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
-  - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
 - **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
 - **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
 - **Body**:
