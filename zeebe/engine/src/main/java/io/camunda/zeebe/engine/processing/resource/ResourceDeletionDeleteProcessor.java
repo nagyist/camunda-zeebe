@@ -274,7 +274,11 @@ public class ResourceDeletionDeleteProcessor
     decisionState
         .findDecisionsByTenantAndDecisionRequirementsKey(
             drg.getTenantId(), drg.getDecisionRequirementsKey())
-        .forEach(pd -> deleteDecision(pd, command, eventKey));
+        .forEach(this::deleteDecision);
+
+    if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
+      deleteDecisionInstanceHistory(drg.getDecisionRequirementsKey(), eventKey, command.getValue());
+    }
 
     final var drgRecord =
         new DecisionRequirementsRecord()
@@ -292,10 +296,7 @@ public class ResourceDeletionDeleteProcessor
         keyGenerator.nextKey(), DecisionRequirementsIntent.DELETED, drgRecord);
   }
 
-  private void deleteDecision(
-      final PersistedDecision persistedDecision,
-      final TypedRecord<ResourceDeletionRecord> command,
-      final long eventKey) {
+  private void deleteDecision(final PersistedDecision persistedDecision) {
     final var decisionRecord =
         new DecisionRecord()
             .setDecisionId(bufferAsString(persistedDecision.getDecisionId()))
@@ -309,9 +310,6 @@ public class ResourceDeletionDeleteProcessor
             .setTenantId(persistedDecision.getTenantId())
             .setDeploymentKey(persistedDecision.getDeploymentKey());
 
-    if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
-      deleteDecisionInstanceHistory(persistedDecision, eventKey, command.getValue());
-    }
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
@@ -396,10 +394,9 @@ public class ResourceDeletionDeleteProcessor
   }
 
   private void deleteDecisionInstanceHistory(
-      final PersistedDecision decision,
+      final long decisionRequirementsKey,
       final long eventKey,
       final ResourceDeletionRecord resourceDeletionRecord) {
-    final var decisionRequirementsKey = decision.getDecisionRequirementsKey();
     final var filter =
         new DecisionInstanceFilter.Builder()
             .decisionRequirementsKeys(decisionRequirementsKey)
