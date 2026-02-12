@@ -763,9 +763,10 @@ public final class RecordingExporter implements Exporter {
    */
   public static <T extends ExporterRecordStream<?, ?>> T expectNoMatchingRecords(
       final Function<RecordStream, T> consumer) {
+    final var previousMaximumWaitTime = maximumWaitTime;
     maximumWaitTime = DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME;
     final var records = consumer.apply(records());
-    maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
+    maximumWaitTime = previousMaximumWaitTime;
     return records;
   }
 
