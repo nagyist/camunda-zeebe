@@ -81,16 +81,19 @@ public class HistoryDeletionService {
       return List.of();
     }
 
-    final var allProcessInstanceDependantDataDeleted =
-        rdbmsWriters.getProcessInstanceDependantWriters().stream()
-            .filter(dependant -> !(dependant instanceof AuditLogWriter))
-            .allMatch(
-                dependant -> {
-                  final var limit = config.dependentRowLimit();
-                  final var deletedRows =
-                      dependant.deleteRootProcessInstanceRelatedData(processInstanceKeys, limit);
-                  return deletedRows < limit;
-                });
+    boolean allProcessInstanceDependantDataDeleted = true;
+    final var limit = config.dependentRowLimit();
+    for (final var dependant : rdbmsWriters.getProcessInstanceDependantWriters()) {
+      // TODO check if we should still have this or not
+      // if (dependant instanceof AuditLogWriter) {
+      //  continue;
+      // }
+      final var deletedRows =
+          dependant.deleteProcessInstanceRelatedData(processInstanceKeys, limit);
+      if (deletedRows >= limit) {
+        allProcessInstanceDependantDataDeleted = false;
+      }
+    }
 
     if (allProcessInstanceDependantDataDeleted) {
       rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);

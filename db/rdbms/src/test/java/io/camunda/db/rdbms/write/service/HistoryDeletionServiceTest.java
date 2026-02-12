@@ -76,10 +76,10 @@ public class HistoryDeletionServiceTest {
 
     // then
     verify(mapperMock)
-        .deleteRootProcessInstanceRelatedData(
+        .deleteProcessInstanceRelatedData(
             argThat(
                 dto ->
-                    dto.rootProcessInstanceKeys()
+                    dto.processInstanceKeys()
                         .equals(List.of(processInstanceKey1, processInstanceKey2))));
     verify(rdbmsWritersMock.getProcessInstanceWriter())
         .deleteByKeys(List.of(processInstanceKey1, processInstanceKey2));
@@ -100,7 +100,7 @@ public class HistoryDeletionServiceTest {
     historyDeletionService.deleteHistory(1);
 
     // then
-    verify(mapperMock, never()).deleteRootProcessInstanceRelatedData(any());
+    verify(mapperMock, never()).deleteProcessInstanceRelatedData(any());
     verify(rdbmsWritersMock.getProcessInstanceWriter(), never()).deleteByKeys(anyList());
     verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
   }
@@ -118,7 +118,7 @@ public class HistoryDeletionServiceTest {
     final var mapperMock = mock(ProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
-    when(mapperMock.deleteRootProcessInstanceRelatedData(any()))
+    when(mapperMock.deleteProcessInstanceRelatedData(any()))
         .thenReturn(10000); // not all dependant data deleted
 
     // when
@@ -286,7 +286,7 @@ public class HistoryDeletionServiceTest {
                         decisionInstanceKey1, HistoryDeletionTypeDbModel.DECISION_INSTANCE))));
     // Mock process instance dependant writers to return limit, meaning not all data deleted
     final var mapperMock = mock(ProcessInstanceDependantMapper.class);
-    when(mapperMock.deleteRootProcessInstanceRelatedData(any()))
+    when(mapperMock.deleteProcessInstanceRelatedData(any()))
         .thenReturn(10000); // return the limit, meaning not all dependant data deleted
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
