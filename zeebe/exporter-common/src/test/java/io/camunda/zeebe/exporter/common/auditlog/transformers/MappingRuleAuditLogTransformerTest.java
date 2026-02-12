@@ -51,4 +51,15 @@ class MappingRuleAuditLogTransformerTest {
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
     assertThat(entity.getEntityDescription()).isEqualTo("Engineering Mapping");
   }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<MappingRuleRecordValue> record =
+        factory.generateRecord(
+            ValueType.MAPPING_RULE, r -> r.withIntent(MappingRuleIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
+  }
 }
