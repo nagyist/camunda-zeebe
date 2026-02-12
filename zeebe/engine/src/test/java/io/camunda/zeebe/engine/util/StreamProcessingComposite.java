@@ -19,7 +19,9 @@ import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.Actor;
@@ -118,6 +120,13 @@ public class StreamProcessingComposite implements CommandWriter {
 
   public void banInstanceInNewTransaction(final int partitionId, final long processInstanceKey) {
     streams.banInstanceInNewTransaction(getLogName(partitionId), processInstanceKey);
+
+    final var errorRecord = new ErrorRecord();
+    errorRecord.initErrorRecord(new Exception("Instance was banned from outside."), -1);
+    errorRecord.setProcessInstanceKey(processInstanceKey);
+
+    writeBatch(
+        RecordToWrite.event().key(processInstanceKey).error(ErrorIntent.CREATED, errorRecord));
   }
 
   public void resumeProcessing(final int partitionId) {
