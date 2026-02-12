@@ -736,7 +736,7 @@ jobs:
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
       DOCKER_IMAGE: camunda/optimize
-      DOCKER_INTERNAL_IMAGE_DOCKER_HUB: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
+      DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
     steps:
       - uses: actions/checkout@v6
         with:
@@ -842,7 +842,7 @@ jobs:
           timeout_minutes: 10
           command: |
             docker -D buildx imagetools create \
-              --tag ${{ env.DOCKER_INTERNAL_IMAGE_DOCKER_HUB }}:${{ env.RELEASE_VERSION }} \
+              --tag ${{ env.DOCKER_INFOSEC_REGISTRY_IMAGE }}:${{ env.RELEASE_VERSION }} \
               ${{ steps.build-optimize-docker.outputs.image }}
       - name: Observe build status
         if: always()
