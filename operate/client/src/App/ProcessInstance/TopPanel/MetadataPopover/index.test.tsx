@@ -96,22 +96,15 @@ describe('MetadataPopover', () => {
     mockFetchElementInstance('2251799813699889').withSuccess(
       mockElementInstance,
     );
-    mockSearchIncidents().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchIncidents().withSuccess(searchResult([]));
 
-    mockSearchElementInstances().withSuccess({
-      items: [mockElementInstance],
-      page: {totalItems: 1},
-    });
+    mockSearchElementInstances().withSuccess(
+      searchResult([mockElementInstance]),
+    );
 
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchProcessInstances().withSuccess(searchResult([]));
 
-    mockSearchUserTasks().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchUserTasks().withSuccess(searchResult([]));
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
@@ -139,22 +132,11 @@ describe('MetadataPopover', () => {
       ],
     });
 
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
+    mockSearchJobs().withSuccess(searchResult([]));
 
-    mockSearchMessageSubscriptions().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchMessageSubscriptions().withSuccess(searchResult([]));
 
-    mockSearchDecisionInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchDecisionInstances().withSuccess(searchResult([]));
 
     mockFetchDecisionDefinition('123456').withSuccess({
       decisionDefinitionKey: '123456',
@@ -205,10 +187,9 @@ describe('MetadataPopover', () => {
       ...mockElementInstance,
       hasIncident: true,
     });
-    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess({
-      items: [mockSingleIncident],
-      page: {totalItems: 1},
-    });
+    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess(
+      searchResult([mockSingleIncident]),
+    );
 
     renderPopover({
       elementId: FLOW_NODE_ID,
@@ -235,23 +216,17 @@ describe('MetadataPopover', () => {
       type: 'CALL_ACTIVITY',
     });
 
-    mockSearchProcessInstances().withSuccess({
-      items: [
+    mockSearchProcessInstances().withSuccess(
+      searchResult([
         {
           ...mockProcessInstance,
           processInstanceKey: '229843728748927482',
           processDefinitionName: 'Called Process',
         },
-      ],
-      page: {totalItems: 1},
-    });
+      ]),
+    );
 
-    mockSearchJobs().withSuccess({
-      items: [jobMetadata],
-      page: {
-        totalItems: 1,
-      },
-    });
+    mockSearchJobs().withSuccess(searchResult([jobMetadata]));
 
     const {user} = renderPopover({
       elementId: CALL_ACTIVITY_FLOW_NODE_ID,
@@ -331,8 +306,8 @@ describe('MetadataPopover', () => {
       ],
     });
 
-    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess({
-      items: [
+    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess(
+      searchResult([
         {
           processDefinitionId: 'invoice',
           errorType: 'CALLED_ELEMENT_ERROR',
@@ -375,9 +350,8 @@ describe('MetadataPopover', () => {
           elementInstanceKey: '2251799813699882',
           jobKey: '2251799814080733',
         },
-      ],
-      page: {totalItems: 3},
-    });
+      ]),
+    );
 
     renderPopover({
       elementId: FLOW_NODE_ID,
@@ -436,12 +410,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render retries left', async () => {
-    mockSearchJobs().withSuccess({
-      items: [jobMetadata],
-      page: {
-        totalItems: 1,
-      },
-    });
+    mockSearchJobs().withSuccess(searchResult([jobMetadata]));
 
     renderPopover({
       elementId: USER_TASK_FLOW_NODE_ID,
@@ -480,10 +449,9 @@ describe('MetadataPopover', () => {
         },
       ],
     });
-    mockSearchElementInstances().withSuccess({
-      items: [mockElementInstance],
-      page: {totalItems: 1},
-    });
+    mockSearchElementInstances().withSuccess(
+      searchResult([mockElementInstance]),
+    );
 
     renderPopover({
       elementId: FLOW_NODE_ID,
@@ -531,10 +499,9 @@ describe('MetadataPopover', () => {
       rootDecisionDefinitionKey: '123456',
     };
 
-    mockSearchDecisionInstances().withSuccess({
-      items: [rootDecisionInstance],
-      page: {totalItems: 1},
-    });
+    mockSearchDecisionInstances().withSuccess(
+      searchResult([rootDecisionInstance]),
+    );
 
     renderPopover({
       elementId: 'BusinessRuleTask',
@@ -581,10 +548,7 @@ describe('MetadataPopover', () => {
       type: 'BUSINESS_RULE_TASK',
     });
 
-    mockSearchDecisionInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchDecisionInstances().withSuccess(searchResult([]));
 
     renderPopover({
       elementId: FLOW_NODE_ID,

@@ -473,7 +473,6 @@ describe('TopPanel', () => {
       elementInstanceKey: '2251799813699889',
       elementId: 'task-1',
       elementName: 'Task 1',
-      state: 'ACTIVE',
     };
 
     mockFetchElementInstance('2251799813699889').withSuccess(element);
