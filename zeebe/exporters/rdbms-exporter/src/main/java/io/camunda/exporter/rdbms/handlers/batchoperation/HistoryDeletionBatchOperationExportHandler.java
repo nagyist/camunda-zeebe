@@ -41,7 +41,7 @@ public class HistoryDeletionBatchOperationExportHandler
 
   @Override
   Optional<Long> getProcessInstanceKey(final Record<HistoryDeletionRecordValue> record) {
-    return Optional.empty();
+    return Optional.of(record.getValue().getResourceKey());
   }
 
   @Override
