@@ -16,7 +16,13 @@ import java.util.List;
  */
 public interface ProcessInstanceDependantMapper {
 
+  // for history deletion API
+  int deleteProcessInstanceRelatedData(DeleteProcessInstanceRelatedDataDto dto);
+
+  // for history cleanup
   int deleteRootProcessInstanceRelatedData(DeleteRootProcessInstanceRelatedDataDto dto);
+
+  record DeleteProcessInstanceRelatedDataDto(List<Long> processInstanceKeys, int limit) {}
 
   record DeleteRootProcessInstanceRelatedDataDto(List<Long> rootProcessInstanceKeys, int limit) {}
 }
