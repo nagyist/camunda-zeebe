@@ -180,6 +180,8 @@ public final class EngineCfg implements ConfigurationEntry {
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
+        .setMaxIdFieldLength(validators.getMaxIdFieldLength())
+        .setMaxNameFieldLength(validators.getMaxNameFieldLength())
         .setBatchOperationSchedulerInterval(batchOperations.getSchedulerInterval())
         .setBatchOperationChunkSize(batchOperations.getChunkSize())
         .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
