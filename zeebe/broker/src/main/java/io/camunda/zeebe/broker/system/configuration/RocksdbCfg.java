@@ -31,9 +31,9 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
 
   /**
-   * @deprecated This configuration property will be removed in a future release (deprecated in
-   *     8.10). The default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please
-   *     use the recommended alternative configuration for memory allocation.
+   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
+   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
+   *     alternative configuration for memory allocation.
    */
   @Deprecated
   private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
@@ -94,9 +94,9 @@ public final class RocksdbCfg implements ConfigurationEntry {
   }
 
   /**
-   * @deprecated This configuration property will be removed in a future release (deprecated in
-   *     8.10). The default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please
-   *     use the recommended alternative configuration for memory allocation.
+   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
+   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
+   *     alternative configuration for memory allocation.
    */
   @Deprecated
   public MemoryAllocationStrategy getMemoryAllocationStrategy() {
@@ -104,9 +104,9 @@ public final class RocksdbCfg implements ConfigurationEntry {
   }
 
   /**
-   * @deprecated This configuration property will be removed in a future release (deprecated in
-   *     8.10). The default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please
-   *     use the recommended alternative configuration for memory allocation.
+   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
+   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
+   *     alternative configuration for memory allocation.
    */
   @Deprecated
   public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {

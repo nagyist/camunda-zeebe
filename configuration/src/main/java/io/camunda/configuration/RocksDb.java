@@ -71,9 +71,9 @@ public class RocksDb {
    * memory limit. If set to 'FRACTION', Zeebe will allocate a configurable percentage of total RAM
    * to RocksDB that can be configured via the memoryFraction configuration [0,1].
    *
-   * @deprecated This configuration property will be removed in a future release (deprecated in
-   *     8.10). The default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please
-   *     use the recommended alternative configuration for memory allocation.
+   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
+   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
+   *     alternative configuration for memory allocation.
    */
   @Deprecated
   private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
@@ -186,9 +186,9 @@ public class RocksDb {
   }
 
   /**
-   * @deprecated This configuration will be removed in a future release (deprecated in 8.10). The
-   *     default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the
-   *     recommended alternative configuration for memory allocation.
+   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
+   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
+   *     alternative configuration for memory allocation.
    */
   @Deprecated
   public MemoryAllocationStrategy getMemoryAllocationStrategy() {
@@ -196,9 +196,9 @@ public class RocksDb {
   }
 
   /**
-   * @deprecated This configuration will be removed in a future release (deprecated in 8.10). The
-   *     default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the
-   *     recommended alternative configuration for memory allocation.
+   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
+   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
+   *     alternative configuration for memory allocation.
    */
   @Deprecated
   public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {
