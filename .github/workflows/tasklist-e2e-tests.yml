@@ -47,7 +47,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.10
+        image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -78,7 +78,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
 
       - name: Install node dependencies
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
@@ -110,7 +110,7 @@ jobs:
 
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.1.0
+        uses: s4u/maven-settings-action@v4.0.0
         with:
           githubServer: false
           servers: |
@@ -160,7 +160,7 @@ jobs:
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
         run: npm run test -- --project=tasklist-${{ matrix.tasklist_mode }}-e2e
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: C8 Orchestration Cluster E2E Test Result (${{ matrix.tasklist_mode }})

@@ -15,6 +15,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import java.util.Optional;
 
 public class HistoryDeletionBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<HistoryDeletionRecordValue> {
@@ -27,13 +29,24 @@ public class HistoryDeletionBatchOperationExportHandler
   }
 
   @Override
+  public boolean canExport(final Record<HistoryDeletionRecordValue> record) {
+    return super.canExport(record)
+        && record.getValue().getResourceType().equals(HistoryDeletionType.PROCESS_INSTANCE);
+  }
+
+  @Override
   long getItemKey(final Record<HistoryDeletionRecordValue> record) {
     return record.getValue().getResourceKey();
   }
 
   @Override
-  long getProcessInstanceKey(final Record<HistoryDeletionRecordValue> record) {
-    return -1;
+  Optional<Long> getProcessInstanceKey(final Record<HistoryDeletionRecordValue> record) {
+    return Optional.empty();
+  }
+
+  @Override
+  Optional<Long> getRootProcessInstanceKey(final Record<HistoryDeletionRecordValue> record) {
+    return Optional.empty();
   }
 
   @Override

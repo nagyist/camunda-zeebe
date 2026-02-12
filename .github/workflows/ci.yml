@@ -582,7 +582,7 @@ jobs:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
-    timeout-minutes: 10
+    timeout-minutes: 15
     runs-on: gcp-perf-core-8-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -685,8 +685,8 @@ jobs:
             name: "Zeebe Exporter Modules"
             maven-modules: ${{ needs.setup-tests.outputs.ZEEBE_IT_EXPORTER_MODULES }}
             maven-build-threads: 2
-            maven-test-fork-count: 3
-            runs-on: gcp-core-32-default
+            maven-test-fork-count: 7
+            runs-on: gcp-perf-core-16-longrunning
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
             owner: "DataLayer"
@@ -987,7 +987,7 @@ jobs:
       - name: Upload Hadolint Results
         if: always()
         continue-on-error: ${{ github.event_name == 'merge_group' }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
@@ -1154,7 +1154,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
           cache: 'npm'
           cache-dependency-path: 'identity/client/package-lock.json'
       - name: Install dependencies
@@ -1292,7 +1292,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=daveshanley/vacuum
-      VACUUM_VERSION: 'v0.23.4'
+      VACUUM_VERSION: 'v0.23.8'
     steps:
       - uses: actions/checkout@v6
       - name: Install vacuum

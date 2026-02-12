@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -92,7 +92,11 @@ public class MyBatisConfiguration {
             "prefix",
             trimmedPrefix,
             "userCharColumnSize",
-            Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
+            Integer.toString(vendorDatabaseProperties.userCharColumnSize()),
+            "errorMessageSize",
+            Integer.toString(vendorDatabaseProperties.errorMessageSize()),
+            "treePathSize",
+            Integer.toString(vendorDatabaseProperties.treePathSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 

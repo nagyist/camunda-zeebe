@@ -30,6 +30,7 @@ import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
+import io.camunda.db.rdbms.read.service.JobMetricsBatchDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.PersistentWebSessionDbReader;
@@ -66,6 +67,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.PersistentWebSessionMapper;
@@ -92,8 +94,8 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.actuate.health.HealthContributor;
-import org.springframework.boot.actuate.jdbc.DataSourceHealthIndicator;
+import org.springframework.boot.health.contributor.HealthContributor;
+import org.springframework.boot.jdbc.health.DataSourceHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -260,6 +262,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public JobMetricsBatchDbReader jobMetricsBatchReader(
+      final JobMetricsBatchMapper jobMetricsBatchMapper) {
+    return new JobMetricsBatchDbReader(jobMetricsBatchMapper);
+  }
+
+  @Bean
   public JobDbReader jobReader(final JobMapper jobMapper) {
     return new JobDbReader(jobMapper);
   }
@@ -417,6 +425,7 @@ public class RdbmsConfiguration {
       final SequenceFlowDbReader sequenceFlowReader,
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
+      final JobMetricsBatchDbReader jobMetricsBatchReader,
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
@@ -458,6 +467,7 @@ public class RdbmsConfiguration {
         sequenceFlowReader,
         batchOperationItemReader,
         jobReader,
+        jobMetricsBatchReader,
         usageMetricReader,
         usageMetricTUDbReader,
         messageSubscriptionReader,

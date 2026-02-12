@@ -31,7 +31,8 @@ public record VariableDbModel(
     Long rootProcessInstanceKey,
     String processDefinitionId,
     String tenantId,
-    int partitionId)
+    int partitionId,
+    Long elementInstanceKey)
     implements Copyable<VariableDbModel> {
 
   @Override
@@ -90,7 +91,8 @@ public record VariableDbModel(
         rootProcessInstanceKey,
         processDefinitionId,
         tenantId,
-        partitionId);
+        partitionId,
+        elementInstanceKey);
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
@@ -104,6 +106,7 @@ public record VariableDbModel(
     private String processDefinitionId;
     private String tenantId;
     private int partitionId;
+    private Long elementInstanceKey;
 
     public VariableDbModelBuilder() {}
 
@@ -152,6 +155,11 @@ public record VariableDbModel(
       return this;
     }
 
+    public VariableDbModelBuilder elementInstanceKey(final Long elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public VariableDbModel build() {
@@ -179,7 +187,8 @@ public record VariableDbModel(
           rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId);
+          partitionId,
+          elementInstanceKey);
     }
 
     private VariableDbModel getLongModel() {
@@ -197,7 +206,8 @@ public record VariableDbModel(
           rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId);
+          partitionId,
+          elementInstanceKey);
     }
 
     private VariableDbModel getDoubleModel() {
@@ -215,7 +225,8 @@ public record VariableDbModel(
           rootProcessInstanceKey,
           processDefinitionId,
           tenantId,
-          partitionId);
+          partitionId,
+          elementInstanceKey);
     }
   }
 }

@@ -30,10 +30,11 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceRecordValue.Builder.class)
 public interface ProcessInstanceRecordValue
-    extends RecordValue, ProcessInstanceRelated, TenantOwned {
+    extends RecordValue, ProcessInstanceRelated, AuditLogProcessInstanceRelated, TenantOwned {
   /**
    * @return the BPMN process id this process instance belongs to.
    */
+  @Override
   String getBpmnProcessId();
 
   /**
@@ -42,15 +43,16 @@ public interface ProcessInstanceRecordValue
   int getVersion();
 
   /**
-   * @return the key of the deployed process this instance belongs to.
-   */
-  long getProcessDefinitionKey();
-
-  /**
    * @return the key of the process instance
    */
   @Override
   long getProcessInstanceKey();
+
+  /**
+   * @return the key of the deployed process this instance belongs to.
+   */
+  @Override
+  long getProcessDefinitionKey();
 
   /**
    * @return the id of the current process element, or empty if the id is not specified.
@@ -192,4 +194,20 @@ public interface ProcessInstanceRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the business id associated with this process instance. The business id is an immutable,
+   * user-defined string identifier that can be used to identify a process instance within the scope
+   * of a process definition.
+   *
+   * <p>The business id is set only on elements of type PROCESS.
+   *
+   * <p>Once set, it remains immutable throughout the instance's lifecycle.
+   *
+   * <p>It can be used to enforce idempotency when creating process instances.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.9
+   */
+  String getBusinessId();
 }

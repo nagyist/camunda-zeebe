@@ -21,10 +21,9 @@ public class VariableAddUpdateAuditLogTransformer
 
   @Override
   public void transform(final Record<VariableRecordValue> record, final AuditLogEntry log) {
-    final var value = record.getValue();
-    log.setProcessInstanceKey(value.getProcessInstanceKey())
-        .setProcessDefinitionId(value.getBpmnProcessId())
-        .setProcessDefinitionKey(value.getProcessDefinitionKey())
-        .setElementInstanceKey(value.getScopeKey());
+    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      log.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 }

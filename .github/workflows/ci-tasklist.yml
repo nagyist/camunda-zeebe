@@ -76,7 +76,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run ts-check
@@ -110,7 +110,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run eslint
@@ -144,7 +144,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run stylelint
@@ -178,7 +178,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run test:ci -- --no-file-parallelism --maxWorkers 1
@@ -204,7 +204,7 @@ jobs:
       TEST_TYPE: visual-regression
       TEST_OWNER: Core Features
     container:
-      image: mcr.microsoft.com/playwright:v1.56.1
+      image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
     defaults:
       run:
@@ -217,7 +217,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
@@ -226,7 +226,7 @@ jobs:
         run: npm run start:visual-regression &
       - name: Run Playwright tests
         run: npm run test:visual
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: tasklist-visual-regression-report
@@ -253,7 +253,7 @@ jobs:
       TEST_TYPE: Tool
       TEST_OWNER: Core Features
     container:
-      image: mcr.microsoft.com/playwright:v1.56.1
+      image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
     defaults:
       run:
@@ -266,7 +266,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
@@ -275,7 +275,7 @@ jobs:
         run: npm run start:visual-regression &
       - name: Run A11y tests
         run: npm run test:a11y
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: tasklist-a11y-report

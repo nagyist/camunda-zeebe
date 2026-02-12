@@ -67,6 +67,7 @@ class AuditLogEntryTest {
 
     assertThat(entry.getBatchOperationKey()).isEqualTo(123L); // no batch operation in this record
     assertThat(entry.getProcessInstanceKey()).isEqualTo(value.getProcessInstanceKey());
+    assertThat(entry.getProcessDefinitionId()).isEqualTo(value.getBpmnProcessId());
     assertThat(entry.getProcessDefinitionKey()).isEqualTo(value.getProcessDefinitionKey());
     assertThat(entry.getEntityVersion()).isEqualTo(record.getRecordVersion());
     assertThat(entry.getEntityValueType())
@@ -76,13 +77,12 @@ class AuditLogEntryTest {
     assertThat(entry.getTimestamp())
         .isEqualTo(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC));
+    assertThat(entry.getElementInstanceKey()).isEqualTo(-1L);
 
     // Verify fields that are NOT set by AuditLogEntry.of() are null/empty
     assertThat(entry.getBatchOperationType()).isNull();
     assertThat(entry.getResult()).isNull();
     assertThat(entry.getAnnotation()).isNull();
-    assertThat(entry.getProcessDefinitionId()).isNull();
-    assertThat(entry.getElementInstanceKey()).isNull();
     assertThat(entry.getJobKey()).isNull();
     assertThat(entry.getUserTaskKey()).isNull();
     assertThat(entry.getDecisionEvaluationKey()).isNull();

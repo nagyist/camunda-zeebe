@@ -198,7 +198,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ClusterVariableIntent.CREATED,
         new ClusterVariableCreatedApplier(state.getClusterVariableState()));
-    register(ClusterVariableIntent.UPDATED, NOOP_EVENT_APPLIER);
+    register(
+        ClusterVariableIntent.UPDATED,
+        new ClusterVariableUpdatedApplier(state.getClusterVariableState()));
     register(
         ClusterVariableIntent.DELETED,
         new ClusterVariableDeletedApplier(state.getClusterVariableState()));
@@ -729,7 +731,12 @@ public final class EventAppliers implements EventApplier {
 
     register(
         BatchOperationChunkIntent.CREATED,
-        new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
+        1,
+        new BatchOperationChunkCreatedV1Applier(state.getBatchOperationState()));
+    register(
+        BatchOperationChunkIntent.CREATED,
+        2,
+        new BatchOperationChunkCreatedV2Applier(state.getBatchOperationState()));
     register(
         BatchOperationExecutionIntent.EXECUTING,
         new BatchOperationExecutingApplier(state.getBatchOperationState()));

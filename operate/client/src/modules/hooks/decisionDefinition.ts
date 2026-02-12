@@ -127,7 +127,6 @@ function useDecisionDefinitionsSearchFilter() {
   );
 }
 
-export type {DecisionDefinitionWithIdentifier};
 export {
   getDefinitionIdentifier,
   getDefinitionIdFromIdentifier,

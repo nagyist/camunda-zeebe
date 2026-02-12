@@ -381,6 +381,7 @@ public final class SearchQueryResponseMapper {
     return new ProcessInstanceSequenceFlowResult()
         .sequenceFlowId(result.sequenceFlowId())
         .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(result.rootProcessInstanceKey()))
         .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionId(result.processDefinitionId())
         .elementId(result.flowNodeId())
@@ -710,6 +711,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(job.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(job.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(job.rootProcessInstanceKey()))
         .elementId(job.elementId())
         .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
         .tenantId(job.tenantId())
@@ -720,6 +722,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceResult()
         .processInstanceKey(KeyUtil.keyToString(p.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(p.rootProcessInstanceKey()))
         .processDefinitionId(p.processDefinitionId())
         .processDefinitionName(p.processDefinitionName())
         .processDefinitionVersion(p.processDefinitionVersion())
@@ -947,6 +950,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
         .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(instance.rootProcessInstanceKey()))
         .incidentKey(KeyUtil.keyToString(instance.incidentKey()))
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
@@ -999,6 +1003,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .processDefinitionId(t.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
         .errorType(IncidentErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
         .elementId(t.flowNodeId())
@@ -1023,6 +1028,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(messageSubscription.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(messageSubscription.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(messageSubscription.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(messageSubscription.rootProcessInstanceKey()))
         .elementId(messageSubscription.flowNodeId())
         .elementInstanceKey(KeyUtil.keyToString(messageSubscription.flowNodeInstanceKey()))
         .messageSubscriptionState(
@@ -1056,6 +1062,8 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(
             KeyUtil.keyToString(correlatedMessageSubscription.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(correlatedMessageSubscription.processInstanceKey()))
+        .rootProcessInstanceKey(
+            KeyUtil.keyToString(correlatedMessageSubscription.rootProcessInstanceKey()))
         .subscriptionKey(KeyUtil.keyToString(correlatedMessageSubscription.subscriptionKey()))
         .tenantId(correlatedMessageSubscription.tenantId());
   }
@@ -1066,6 +1074,7 @@ public final class SearchQueryResponseMapper {
         .userTaskKey(KeyUtil.keyToString(t.userTaskKey()))
         .name(t.name())
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
         .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
         .processDefinitionId(t.processDefinitionId())
@@ -1138,6 +1147,7 @@ public final class SearchQueryResponseMapper {
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
         .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionId(entity.decisionDefinitionId())
@@ -1159,6 +1169,7 @@ public final class SearchQueryResponseMapper {
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
         .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionId(entity.decisionDefinitionId())
@@ -1262,6 +1273,7 @@ public final class SearchQueryResponseMapper {
         .name(variableEntity.name())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .isTruncated(truncateValues && variableEntity.isPreview())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
@@ -1273,6 +1285,7 @@ public final class SearchQueryResponseMapper {
         .name(variableEntity.name())
         .value(getFullValueIfPresent(variableEntity))
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
   }
@@ -1427,6 +1440,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(auditLog.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(auditLog.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(auditLog.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(auditLog.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(auditLog.elementInstanceKey()))
         .jobKey(KeyUtil.keyToString(auditLog.jobKey()))
         .userTaskKey(KeyUtil.keyToString(auditLog.userTaskKey()))
@@ -1437,7 +1451,14 @@ public final class SearchQueryResponseMapper {
         .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()))
         .deploymentKey(KeyUtil.keyToString(auditLog.deploymentKey()))
         .formKey(KeyUtil.keyToString(auditLog.formKey()))
-        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()));
+        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()))
+        .relatedEntityKey(auditLog.relatedEntityKey())
+        .relatedEntityType(
+            ofNullable(auditLog.relatedEntityType())
+                .map(Enum::name)
+                .map(AuditLogEntityTypeEnum::fromValue)
+                .orElse(null))
+        .entityDescription(auditLog.entityDescription());
   }
 
   private static ProcessInstanceStateEnum toProtocolState(

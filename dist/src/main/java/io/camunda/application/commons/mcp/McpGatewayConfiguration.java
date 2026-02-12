@@ -9,12 +9,14 @@ package io.camunda.application.commons.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.ConditionalOnMcpGatewayEnabled;
+import io.camunda.gateway.mcp.config.CamundaMcpToolScannerAutoConfiguration;
+import io.camunda.gateway.mcp.config.CamundaMcpToolSpecificationsAutoConfiguration;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.springframework.boot.actuate.autoconfigure.observation.ObservationProperties;
+import org.springframework.boot.micrometer.observation.autoconfigure.ObservationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -25,6 +27,18 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
+/**
+ * Configuration for the MCP gateway implemented in the {@code gateway-mcp} module.
+ *
+ * <p>MCP specific beans overriding the default Spring AI behavior are created as part of the module
+ * autoconfigurations in the {@link io.camunda.gateway.mcp.config} package to resemble the
+ * overridden autoconfiguration logic as much as possible. See:
+ *
+ * <ul>
+ *   <li>{@link CamundaMcpToolScannerAutoConfiguration}
+ *   <li>{@link CamundaMcpToolSpecificationsAutoConfiguration}
+ * </ul>
+ */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = {"io.camunda.gateway.mcp"})
 @ConditionalOnMcpGatewayEnabled
@@ -61,7 +75,7 @@ public class McpGatewayConfiguration {
               final @NonNull HttpServletResponse response,
               final @NonNull FilterChain filterChain)
               throws ServletException, IOException {
-            filterChain.doFilter(new ContentCachingRequestWrapper(request), response);
+            filterChain.doFilter(new ContentCachingRequestWrapper(request, 0), response);
           }
         });
     registrationBean.addUrlPatterns("/mcp/*");

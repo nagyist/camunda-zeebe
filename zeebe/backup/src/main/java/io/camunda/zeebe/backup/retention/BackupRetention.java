@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
@@ -91,6 +92,17 @@ public class BackupRetention extends Actor {
             return refTimestampOpt.orElse(null);
           },
           Comparator.nullsLast(Comparator.naturalOrder()));
+  private static final Comparator<BackupStatus> MAX_BACKUP_COMPARATOR =
+      Comparator.comparing(
+          status -> {
+            if (status.created().isPresent()) {
+              return status.created().get().toEpochMilli();
+            } else if (status.lastModified().isPresent()) {
+              return status.lastModified().get().toEpochMilli();
+            } else {
+              return status.id().checkpointId();
+            }
+          });
 
   private final BackupStore backupStore;
   private final Schedule retentionSchedule;
@@ -250,6 +262,17 @@ public class BackupRetention extends Actor {
     final var deletableBackups = new ArrayList<BackupIdentifier>();
     long firstAvailableBackupInNewRange = -1L;
 
+    final long latestCompletedBackupCheckpointId =
+        backups.stream()
+            .filter(f -> f.statusCode() == BackupStatusCode.COMPLETED)
+            .max(MAX_BACKUP_COMPARATOR)
+            .map(status -> status.id().checkpointId())
+            // In the extreme case where the checkpointId cannot be determined for any
+            // backup, it will be handled by the timestamp fallback. We can assume
+            // that retention will perform no actions. Therefore, we can safely set the max
+            // checkpoint id to 0 in this case
+            .orElse(0L);
+
     for (final var backup : backups) {
       final var refTimestampOpt =
           backup.descriptor().map(BackupDescriptor::checkpointTimestamp).or(backup::lastModified);
@@ -263,7 +286,13 @@ public class BackupRetention extends Actor {
 
       final var timestamp = refTimestampOpt.get().toEpochMilli();
       if (timestamp < window) {
-        deletableBackups.add(backup.id());
+        if (backup.id().checkpointId() != latestCompletedBackupCheckpointId) {
+          deletableBackups.add(backup.id());
+        } else {
+          // If the backup is the latest completed backup it should not be deleted and the marker
+          // should be moved to that backup id.
+          firstAvailableBackupInNewRange = backup.id().checkpointId();
+        }
       } else {
         firstAvailableBackupInNewRange = backup.id().checkpointId();
         break;

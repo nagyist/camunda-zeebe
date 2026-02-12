@@ -55,6 +55,7 @@ class DecisionEvaluationAuditLogTransformerTest {
     assertThat(entity.getDecisionDefinitionKey()).isEqualTo(456L);
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("drg-1");
     assertThat(entity.getDecisionRequirementsKey()).isEqualTo(789L);
+    assertThat(entity.getTenant().get().tenantId()).isEqualTo("tenant-1");
   }
 
   @Test

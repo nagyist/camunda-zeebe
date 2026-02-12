@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,21 +39,26 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Captor;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(value = ProcessDefinitionController.class)
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   static final String PROCESS_DEFINITION_URL = "/v2/process-definitions/";
   static final String PROCESS_DEFINITION_SEARCH_URL = PROCESS_DEFINITION_URL + "search";
+  static final String PROCESS_DEFINITION_VERSION_STATISTICS_URL =
+      PROCESS_DEFINITION_URL + "statistics/process-instances-by-version";
 
   static final ProcessDefinitionEntity PROCESS_DEFINITION_ENTITY =
       new ProcessDefinitionEntity(
@@ -630,6 +634,54 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithNoRequestBody() {
+    // given
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(0L)
+            .items(List.of())
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var response =
+        """
+        {
+          "items": [],
+          "page": {
+            "totalItems": 0,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices)
+        .getProcessDefinitionInstanceStatistics(instanceStatsQueryCaptor.capture());
+    final var capturedQuery = instanceStatsQueryCaptor.getValue();
+    assertThat(capturedQuery).isNotNull();
+    final var filter = capturedQuery.filter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.stateOperations()).isNotEmpty();
+    assertThat(filter.stateOperations().getFirst().values()).containsExactly("ACTIVE");
+  }
+
+  @Test
   public void shouldGetProcessDefinitionInstanceVersionStatistics() {
     // given
     final String processDefinitionId = "process_definition_id";
@@ -644,11 +696,14 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             .endCursor(null)
             .build();
     when(processDefinitionServices.searchProcessDefinitionInstanceVersionStatistics(
-            anyString(), any(ProcessDefinitionInstanceVersionStatisticsQuery.class)))
+            any(ProcessDefinitionInstanceVersionStatisticsQuery.class)))
         .thenReturn(statsResult);
     final var request =
         """
             {
+              "filter": {
+                "processDefinitionId": "process_definition_id"
+              },
               "sort": [
                 {
                   "field": "activeInstancesWithoutIncidentCount",
@@ -678,7 +733,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(PROCESS_DEFINITION_URL + processDefinitionId + "/statistics/process-instances")
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -692,9 +747,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     verify(processDefinitionServices)
         .searchProcessDefinitionInstanceVersionStatistics(
-            anyString(), instanceVersionStatsQueryCaptor.capture());
+            instanceVersionStatsQueryCaptor.capture());
     final var capturedQuery = instanceVersionStatsQueryCaptor.getValue();
     assertThat(capturedQuery).isNotNull();
+    assertThat(capturedQuery.filter().processDefinitionId()).isEqualTo(processDefinitionId);
     final var sort = capturedQuery.sort();
     assertThat(sort).isNotNull();
     assertThat(sort.getFieldSortings().size()).isEqualTo(1);
@@ -702,5 +758,105 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .isEqualTo(sort.getFieldSortings().getFirst().field());
     assertThat(io.camunda.search.sort.SortOrder.DESC)
         .isEqualTo(sort.orderings().getFirst().order());
+  }
+
+  @Test
+  void shouldRejectVersionStatisticsRequestWithoutBody() {
+    // given
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "Bad Request",
+                  "status": 400,
+                  "detail": "Required request body is missing",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_VERSION_STATISTICS_URL);
+    // when/then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectVersionStatisticsRequestWithEmptyBody() {
+    // given
+    final var request = "{}";
+
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "No filter provided.",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_VERSION_STATISTICS_URL);
+
+    // when/then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectVersionStatisticsRequestWithEmptyFilter() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {}
+            }
+        """;
+
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "No filter.processDefinitionId provided.",
+                  "instance": "%s"
+                }""",
+            PROCESS_DEFINITION_VERSION_STATISTICS_URL);
+
+    // when/then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_VERSION_STATISTICS_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 }

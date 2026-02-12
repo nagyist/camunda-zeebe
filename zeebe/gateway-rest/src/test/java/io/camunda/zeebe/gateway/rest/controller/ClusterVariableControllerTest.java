@@ -26,13 +26,16 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(value = ClusterVariableController.class)
 public class ClusterVariableControllerTest extends RestControllerTest {
 
@@ -278,6 +281,106 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isNull();
     assertThat(capturedRequest.tenantId()).isNull();
+  }
+
+  @Test
+  void shouldUpdateGlobalClusterVariable() {
+    // given
+    when(clusterVariableServices.updateGloballyScopedClusterVariable(
+            any(ClusterVariableRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
+
+    final var request =
+        """
+        {
+            "value": "newValue"
+        }""";
+
+    // when / then
+    webClient
+        .put()
+        .uri(GLOBAL_WITH_NAME_URL.formatted("foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(clusterVariableServices)
+        .updateGloballyScopedClusterVariable(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.name()).isEqualTo("foo");
+    assertThat(capturedRequest.value()).isEqualTo("newValue");
+    assertThat(capturedRequest.tenantId()).isNull();
+  }
+
+  @Test
+  void shouldRejectUpdateWithInvalidGlobalClusterVariableName() {
+    // given
+    final var request =
+        """
+        {
+            "value": "newValue"
+        }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
+              "instance": "%s"
+            }"""
+            .formatted(GLOBAL_WITH_NAME_URL.formatted("$foo"));
+
+    // when / then
+    webClient
+        .put()
+        .uri(GLOBAL_WITH_NAME_URL.formatted("$foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectUpdateWithoutGlobalClusterVariableValue() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "No value provided.",
+              "instance": "%s"
+            }"""
+            .formatted(GLOBAL_WITH_NAME_URL.formatted("foo"));
+
+    // when / then
+    webClient
+        .put()
+        .uri(GLOBAL_WITH_NAME_URL.formatted("foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -594,6 +697,142 @@ public class ClusterVariableControllerTest extends RestControllerTest {
     assertThat(capturedRequest.name()).isEqualTo("foo");
     assertThat(capturedRequest.value()).isNull();
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
+  }
+
+  @Test
+  void shouldUpdateTenantClusterVariable() {
+    // given
+    when(clusterVariableServices.updateTenantScopedClusterVariable(
+            any(ClusterVariableRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new ClusterVariableRecord().setName("foo")));
+
+    final var request =
+        """
+        {
+            "value": "newValue"
+        }""";
+
+    // when / then
+    webClient
+        .put()
+        .uri(TENANT_WITH_NAME_URL.formatted("tenant1", "foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(clusterVariableServices)
+        .updateTenantScopedClusterVariable(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.name()).isEqualTo("foo");
+    assertThat(capturedRequest.value()).isEqualTo("newValue");
+    assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
+  }
+
+  @Test
+  void shouldRejectUpdateWithInvalidTenantClusterVariableName() {
+    // given
+    final var request =
+        """
+        {
+            "value": "newValue"
+        }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "The provided name contains illegal characters. It must match the pattern '^[a-zA-Z0-9_~@.+-]+$'.",
+              "instance": "%s"
+            }"""
+            .formatted(TENANT_WITH_NAME_URL.formatted("tenant1", "$foo"));
+
+    // when / then
+    webClient
+        .put()
+        .uri(TENANT_WITH_NAME_URL.formatted("tenant1", "$foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectUpdateWithInvalidTenantId() {
+    // given
+    final var request =
+        """
+        {
+            "value": "newValue"
+        }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "The provided tenantId contains illegal characters. It must match the pattern '^[\\\\w\\\\.-]{1,31}$'.",
+              "instance": "%s"
+            }"""
+            .formatted(TENANT_WITH_NAME_URL.formatted("$tenant1", "foo"));
+
+    // when / then
+    webClient
+        .put()
+        .uri(TENANT_WITH_NAME_URL.formatted("$tenant1", "foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectUpdateWithoutTenantClusterVariableValue() {
+    // given
+    final var request = "{}";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "title": "INVALID_ARGUMENT",
+              "status": 400,
+              "detail": "No value provided.",
+              "instance": "%s"
+            }"""
+            .formatted(TENANT_WITH_NAME_URL.formatted("tenant1", "foo"));
+
+    // when / then
+    webClient
+        .put()
+        .uri(TENANT_WITH_NAME_URL.formatted("tenant1", "foo"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test

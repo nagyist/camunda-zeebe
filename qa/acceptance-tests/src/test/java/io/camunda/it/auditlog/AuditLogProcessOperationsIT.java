@@ -192,7 +192,7 @@ public class AuditLogProcessOperationsIT {
         AuditLogOperationTypeEnum.MIGRATE,
         processInstanceKey,
         targetProcess.getProcessDefinitionKey(),
-        null);
+        PROCESS_V1_ID);
   }
 
   @Test
@@ -228,7 +228,7 @@ public class AuditLogProcessOperationsIT {
         AuditLogOperationTypeEnum.MODIFY,
         processInstanceKey,
         processInstance.getProcessDefinitionKey(),
-        null);
+        SERVICE_TASKS_PROCESS_ID);
   }
 
   @Test

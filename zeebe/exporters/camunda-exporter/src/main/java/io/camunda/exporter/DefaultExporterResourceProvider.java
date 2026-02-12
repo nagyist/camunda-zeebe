@@ -19,7 +19,7 @@ import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AuditLogHandler;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
-import io.camunda.exporter.handlers.ClusterVariableCreatedHandler;
+import io.camunda.exporter.handlers.ClusterVariableCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.ClusterVariableDeletedHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler;
@@ -74,7 +74,6 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedIte
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationInitializedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
-import io.camunda.exporter.handlers.batchoperation.ProcessDefinitionHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
@@ -243,7 +242,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
             new ListViewVariableFromVariableHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()),
-            new ClusterVariableCreatedHandler(
+            new ClusterVariableCreatedUpdatedHandler(
                 indexDescriptors.get(ClusterVariableIndex.class).getFullQualifiedName(),
                 configuration.getIndex().getVariableSizeThreshold()),
             new ClusterVariableDeletedHandler(
@@ -339,9 +338,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ProcessInstanceHistoryDeletionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
-            new ProcessDefinitionHistoryDeletionOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
-                batchOperationCache),
             new ListViewFromProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
@@ -386,6 +382,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     indicesWithCustomErrorHandlers =
         Map.of(
             indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
+            ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST,
+            indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
             ErrorHandlers.IGNORE_DOCUMENT_DOES_NOT_EXIST);
   }
 

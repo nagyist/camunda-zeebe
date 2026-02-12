@@ -450,6 +450,8 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: the process instance key of the processed item.
+        rootProcessInstanceKey:
+          $ref: 'keys.yaml#/components/schemas/RootProcessInstanceKey'
         state:
           description: State of the item.
           type: string

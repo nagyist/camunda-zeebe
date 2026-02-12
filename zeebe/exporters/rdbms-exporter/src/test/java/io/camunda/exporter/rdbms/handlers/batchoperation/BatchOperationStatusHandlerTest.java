@@ -30,6 +30,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
@@ -452,7 +454,12 @@ class BatchOperationStatusHandlerTest {
           ValueType.HISTORY_DELETION,
           b ->
               b.withIntent(HistoryDeletionIntent.DELETED)
-                  .withBatchOperationReference(batchOperationKey));
+                  .withBatchOperationReference(batchOperationKey)
+                  .withValue(
+                      ImmutableHistoryDeletionRecordValue.builder()
+                          .from(factory.generateObject(HistoryDeletionRecordValue.class))
+                          .withResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                          .build()));
     }
 
     @Override
@@ -462,55 +469,12 @@ class BatchOperationStatusHandlerTest {
           b ->
               b.withRejectionType(RejectionType.PROCESSING_ERROR)
                   .withIntent(HistoryDeletionIntent.DELETE)
-                  .withBatchOperationReference(batchOperationKey));
-    }
-  }
-
-  @Nested
-  class ProcessDefinitionHistoryDeletionOperationHandlerTest
-      extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
-
-    ProcessDefinitionHistoryDeletionOperationHandlerTest() {
-      super(
-          new HistoryDeletionBatchOperationExportHandler(
-              batchOperationWriter,
-              batchOperationCache,
-              BatchOperationType.DELETE_PROCESS_DEFINITION));
-    }
-
-    @Override
-    void shouldExtractCorrectItemKey() {
-      final var record = createSuccessRecord();
-      final var itemKey = handler.getItemKey(record);
-
-      assertThat(itemKey).isEqualTo(record.getValue().getResourceKey());
-    }
-
-    @Override
-    void shouldExtractCorrectProcessInstanceKey() {
-      final var record = createSuccessRecord();
-      final var processInstanceKey = handler.getProcessInstanceKey(record);
-
-      assertThat(processInstanceKey).isEqualTo(-1);
-    }
-
-    @Override
-    Record<HistoryDeletionRecordValue> createSuccessRecord() {
-      return factory.generateRecord(
-          ValueType.HISTORY_DELETION,
-          b ->
-              b.withIntent(HistoryDeletionIntent.DELETED)
-                  .withBatchOperationReference(batchOperationKey));
-    }
-
-    @Override
-    Record<HistoryDeletionRecordValue> createFailureRecord() {
-      return factory.generateRecord(
-          ValueType.HISTORY_DELETION,
-          b ->
-              b.withRejectionType(RejectionType.PROCESSING_ERROR)
-                  .withIntent(HistoryDeletionIntent.DELETE)
-                  .withBatchOperationReference(batchOperationKey));
+                  .withBatchOperationReference(batchOperationKey)
+                  .withValue(
+                      ImmutableHistoryDeletionRecordValue.builder()
+                          .from(factory.generateObject(HistoryDeletionRecordValue.class))
+                          .withResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                          .build()));
     }
   }
 }

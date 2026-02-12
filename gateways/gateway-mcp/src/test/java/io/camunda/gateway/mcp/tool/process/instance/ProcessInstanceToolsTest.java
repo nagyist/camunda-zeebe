@@ -52,14 +52,17 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {ProcessInstanceTools.class})
 class ProcessInstanceToolsTest extends ToolsTest {
 
@@ -193,7 +196,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("Process instance key must be a positive number."));
+                      .isEqualTo(
+                          "processInstanceKey: Process instance key must be a positive number."));
     }
   }
 

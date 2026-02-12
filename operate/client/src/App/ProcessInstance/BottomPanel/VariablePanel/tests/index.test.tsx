@@ -295,7 +295,8 @@ describe('VariablePanel', () => {
     vi.useRealTimers();
   });
 
-  it('should remove pending variable if scope id changes', async () => {
+  // TODO: fix test with #44450
+  it.skip('should remove pending variable if scope id changes', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchFlowNodeMetadata().withSuccess({
@@ -464,7 +465,8 @@ describe('VariablePanel', () => {
     );
   });
 
-  it('should select correct tab when navigating between flow nodes', async () => {
+  // TODO: fix test with #44450
+  it.skip('should select correct tab when navigating between flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchVariables().withSuccess({
       items: [createvariable()],

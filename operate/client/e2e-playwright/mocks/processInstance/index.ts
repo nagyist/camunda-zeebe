@@ -84,9 +84,22 @@ function mockResponses({
     }
 
     if (route.request().url().includes('/v2/element-instances/search')) {
+      let filteredInstancesResponse = elementInstances;
+      const elementId: string | undefined = route.request().postDataJSON()
+        ?.filter?.elementId;
+
+      if (elementId && elementInstances) {
+        const filteredItems = elementInstances.items.filter(
+          (instance) => instance.elementId === elementId,
+        );
+        filteredInstancesResponse = {
+          items: filteredItems,
+          page: {totalItems: filteredItems.length},
+        };
+      }
       return route.fulfill({
-        status: elementInstances === undefined ? 400 : 200,
-        body: JSON.stringify(elementInstances),
+        status: filteredInstancesResponse === undefined ? 400 : 200,
+        body: JSON.stringify(filteredInstancesResponse),
         headers: {
           'content-type': 'application/json',
         },

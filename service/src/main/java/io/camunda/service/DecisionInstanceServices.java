@@ -10,7 +10,6 @@ package io.camunda.service;
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 import static io.camunda.search.query.SearchQueryBuilders.decisionInstanceSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
-import static io.camunda.service.authorization.Authorizations.DECISION_DEFINITION_DELETE_DECISION_INSTANCE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.DECISION_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -19,15 +18,17 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.concurrent.CompletableFuture;
 
 public final class DecisionInstanceServices
@@ -111,7 +112,7 @@ public final class DecisionInstanceServices
    * @return a CompletableFuture containing the batch operation creation record
    * @throws CamundaSearchException if no decision instance with the given key exists
    */
-  public CompletableFuture<BatchOperationCreationRecord> deleteDecisionInstance(
+  public CompletableFuture<HistoryDeletionRecord> deleteDecisionInstance(
       final long decisionInstanceKey, final Long operationReference) {
 
     // make sure decision instance exists before deletion, otherwise return not found
@@ -129,18 +130,11 @@ public final class DecisionInstanceServices
     final var decisionInstance = searchResult.items().getFirst();
 
     final var brokerRequest =
-        new BrokerCreateBatchOperationRequest()
-            .setFilter(
-                new DecisionInstanceFilter.Builder()
-                    .decisionInstanceKeys(decisionInstanceKey)
-                    .build())
-            .setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE)
-            .setAuthentication(authentication)
-            // the user only needs single instance delete permission, not batch
-            .setAuthorizationCheck(
-                Authorization.withAuthorization(
-                    DECISION_DEFINITION_DELETE_DECISION_INSTANCE_AUTHORIZATION,
-                    decisionInstance.decisionDefinitionId()));
+        new BrokerDeleteHistoryRequest()
+            .setResourceKey(decisionInstanceKey)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setDecisionDefinitionId(decisionInstance.decisionDefinitionId())
+            .setTenantId(decisionInstance.tenantId());
 
     if (operationReference != null) {
       brokerRequest.setOperationReference(operationReference);

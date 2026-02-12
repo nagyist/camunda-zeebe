@@ -23,10 +23,6 @@ public class ProcessInstanceCancelAuditLogTransformer
 
   @Override
   public void transform(final Record<ProcessInstanceRecordValue> record, final AuditLogEntry log) {
-    final var value = record.getValue();
-    log.setProcessDefinitionId(record.getValue().getBpmnProcessId())
-        .setProcessDefinitionKey(value.getProcessDefinitionKey())
-        .setProcessInstanceKey(value.getProcessInstanceKey());
     final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);

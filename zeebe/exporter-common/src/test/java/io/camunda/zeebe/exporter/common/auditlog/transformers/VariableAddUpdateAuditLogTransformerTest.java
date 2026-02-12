@@ -52,5 +52,9 @@ class VariableAddUpdateAuditLogTransformerTest {
     assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
     assertThat(entity.getElementInstanceKey()).isEqualTo(789L);
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(entity.getTenant().get().tenantId()).isEqualTo("tenant-1");
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(record.getValue().getRootProcessInstanceKey());
   }
 }

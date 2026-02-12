@@ -8,9 +8,7 @@
 package io.camunda.zeebe.backup.api;
 
 import java.util.Objects;
-import java.util.SequencedCollection;
 import java.util.Set;
-import java.util.stream.Stream;
 
 public sealed interface BackupRange {
   long firstCheckpointId();
@@ -19,33 +17,25 @@ public sealed interface BackupRange {
 
   boolean contains(Interval<Long> other);
 
-  /** Returns the checkpoints range extremes in order */
-  SequencedCollection<Long> checkpoints();
-
   /** A complete backup range without deletions. */
-  record Complete(Interval<Long> interval) implements BackupRange {
+  record Complete(Interval<Long> checkpointInterval) implements BackupRange {
     public Complete(final long startCheckpointId, final long endCheckpointId) {
-      this(new Interval<>(startCheckpointId, endCheckpointId));
-    }
-
-    @Override
-    public boolean contains(final Interval<Long> other) {
-      return interval().contains(other);
+      this(Interval.closed(startCheckpointId, endCheckpointId));
     }
 
     @Override
     public long firstCheckpointId() {
-      return interval().start();
+      return checkpointInterval().start();
     }
 
     @Override
     public long lastCheckpointId() {
-      return interval.end();
+      return checkpointInterval().end();
     }
 
     @Override
-    public SequencedCollection<Long> checkpoints() {
-      return interval.values();
+    public boolean contains(final Interval<Long> other) {
+      return checkpointInterval().contains(other);
     }
   }
 
@@ -53,7 +43,7 @@ public sealed interface BackupRange {
    * A backup range with deletions. Verification of all contained backups is required to determine
    * whether the range is effectively complete or not.
    */
-  record Incomplete(Interval<Long> interval, Set<Long> deletedCheckpointIds)
+  record Incomplete(Interval<Long> checkpointInterval, Set<Long> deletedCheckpointIds)
       implements BackupRange {
     public Incomplete(
         final long startCheckpointId,
@@ -70,31 +60,23 @@ public sealed interface BackupRange {
       deletedCheckpointIds = Set.copyOf(deletedCheckpointIds);
     }
 
-    @Override
-    public boolean contains(final Interval<Long> other) {
-      return interval.contains(other) && !isInDeletionRange(other);
-    }
-
-    @Override
-    public SequencedCollection<Long> checkpoints() {
-      return Stream.concat(interval.values().stream(), deletedCheckpointIds.stream())
-          .sorted()
-          .distinct()
-          .toList();
-    }
-
     private boolean isInDeletionRange(final Interval<Long> interval) {
       return deletedCheckpointIds.stream().anyMatch(interval::contains);
     }
 
     @Override
     public long firstCheckpointId() {
-      return interval().start();
+      return checkpointInterval.start();
     }
 
     @Override
     public long lastCheckpointId() {
-      return interval.end();
+      return checkpointInterval.end();
+    }
+
+    @Override
+    public boolean contains(final Interval<Long> other) {
+      return checkpointInterval.contains(other) && !isInDeletionRange(other);
     }
   }
 }

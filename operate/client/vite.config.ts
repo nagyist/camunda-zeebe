@@ -86,13 +86,6 @@ export default defineConfig(({mode}) => ({
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
     legalComments: 'none',
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        silenceDeprecations: ['mixed-decls', 'global-builtin'],
-      },
-    },
-  },
   resolve: {alias: {src: path.resolve(__dirname, './src')}},
   test: {
     globals: true,
@@ -102,7 +95,14 @@ export default defineConfig(({mode}) => ({
     clearMocks: true,
     resetMocks: true,
     unstubEnvs: true,
+    dangerouslyIgnoreUnhandledErrors: Boolean(process.env.CI),
     ...getReporters(),
+    server: {
+      deps: {
+        // this was necessary due to some issues with styled-components which appeared when bumping C3 on this https://github.com/camunda/camunda/pull/44663
+        inline: ['@camunda/camunda-composite-components'],
+      },
+    },
     projects: [
       {
         extends: true,

@@ -12,6 +12,8 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.time.OffsetDateTime;
+import java.util.Map;
 
 public class JobMetricsBatchWriter implements RdbmsWriter {
 
@@ -29,5 +31,15 @@ public class JobMetricsBatchWriter implements RdbmsWriter {
             dbModel.key(),
             "io.camunda.db.rdbms.sql.JobMetricsBatchMapper.insert",
             dbModel));
+  }
+
+  public void cleanupMetrics(final OffsetDateTime cleanupDate, final int limit) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.JOB_METRICS_BATCH,
+            WriteStatementType.DELETE,
+            null,
+            "io.camunda.db.rdbms.sql.JobMetricsBatchMapper.cleanupMetrics",
+            Map.of("cleanupDate", cleanupDate, "limit", limit)));
   }
 }

@@ -12,7 +12,11 @@ import type {
   InstanceEntityState,
   OperationEntityType,
 } from 'modules/types/operate';
-import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  BatchOperationState,
+  BatchOperationType,
+  DecisionInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const EVENT_PREFIX = 'operate:';
 
@@ -296,6 +300,43 @@ type Events =
   | {
       eventName: 'batch-move-modification-apply-button-clicked';
     }
+  /**
+   * Batch operations list and details
+   */
+  | {
+      eventName: 'batch-operations-sorted';
+      sortBy: string;
+      sortOrder: 'asc' | 'desc';
+    }
+  | {
+      eventName: 'batch-operation-details-opened';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  | {
+      eventName: 'batch-operation-details-loaded';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+      operationsTotalCount: number;
+    }
+  | {
+      eventName: 'batch-operation-suspended';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  | {
+      eventName: 'batch-operation-resumed';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  | {
+      eventName: 'batch-operation-canceled';
+      batchOperationType: BatchOperationType;
+      batchOperationState: BatchOperationState;
+    }
+  /**
+   * audit logs
+   */
   | {
       eventName: 'audit-logs-loaded';
       filters: string[];

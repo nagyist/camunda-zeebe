@@ -24,10 +24,14 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableProcessInstanceCreationRecordValue.Builder.class)
 public interface ProcessInstanceCreationRecordValue
-    extends RecordValueWithVariables, ProcessInstanceRelated, TenantOwned {
+    extends RecordValueWithVariables,
+        ProcessInstanceRelated,
+        AuditLogProcessInstanceRelated,
+        TenantOwned {
   /**
    * @return the BPMN process id to create a process from
    */
+  @Override
   String getBpmnProcessId();
 
   /**
@@ -38,6 +42,7 @@ public interface ProcessInstanceCreationRecordValue
   /**
    * @return the unique key of the BPMN process definition to create a process from
    */
+  @Override
   long getProcessDefinitionKey();
 
   /** Returns a list of start instructions (if available), or an empty list. */
@@ -61,6 +66,20 @@ public interface ProcessInstanceCreationRecordValue
    * @return the key of the root process instance, or {@code -1} if not set
    */
   long getRootProcessInstanceKey();
+
+  /**
+   * Returns the business id for the process instance to be created. The business id is an
+   * immutable, user-defined string identifier that uniquely identifies a process instance within
+   * the scope of a process definition.
+   *
+   * <p>If provided, the engine will enforce uniqueness: only one active process instance with a
+   * given business id can exist per process definition (scoped by tenant). If a process instance
+   * with the same business id already exists, the creation will be rejected.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.9
+   */
+  String getBusinessId();
 
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)

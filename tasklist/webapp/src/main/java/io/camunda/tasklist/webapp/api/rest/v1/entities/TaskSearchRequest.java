@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import static io.camunda.tasklist.webapp.dto.TaskQueryDTO.DEFAULT_PAGE_SIZE;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.tasklist.queries.DateFilter;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.TaskByVariables;
@@ -21,6 +22,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 @Schema(description = "Request object to search tasks by provided params.")
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskSearchRequest {
   @Schema(description = "The state of the tasks.")
   private TaskState state;

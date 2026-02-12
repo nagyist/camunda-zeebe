@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
@@ -187,6 +188,7 @@ final class JsonSerializableToJsonTest {
               final int requestStreamId = 1;
 
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AgentInfo agentInfo = new AgentInfo().setId(123L).setName("agent-name");
 
               recordMetadata
                   .intent(intent)
@@ -200,6 +202,7 @@ final class JsonSerializableToJsonTest {
                   .requestId(requestId)
                   .requestStreamId(requestStreamId)
                   .authorization(authInfo)
+                  .agent(agentInfo)
                   .operationReference(1234)
                   .batchOperationReference(5678);
 
@@ -247,6 +250,10 @@ final class JsonSerializableToJsonTest {
                   "brokerVersion": "1.2.3",
                   "authorizations": {
                     "foo" : "bar"
+                  },
+                  "agent": {
+                    "id": 123,
+                    "name": "agent-name"
                   },
                   "recordVersion": 10,
                   "operationReference": 1234,
@@ -315,6 +322,7 @@ final class JsonSerializableToJsonTest {
                   "rejectionReason": "",
                   "brokerVersion": "0.0.0",
                   "authorizations": {},
+                  "agent": null,
                   "recordVersion": 1,
                   "operationReference": -1,
                   "batchOperationReference": -1,
@@ -903,7 +911,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "timeout": 2,
-                  "tenantIds": []
+                  "tenantIds": [],
+                  "tenantFilter": "PROVIDED"
                 }
                 """
       },
@@ -928,7 +937,8 @@ final class JsonSerializableToJsonTest {
                   "jobKeys": [],
                   "jobs": [],
                   "timeout": -1,
-                  "tenantIds": []
+                  "tenantIds": [],
+                  "tenantFilter": "PROVIDED"
                 }
                 """
       },
@@ -1612,7 +1622,8 @@ final class JsonSerializableToJsonTest {
                   "name": "x",
                   "value": "1",
                   "tenantId": "<default>",
-                  "rootProcessInstanceKey": 5
+                  "rootProcessInstanceKey": 5,
+                  "elementInstanceKey": 3
                 }
                 """
       },
@@ -1649,7 +1660,8 @@ final class JsonSerializableToJsonTest {
                   "name": "x",
                   "value": "1",
                   "tenantId": "tenant-test",
-                  "rootProcessInstanceKey": 5
+                  "rootProcessInstanceKey": 5,
+                  "elementInstanceKey": 3
                 }
                 """
       },
@@ -1720,6 +1732,7 @@ final class JsonSerializableToJsonTest {
               final int version = 1;
               final long instanceKey = 2L;
               final long rootProcessInstanceKey = 3L;
+              final String businessId = "business-id-456";
 
               return new ProcessInstanceCreationRecord()
                   .setBpmnProcessId(processId)
@@ -1733,7 +1746,8 @@ final class JsonSerializableToJsonTest {
                       new ProcessInstanceCreationStartInstruction().setElementId("element"))
                   .setProcessInstanceKey(instanceKey)
                   .setTags(Set.of("tag1", "tag2"))
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setBusinessId(businessId);
             },
         """
                 {
@@ -1753,7 +1767,9 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "test-tenant",
                   "runtimeInstructions": [],
                   "tags": ["tag1", "tag2"],
-                  "rootProcessInstanceKey": 3
+                  "rootProcessInstanceKey": 3,
+                  "businessId": "business-id-456",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1777,7 +1793,9 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "runtimeInstructions": [],
                   "tags": [],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": "",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1798,6 +1816,7 @@ final class JsonSerializableToJsonTest {
               final var variableInstructionElementId = "sub-process";
               final var rootProcessInstanceKey = 4L;
               final var processDefinitionKey = 5L;
+              final var bpmnProcessId = "bpmnProcessId";
 
               return new ProcessInstanceModificationRecord()
                   .setProcessInstanceKey(key)
@@ -1826,7 +1845,8 @@ final class JsonSerializableToJsonTest {
                                   .setElementId(variableInstructionElementId))
                           .addAncestorScopeKeys(Set.of(key, ancestorScopeKey)))
                   .setRootProcessInstanceKey(rootProcessInstanceKey)
-                  .setProcessDefinitionKey(processDefinitionKey);
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(bpmnProcessId);
             },
         """
                 {
@@ -1863,7 +1883,9 @@ final class JsonSerializableToJsonTest {
                   "ancestorScopeKeys": [1,3],
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": 4,
-                  "processDefinitionKey": 5
+                  "processDefinitionKey": 5,
+                  "bpmnProcessId": "bpmnProcessId",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1886,7 +1908,9 @@ final class JsonSerializableToJsonTest {
                   "ancestorScopeKeys": [],
                   "tenantId": "<default>",
                   "rootProcessInstanceKey": -1,
-                  "processDefinitionKey": -1
+                  "processDefinitionKey": -1,
+                  "bpmnProcessId": "",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1911,6 +1935,7 @@ final class JsonSerializableToJsonTest {
               final var processDefinitionPath = List.of(101L, 102L);
               final var callingElementPath = List.of(12345, 67890);
               final var rootProcessInstanceKey = 9999L;
+              final var businessId = "business-id-123";
 
               return new ProcessInstanceRecord()
                   .setElementId(elementId)
@@ -1927,7 +1952,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessDefinitionPath(processDefinitionPath)
                   .setCallingElementPath(callingElementPath)
                   .setTags(Set.of("tag1", "tag2"))
-                  .setRootProcessInstanceKey(rootProcessInstanceKey);
+                  .setRootProcessInstanceKey(rootProcessInstanceKey)
+                  .setBusinessId(businessId);
             },
         """
                 {
@@ -1946,7 +1972,9 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionPath": [101, 102],
                   "callingElementPath": [12345, 67890],
                   "tags": ["tag1", "tag2"],
-                  "rootProcessInstanceKey": 9999
+                  "rootProcessInstanceKey": 9999,
+                  "businessId": "business-id-123",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -1976,7 +2004,9 @@ final class JsonSerializableToJsonTest {
                   "processDefinitionPath": [],
                   "callingElementPath": [],
                   "tags": [],
-                  "rootProcessInstanceKey": -1
+                  "rootProcessInstanceKey": -1,
+                  "businessId": "",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -2949,7 +2979,8 @@ final class JsonSerializableToJsonTest {
                         new ProcessInstanceMigrationMappingInstruction()
                             .setTargetElementId("targetId3"))
                     .setRootProcessInstanceKey(321L)
-                    .setProcessDefinitionKey(234L),
+                    .setProcessDefinitionKey(234L)
+                    .setBpmnProcessId("bpmnProcessId"),
         """
                 {
                   "tenantId": "tenantId",
@@ -2966,7 +2997,9 @@ final class JsonSerializableToJsonTest {
                     "targetElementId": "targetId3"
                   }],
                   "rootProcessInstanceKey": 321,
-                  "processDefinitionKey": 234
+                  "processDefinitionKey": 234,
+                  "bpmnProcessId": "bpmnProcessId",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -2990,7 +3023,9 @@ final class JsonSerializableToJsonTest {
                   "targetProcessDefinitionKey": 456,
                   "mappingInstructions": [],
                   "rootProcessInstanceKey": -1,
-                  "processDefinitionKey": -1
+                  "processDefinitionKey": -1,
+                  "bpmnProcessId": "",
+                  "elementInstanceKey": -1
                 }
                 """
       },
@@ -3735,7 +3770,7 @@ final class JsonSerializableToJsonTest {
       // ///////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "BatchOperationCreationRecord",
+        "Empty BatchOperationCreationRecord",
         (Supplier<BatchOperationCreationRecord>)
             () ->
                 new BatchOperationCreationRecord()
@@ -3877,7 +3912,10 @@ final class JsonSerializableToJsonTest {
                       "intent": "DELETE",
                       "recordValue": {
                         "resourceKey": 1,
-                        "resourceType": "PROCESS_DEFINITION"
+                        "resourceType": "PROCESS_DEFINITION",
+                        "processId": "",
+                        "tenantId": "<default>",
+                        "decisionDefinitionId": ""
                       }
                     }
                  }
@@ -4139,11 +4177,37 @@ final class JsonSerializableToJsonTest {
             () ->
                 new HistoryDeletionRecord()
                     .setResourceKey(1L)
+                    .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                    .setProcessId("processId")
+                    .setTenantId("tenantId")
+                    .setDecisionDefinitionId("decisionDefinitionId"),
+        """
+      {
+        "resourceKey": 1,
+        "resourceType": "PROCESS_INSTANCE",
+        "processId": "processId",
+        "tenantId": "tenantId",
+        "decisionDefinitionId": "decisionDefinitionId"
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty HistoryDeletionRecord ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty HistoryDeletionRecord",
+        (Supplier<HistoryDeletionRecord>)
+            () ->
+                new HistoryDeletionRecord()
+                    .setResourceKey(1L)
                     .setResourceType(HistoryDeletionType.PROCESS_INSTANCE),
         """
       {
         "resourceKey": 1,
-        "resourceType": "PROCESS_INSTANCE"
+        "resourceType": "PROCESS_INSTANCE",
+        "processId": "",
+        "tenantId": "<default>",
+        "decisionDefinitionId": ""
       }
       """
       },
