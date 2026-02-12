@@ -1950,6 +1950,10 @@
                 {
                   "name": "startCursor",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
                 }
               ]
             }
@@ -2027,6 +2031,10 @@
                 },
                 {
                   "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
@@ -2199,6 +2207,10 @@
                 },
                 {
                   "name": "startCursor",
+                  "type": "string"
+                },
+                 {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
@@ -4073,6 +4085,10 @@
                 {
                   "name": "startCursor",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
                 }
               ]
             }
@@ -4772,6 +4788,10 @@
                 },
                 {
                   "name": "tenantId",
+                  "type": "string"
+                },
+                 {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
