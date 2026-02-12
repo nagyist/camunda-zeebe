@@ -99,6 +99,8 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+    assertThat(auditLog.getRelatedEntityKey()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getRelatedEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER);
     assertUserTaskAuditLog(
         auditLog, AuditLogOperationTypeEnum.ASSIGN, userTask.getProcessDefinitionKey());
   }

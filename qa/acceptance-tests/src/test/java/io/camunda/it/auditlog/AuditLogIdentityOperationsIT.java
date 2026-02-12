@@ -221,11 +221,10 @@ public class AuditLogIdentityOperationsIT {
             client, AuditLogEntityTypeEnum.TENANT, AuditLogOperationTypeEnum.ASSIGN, tenantId);
 
     // then
+    final var result = findByEntityKey(auditLogs, tenantId);
     assertAuditLog(
-        findByEntityKey(auditLogs, tenantId),
-        AuditLogEntityTypeEnum.TENANT,
-        AuditLogOperationTypeEnum.ASSIGN,
-        tenantId);
+        result, AuditLogEntityTypeEnum.TENANT, AuditLogOperationTypeEnum.ASSIGN, tenantId);
+    assertRelatedEntity(result, username, AuditLogEntityTypeEnum.USER);
   }
 
   @Test
@@ -247,11 +246,10 @@ public class AuditLogIdentityOperationsIT {
             client, AuditLogEntityTypeEnum.TENANT, AuditLogOperationTypeEnum.UNASSIGN, tenantId);
 
     // then
+    final var result = findByEntityKey(auditLogs, tenantId);
     assertAuditLog(
-        findByEntityKey(auditLogs, tenantId),
-        AuditLogEntityTypeEnum.TENANT,
-        AuditLogOperationTypeEnum.UNASSIGN,
-        tenantId);
+        result, AuditLogEntityTypeEnum.TENANT, AuditLogOperationTypeEnum.UNASSIGN, tenantId);
+    assertRelatedEntity(result, username, AuditLogEntityTypeEnum.USER);
   }
 
   // ==================== ROLE TESTS ====================
@@ -328,11 +326,10 @@ public class AuditLogIdentityOperationsIT {
             client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN, ROLE_A_ID);
 
     // then
+    final var result = findByEntityKey(auditLogs, ROLE_A_ID);
     assertAuditLog(
-        findByEntityKey(auditLogs, ROLE_A_ID),
-        AuditLogEntityTypeEnum.ROLE,
-        AuditLogOperationTypeEnum.ASSIGN,
-        ROLE_A_ID);
+        result, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.ASSIGN, ROLE_A_ID);
+    assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.USER);
   }
 
   @Test
@@ -354,11 +351,9 @@ public class AuditLogIdentityOperationsIT {
             client, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.UNASSIGN, roleId);
 
     // then
-    assertAuditLog(
-        findByEntityKey(auditLogs, roleId),
-        AuditLogEntityTypeEnum.ROLE,
-        AuditLogOperationTypeEnum.UNASSIGN,
-        roleId);
+    final var result = findByEntityKey(auditLogs, roleId);
+    assertAuditLog(result, AuditLogEntityTypeEnum.ROLE, AuditLogOperationTypeEnum.UNASSIGN, roleId);
+    assertRelatedEntity(result, username, AuditLogEntityTypeEnum.USER);
   }
 
   // ==================== GROUP TESTS ====================
@@ -435,11 +430,10 @@ public class AuditLogIdentityOperationsIT {
             client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN, GROUP_A_ID);
 
     // then
+    final var result = findByEntityKey(auditLogs, GROUP_A_ID);
     assertAuditLog(
-        findByEntityKey(auditLogs, GROUP_A_ID),
-        AuditLogEntityTypeEnum.GROUP,
-        AuditLogOperationTypeEnum.ASSIGN,
-        GROUP_A_ID);
+        result, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.ASSIGN, GROUP_A_ID);
+    assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.USER);
   }
 
   @Test
@@ -462,11 +456,10 @@ public class AuditLogIdentityOperationsIT {
     // then
     final var auditLogs =
         findAuditLogs(client, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.UNASSIGN);
+    final var result = findByEntityKey(auditLogs, groupId);
     assertAuditLog(
-        findByEntityKey(auditLogs, groupId),
-        AuditLogEntityTypeEnum.GROUP,
-        AuditLogOperationTypeEnum.UNASSIGN,
-        groupId);
+        result, AuditLogEntityTypeEnum.GROUP, AuditLogOperationTypeEnum.UNASSIGN, groupId);
+    assertRelatedEntity(result, username, AuditLogEntityTypeEnum.USER);
   }
 
   // ==================== MAPPING RULE TESTS ====================
@@ -482,11 +475,13 @@ public class AuditLogIdentityOperationsIT {
             MAPPING_RULE_A.id());
 
     // then
+    final var result = findByEntityKey(auditLogs, MAPPING_RULE_A.id());
     assertAuditLog(
-        findByEntityKey(auditLogs, MAPPING_RULE_A.id()),
+        result,
         AuditLogEntityTypeEnum.MAPPING_RULE,
         AuditLogOperationTypeEnum.CREATE,
         MAPPING_RULE_A.id());
+    assertThat(result.getEntityDescription()).isNotBlank();
   }
 
   @Test
@@ -525,11 +520,13 @@ public class AuditLogIdentityOperationsIT {
     final var auditLogs =
         findAuditLogs(
             client, AuditLogEntityTypeEnum.MAPPING_RULE, AuditLogOperationTypeEnum.UPDATE);
+    final var result = findByEntityKey(auditLogs, mappingRuleId);
     assertAuditLog(
-        findByEntityKey(auditLogs, mappingRuleId),
+        result,
         AuditLogEntityTypeEnum.MAPPING_RULE,
         AuditLogOperationTypeEnum.UPDATE,
         mappingRuleId);
+    assertThat(result.getEntityDescription()).isEqualTo("Updated Name");
   }
 
   @Test
@@ -567,6 +564,7 @@ public class AuditLogIdentityOperationsIT {
         AuditLogEntityTypeEnum.MAPPING_RULE,
         AuditLogOperationTypeEnum.DELETE,
         mappingRuleId);
+    // Currently, mapping rule delete does not set the mapping rule name in the record
   }
 
   // ==================== AUTHORIZATION TESTS ====================
@@ -587,11 +585,13 @@ public class AuditLogIdentityOperationsIT {
             client, AuditLogEntityTypeEnum.AUTHORIZATION, AuditLogOperationTypeEnum.CREATE);
 
     // then
+    final var result = findByEntityKey(auditLogs, authorizationKey);
     assertAuditLog(
-        findByEntityKey(auditLogs, authorizationKey),
+        result,
         AuditLogEntityTypeEnum.AUTHORIZATION,
         AuditLogOperationTypeEnum.CREATE,
         authorizationKey);
+    assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.USER);
   }
 
   @Test
@@ -635,11 +635,13 @@ public class AuditLogIdentityOperationsIT {
     final var auditLogs =
         findAuditLogs(
             client, AuditLogEntityTypeEnum.AUTHORIZATION, AuditLogOperationTypeEnum.UPDATE);
+    final var result = findByEntityKey(auditLogs, authorizationKey);
     assertAuditLog(
-        findByEntityKey(auditLogs, authorizationKey),
+        result,
         AuditLogEntityTypeEnum.AUTHORIZATION,
         AuditLogOperationTypeEnum.UPDATE,
         authorizationKey);
+    assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.USER);
   }
 
   @Test
@@ -677,6 +679,7 @@ public class AuditLogIdentityOperationsIT {
         AuditLogEntityTypeEnum.AUTHORIZATION,
         AuditLogOperationTypeEnum.DELETE,
         authorizationKey);
+    // Currently, authorization delete does not set the owner in the record
   }
 
   // ==================== HELPER METHODS ====================
@@ -715,6 +718,21 @@ public class AuditLogIdentityOperationsIT {
     assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.ADMIN);
     assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
     assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
+  }
+
+  /**
+   * Asserts the related entity information in the audit log.
+   *
+   * @param auditLog the audit log entry
+   * @param relatedEntityKey the expected related entity key
+   * @param relatedEntityType the expected related entity type
+   */
+  private void assertRelatedEntity(
+      final AuditLogResult auditLog,
+      final String relatedEntityKey,
+      final AuditLogEntityTypeEnum relatedEntityType) {
+    assertThat(auditLog.getRelatedEntityKey()).isEqualTo(relatedEntityKey);
+    assertThat(auditLog.getRelatedEntityType()).isEqualTo(relatedEntityType);
   }
 
   private List<AuditLogResult> awaitAuditLogEntry(
