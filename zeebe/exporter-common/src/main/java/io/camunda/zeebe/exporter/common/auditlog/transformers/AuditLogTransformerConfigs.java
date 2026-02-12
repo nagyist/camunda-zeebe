@@ -56,9 +56,8 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig AUTHORIZATION_CONFIG =
       TransformerConfig.with(AUTHORIZATION)
           .withIntents(
-              AuthorizationIntent.CREATED,
-              AuthorizationIntent.UPDATED,
-              AuthorizationIntent.DELETED);
+              AuthorizationIntent.CREATED, AuthorizationIntent.UPDATED, AuthorizationIntent.DELETED)
+          .withDataCleanupIntents(AuthorizationIntent.DELETED);
 
   public static final TransformerConfig BATCH_OPERATION_CREATION_CONFIG =
       TransformerConfig.with(BATCH_OPERATION_CREATION).withIntents(BatchOperationIntent.CREATED);
@@ -77,7 +76,9 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig DECISION_EVALUATION_CONFIG =
       TransformerConfig.with(DECISION_EVALUATION)
-          .withIntents(DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED);
+          .withIntents(DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED)
+          .withDataCleanupIntents(
+              DecisionEvaluationIntent.EVALUATED, DecisionEvaluationIntent.FAILED);
 
   public static final TransformerConfig DECISION_CONFIG =
       TransformerConfig.with(DECISION).withIntents(DecisionIntent.CREATED, DecisionIntent.DELETED);
@@ -87,11 +88,14 @@ public class AuditLogTransformerConfigs {
           .withIntents(DecisionRequirementsIntent.CREATED, DecisionRequirementsIntent.DELETED);
 
   public static final TransformerConfig FORM_CONFIG =
-      TransformerConfig.with(ValueType.FORM).withIntents(FormIntent.CREATED, FormIntent.DELETED);
+      TransformerConfig.with(ValueType.FORM)
+          .withIntents(FormIntent.CREATED, FormIntent.DELETED)
+          .withDataCleanupIntents(FormIntent.DELETED);
 
   public static final TransformerConfig GROUP_CONFIG =
       TransformerConfig.with(GROUP)
-          .withIntents(GroupIntent.CREATED, GroupIntent.UPDATED, GroupIntent.DELETED);
+          .withIntents(GroupIntent.CREATED, GroupIntent.UPDATED, GroupIntent.DELETED)
+          .withDataCleanupIntents(GroupIntent.DELETED);
 
   public static final TransformerConfig GROUP_ENTITY_CONFIG =
       TransformerConfig.with(GROUP)
@@ -105,7 +109,8 @@ public class AuditLogTransformerConfigs {
   public static final TransformerConfig MAPPING_RULE_CONFIG =
       TransformerConfig.with(MAPPING_RULE)
           .withIntents(
-              MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED);
+              MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED, MappingRuleIntent.DELETED)
+          .withDataCleanupIntents(MappingRuleIntent.DELETED);
 
   public static final TransformerConfig PROCESS_CONFIG =
       TransformerConfig.with(PROCESS).withIntents(ProcessIntent.CREATED, ProcessIntent.DELETED);
@@ -136,7 +141,8 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig TENANT_CONFIG =
       TransformerConfig.with(TENANT)
-          .withIntents(TenantIntent.CREATED, TenantIntent.UPDATED, TenantIntent.DELETED);
+          .withIntents(TenantIntent.CREATED, TenantIntent.UPDATED, TenantIntent.DELETED)
+          .withDataCleanupIntents(TenantIntent.DELETED);
 
   public static final TransformerConfig TENANT_ENTITY_CONFIG =
       TransformerConfig.with(TENANT)
@@ -144,14 +150,16 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig ROLE_CONFIG =
       TransformerConfig.with(ROLE)
-          .withIntents(RoleIntent.CREATED, RoleIntent.UPDATED, RoleIntent.DELETED);
+          .withIntents(RoleIntent.CREATED, RoleIntent.UPDATED, RoleIntent.DELETED)
+          .withDataCleanupIntents(RoleIntent.DELETED);
 
   public static final TransformerConfig ROLE_ENTITY_CONFIG =
       TransformerConfig.with(ROLE).withIntents(RoleIntent.ENTITY_ADDED, RoleIntent.ENTITY_REMOVED);
 
   public static final TransformerConfig USER_CONFIG =
       TransformerConfig.with(USER)
-          .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED);
+          .withIntents(UserIntent.CREATED, UserIntent.UPDATED, UserIntent.DELETED)
+          .withDataCleanupIntents(UserIntent.DELETED);
 
   public static final TransformerConfig USER_TASK_CONFIG =
       TransformerConfig.with(USER_TASK)
