@@ -57,9 +57,10 @@ on:
         required: false
         default: false
       enable-optimize:
-        description: 'Enables the optimize for the load testing'
+        description: 'Enable Optimize for load testing'
         type: boolean
         required: false
+        default: false
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
         type: choice
@@ -119,9 +120,10 @@ on:
         required: false
         default: false
       enable-optimize:
-        description: 'Enables the optimize for the load testing'
+        description: 'Enable Optimize for load testing'
         type: boolean
         required: false
+        default: false
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
         # type choice is invalid here

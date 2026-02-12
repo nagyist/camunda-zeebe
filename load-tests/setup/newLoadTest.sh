@@ -36,6 +36,12 @@ fi
 
 # Validate enable_optimize value
 enable_optimize="${4:-false}"
+enable_optimize=$(echo "$enable_optimize" | tr '[:upper:]' '[:lower:]')
+if [[ "$enable_optimize" != "true" && "$enable_optimize" != "false" ]]; then
+  echo "Error: Invalid enable_optimize value '$enable_optimize'"
+  echo "Allowed values are: true or false"
+  exit 1
+fi
 
 # Create namespace if it doesn't exist
 if ! kubectl get namespace $namespace >/dev/null 2>&1; then
