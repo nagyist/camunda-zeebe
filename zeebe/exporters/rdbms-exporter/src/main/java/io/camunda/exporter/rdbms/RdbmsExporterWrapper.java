@@ -48,6 +48,7 @@ import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.DecisionInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
@@ -319,7 +320,7 @@ public class RdbmsExporterWrapper implements Exporter {
             BatchOperationType.DELETE_PROCESS_INSTANCE));
     builder.withHandler(
         ValueType.HISTORY_DELETION,
-        new ProcessInstanceHistoryDeletionBatchOperationExportHandler(
+        new DecisionInstanceHistoryDeletionBatchOperationExportHandler(
             rdbmsWriters.getBatchOperationWriter(),
             batchOperationCache,
             BatchOperationType.DELETE_DECISION_INSTANCE));
