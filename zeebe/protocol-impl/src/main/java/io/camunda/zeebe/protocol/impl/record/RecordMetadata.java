@@ -143,7 +143,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public int write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     encoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     // working with fixed-length fields
@@ -171,10 +171,12 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     encoder.putAuthorization(authorizationBuffer, 0, authorizationBuffer.capacity());
 
     if (agent != null) {
-      encoder.putAgent(agent.toDirectBuffer(), 0, agent.getLength());
+      final var bb = agent.toDirectBuffer();
+      encoder.putAgent(bb, 0, bb.capacity());
     } else {
       encoder.agent("");
     }
+    return headerEncoder.encodedLength() + encoder.encodedLength();
   }
 
   public long getRequestId() {
