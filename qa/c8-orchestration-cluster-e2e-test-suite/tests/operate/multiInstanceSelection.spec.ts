@@ -98,14 +98,10 @@ test.describe('Multi Instance Flow Node Selection', () => {
     operateProcessInstancePage,
     operateDiagramPage,
   }) => {
-    await test.step('Expand and click on Task B flow node', async () => {
+    await test.step('Expand Task B (Multi instance) flow node', async () => {
       await operateProcessInstancePage.expandTreeItemInHistory(
         /^task b \(multi instance\)$/i,
       );
-      await operateProcessInstancePage
-        .findTreeItemInHistory(/^task b \(multi instance\)$/i)
-        .first()
-        .click();
     });
 
     await test.step('Verify 5 child Task B instances are visible', async () => {
