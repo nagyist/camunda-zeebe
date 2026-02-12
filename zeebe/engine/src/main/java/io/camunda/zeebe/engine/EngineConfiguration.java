@@ -58,6 +58,7 @@ public final class EngineConfiguration {
       Duration.ofMinutes(5);
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
+  public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
 
   private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
   private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
@@ -94,6 +95,7 @@ public final class EngineConfiguration {
   private Duration commandRedistributionMaxBackoff =
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
 
+  private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
   private GlobalListenersConfiguration globalListeners = GlobalListenersConfiguration.empty();
   private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
@@ -415,6 +417,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setExpressionEvaluationTimeout(
       final Duration expressionEvaluationTimeout) {
     this.expressionEvaluationTimeout = expressionEvaluationTimeout;
+    return this;
+  }
+
+  public boolean isBusinessIdUniquenessEnabled() {
+    return businessIdUniquenessEnabled;
+  }
+
+  public EngineConfiguration setBusinessIdUniquenessEnabled(
+      final boolean businessIdUniquenessEnabled) {
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     return this;
   }
 }
