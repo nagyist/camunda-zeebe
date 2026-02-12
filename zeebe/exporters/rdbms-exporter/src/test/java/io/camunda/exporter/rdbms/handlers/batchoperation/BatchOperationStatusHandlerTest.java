@@ -426,7 +426,7 @@ class BatchOperationStatusHandlerTest {
 
     ProcessInstanceHistoryDeletionOperationHandlerTest() {
       super(
-          new HistoryDeletionBatchOperationExportHandler(
+          new ProcessInstanceHistoryDeletionBatchOperationExportHandler(
               batchOperationWriter,
               batchOperationCache,
               BatchOperationType.DELETE_PROCESS_INSTANCE));
