@@ -938,6 +938,10 @@
             "type": "string"
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string"
+          },
+          {
             "name": "candidateGroups",
             "type": "array<string>"
           },
@@ -1179,6 +1183,10 @@
                   "wrapper": true
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
+                },
+                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -1258,7 +1266,10 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [{
+                "name": "rootProcessInstanceKey",
+                "type": "string"
+              }]
             }
           },
           {
@@ -1331,7 +1342,12 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
+                }
+              ]
             }
           },
           {
@@ -1395,7 +1411,10 @@
             "type": "string"
           }
         ],
-        "optional": []
+        "optional": [{
+          "name": "rootProcessInstanceKey",
+          "type": "string"
+        }]
       }
     },
     {
@@ -1701,6 +1720,10 @@
             "name": "tags",
             "type": "array<string>",
             "rawRefName": "TagSet"
+          },
+           {
+            "name": "rootProcessInstanceKey",
+             "type": "string"
           }
         ]
       }
@@ -1869,6 +1892,10 @@
                   "name": "tags",
                   "type": "array<string>",
                   "rawRefName": "TagSet"
+                },
+                {
+                   "name": "rootProcessInstanceKey",
+                   "type": "string"
                 }
               ]
             }
@@ -1930,6 +1957,10 @@
                 },
                 {
                   "name": "startCursor",
+                  "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
@@ -2008,6 +2039,10 @@
                 },
                 {
                   "name": "tenantId",
+                  "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
@@ -2150,7 +2185,10 @@
       "status": "200",
       "schema": {
         "required": [],
-        "optional": []
+        "optional": [{
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
+                }]
       }
     },
     {
@@ -2180,6 +2218,10 @@
                 },
                 {
                   "name": "startCursor",
+                  "type": "string"
+                },
+                 {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
@@ -2273,6 +2315,10 @@
                 },
                 {
                   "name": "incidentKey",
+                  "type": "string"
+                },
+                 {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
@@ -4054,6 +4100,10 @@
                 {
                   "name": "startCursor",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
                 }
               ]
             }
@@ -4113,6 +4163,10 @@
                 },
                 {
                   "name": "processDefinitionKey",
+                  "type": "string"
+                },
+                 {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
@@ -4753,6 +4807,10 @@
                 },
                 {
                   "name": "tenantId",
+                  "type": "string"
+                },
+                 {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
