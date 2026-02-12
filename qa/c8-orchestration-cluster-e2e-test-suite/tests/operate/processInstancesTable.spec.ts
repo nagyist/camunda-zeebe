@@ -7,7 +7,7 @@
  */
 
 import {test} from 'fixtures';
-import {expect, Locator, Page} from '@playwright/test';
+import {expect} from '@playwright/test';
 import {deploy, createInstances, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
@@ -22,12 +22,6 @@ let processB_v_1: ProcessInstance;
 let processB_v_2: ProcessInstance;
 let scrollingInstances: ProcessInstance[];
 const amountOfInstancesForInfiniteScroll = 350;
-
-async function scrollUntilElementIsVisible(page: Page, locator: Locator) {
-  while (!(await locator.isVisible())) {
-    await page.mouse.wheel(0, 600);
-  }
-}
 
 test.beforeAll(async () => {
   await deploy([
@@ -302,8 +296,7 @@ test.describe('Process Instances Table', () => {
     });
 
     await test.step('Scroll to 100th instance', async () => {
-      await scrollUntilElementIsVisible(
-        page,
+      await operateProcessesPage.scrollUntilElementIsVisible(
         page.getByRole('row', {name: `Instance ${descendingInstanceIds[50]}`}),
       );
 
@@ -311,16 +304,14 @@ test.describe('Process Instances Table', () => {
     });
 
     await test.step('Scroll to 150th instance', async () => {
-      await scrollUntilElementIsVisible(
-        page,
+      await operateProcessesPage.scrollUntilElementIsVisible(
         page.getByRole('row', {name: `Instance ${descendingInstanceIds[100]}`}),
       );
       await expect(instanceRows).toHaveCount(150);
     });
 
     await test.step('Scroll to 200th instance', async () => {
-      await scrollUntilElementIsVisible(
-        page,
+      await operateProcessesPage.scrollUntilElementIsVisible(
         page.getByRole('row', {name: `Instance ${descendingInstanceIds[150]}`}),
       );
       await sleep(500);

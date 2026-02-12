@@ -465,6 +465,12 @@ class OperateProcessesPage {
       .nth(index + 1) // +1 to skip header row
       .getByRole('checkbox');
   }
+
+  async scrollUntilElementIsVisible(locator: Locator): Promise<void> {
+    while (!(await locator.isVisible())) {
+      await this.page.mouse.wheel(0, 600);
+    }
+  }
 }
 
 export {OperateProcessesPage};
