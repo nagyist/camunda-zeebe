@@ -89,7 +89,7 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
           .checkpointPosition(partitionState.checkpointPosition)
           .firstLogPosition(partitionState.firstLogPosition);
     }
-    return getLength();
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   @Override
