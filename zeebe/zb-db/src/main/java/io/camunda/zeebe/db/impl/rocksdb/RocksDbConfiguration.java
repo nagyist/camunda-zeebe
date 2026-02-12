@@ -72,8 +72,12 @@ public final class RocksDbConfiguration {
    */
   private int ioRateBytesPerSecond = DEFAULT_IO_RATE_BYTES_PER_SECOND;
 
-  private MemoryAllocationStrategy memoryAllocationStrategy =
-      DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY;
+  /**
+   * @deprecated This configuration property will be removed in a future release (deprecated in
+   *     8.10). Please use the recommended alternative configuration for memory allocation.
+   */
+  @Deprecated
+  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
 
   public RocksDbConfiguration() {}
 
@@ -159,10 +163,22 @@ public final class RocksDbConfiguration {
     return this;
   }
 
+  /**
+   * @deprecated This configuration property will be removed in a future release (deprecated in
+   *     8.10). The default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please
+   *     use the recommended alternative configuration for memory allocation.
+   */
+  @Deprecated
   public MemoryAllocationStrategy getMemoryAllocationStrategy() {
     return memoryAllocationStrategy;
   }
 
+  /**
+   * @deprecated This configuration property will be removed in a future release (deprecated in
+   *     8.10). The default behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please
+   *     use the recommended alternative configuration for memory allocation.
+   */
+  @Deprecated
   public RocksDbConfiguration setMemoryAllocationStrategy(
       final MemoryAllocationStrategy memoryAllocationStrategy) {
     this.memoryAllocationStrategy = memoryAllocationStrategy;
