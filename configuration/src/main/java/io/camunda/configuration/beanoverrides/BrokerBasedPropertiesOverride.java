@@ -788,6 +788,12 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateBackupScheduler(
       final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
+
+    if (invalidContinuousBackupConfiguration(primaryStorageBackup)) {
+      throw new IllegalArgumentException(
+          "Continuous backups are not compatible with document-based secondary storage. Please disable continuous backups.");
+    }
+
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setRequired(primaryStorageBackup.isRequired());
     backupCfg.setContinuous(primaryStorageBackup.isContinuous());
@@ -795,6 +801,17 @@ public class BrokerBasedPropertiesOverride {
     backupCfg.setCheckpointInterval(primaryStorageBackup.getCheckpointInterval());
     backupCfg.setOffset(primaryStorageBackup.getOffset());
     backupCfg.setRetention(primaryStorageBackup.getRetention());
+  }
+
+  private boolean invalidContinuousBackupConfiguration(
+      final PrimaryStorageBackup primaryStorageBackup) {
+    final var dbType = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType();
+
+    return (dbType.isElasticSearch() || dbType.isOpenSearch())
+        && primaryStorageBackup.isContinuous()
+        && !(primaryStorageBackup.getSchedule() == null
+            || primaryStorageBackup.getSchedule().isBlank())
+        && !primaryStorageBackup.getSchedule().equalsIgnoreCase("none");
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {
