@@ -35,7 +35,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Slash Command Dispatch
-        uses: peter-evans/slash-command-dispatch@v4
+        uses: peter-evans/slash-command-dispatch@v5
         with:
           token: ${{ steps.github-token.outputs.token }}
           reaction-token: ${{ steps.github-token.outputs.token }}
@@ -84,7 +84,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Slash Command Dispatch
-        uses: peter-evans/slash-command-dispatch@v4
+        uses: peter-evans/slash-command-dispatch@v5
         with:
           token: ${{ steps.github-token.outputs.token }}
           reaction-token: ${{ steps.github-token.outputs.token }}
