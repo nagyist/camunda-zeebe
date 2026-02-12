@@ -146,8 +146,8 @@ public class Subscription<T> {
     doWithLock(
         () -> {
           closed = true;
-          transport.close();
           dispatcher.close();
+          transport.close();
         });
   }
 
