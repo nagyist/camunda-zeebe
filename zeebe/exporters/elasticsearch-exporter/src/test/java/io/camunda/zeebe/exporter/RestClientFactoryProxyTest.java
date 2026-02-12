@@ -150,7 +150,7 @@ final class RestClientFactoryProxyTest {
   }
 
   private void sendRequest() {
-    try (final var client = RestClientFactory.of(config)) {
+    try (final var client = RestClientFactory.ofRestClient(config)) {
       final var context = new BasicHttpContext();
       client
           .getHttpClient()
