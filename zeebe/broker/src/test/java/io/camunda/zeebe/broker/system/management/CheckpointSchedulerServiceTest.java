@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -312,6 +313,54 @@ public class CheckpointSchedulerServiceTest {
                     .submitActor(argThat(CheckpointScheduler.class::isInstance)));
     assertThat(getSchedule(schedulingService, "checkpointSchedule")).isNull();
     assertThat(getSchedule(schedulingService, "backupSchedule")).isNotNull();
+  }
+
+  @Test
+  void shouldNotRegisterRetentionJobOnEmptySchedule() {
+
+    // given
+    brokerConfig.getData().getBackup().getRetention().setCleanupSchedule(null);
+    final var member = mock(Member.class);
+    doReturn(Set.of(member)).when(membershipService).getMembers();
+    doReturn(MemberId.from("0")).when(member).id();
+    doReturn(member).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+
+    verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance));
+  }
+
+  @Test
+  void shouldNotRegisterRetentionJobOnNullSchedule() {
+
+    // given
+    brokerConfig.getData().getBackup().getRetention().setWindow(null);
+    final var member = mock(Member.class);
+    doReturn(Set.of(member)).when(membershipService).getMembers();
+    doReturn(MemberId.from("0")).when(member).id();
+    doReturn(member).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+
+    verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance));
   }
 
   private CheckpointScheduler getCheckpointCreator(

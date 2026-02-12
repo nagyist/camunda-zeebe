@@ -808,9 +808,12 @@ public class BrokerBasedPropertiesOverride {
     final var dbType = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType();
 
     return (dbType.isElasticSearch() || dbType.isOpenSearch())
-        && primaryStorageBackup.isContinuous()
-        && !(primaryStorageBackup.getSchedule() == null
-            || primaryStorageBackup.getSchedule().isBlank())
+        && (primaryStorageBackup.isContinuous() || hasScheduleConfig(primaryStorageBackup));
+  }
+
+  private boolean hasScheduleConfig(final PrimaryStorageBackup primaryStorageBackup) {
+    return primaryStorageBackup.getSchedule() != null
+        && !primaryStorageBackup.getSchedule().isBlank()
         && !primaryStorageBackup.getSchedule().equalsIgnoreCase("none");
   }
 
