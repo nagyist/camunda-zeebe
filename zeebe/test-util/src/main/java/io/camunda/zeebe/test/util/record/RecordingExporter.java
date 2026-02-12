@@ -141,12 +141,14 @@ public final class RecordingExporter implements Exporter {
       new ConcurrentSkipListMap<Integer, Record<?>>();
   private static final Lock LOCK = new ReentrantLock();
   private static final Condition IS_EMPTY = LOCK.newCondition();
-
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
   private static boolean overrideMaximumWaitTime = false;
-
   private Controller controller;
+
+  static long getMaximumWaitTime() {
+    return maximumWaitTime;
+  }
 
   public static void setMaximumWaitTime(final long maximumWaitTime) {
     RecordingExporter.maximumWaitTime = maximumWaitTime;
