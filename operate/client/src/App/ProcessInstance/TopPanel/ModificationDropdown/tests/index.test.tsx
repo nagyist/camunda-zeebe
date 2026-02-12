@@ -78,8 +78,7 @@ const statisticsData = [
   },
 ];
 
-// TODO: fix test with #44451
-describe.skip('Modification Dropdown', () => {
+describe('Modification Dropdown', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',
