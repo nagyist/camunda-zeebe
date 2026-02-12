@@ -28,7 +28,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.SAME_THREAD)
-final class RestClientFactoryProxyTest {
+final class ElasticsearchClientFactoryProxyTest {
 
   private static final String PROXY_USERNAME = "proxyuser";
   private static final String PROXY_PASSWORD = "proxypass";
@@ -150,7 +150,7 @@ final class RestClientFactoryProxyTest {
   }
 
   private void sendRequest() {
-    try (final var client = RestClientFactory.ofRestClient(config)) {
+    try (final var client = ElasticsearchClientFactory.ofRestClient(config)) {
       final var context = new BasicHttpContext();
       client
           .getHttpClient()

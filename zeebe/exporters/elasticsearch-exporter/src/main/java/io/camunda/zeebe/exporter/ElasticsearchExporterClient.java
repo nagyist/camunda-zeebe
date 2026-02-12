@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -30,12 +31,13 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-class ElasticsearchClient implements AutoCloseable {
+class ElasticsearchExporterClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final co.elastic.clients.elasticsearch.ElasticsearchClient esClient;
+  private final ElasticsearchClient esClient;
   private final ElasticsearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
@@ -51,21 +53,21 @@ class ElasticsearchClient implements AutoCloseable {
    */
   private Sample flushLatencyMeasurement;
 
-  ElasticsearchClient(
+  ElasticsearchExporterClient(
       final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
     this(
         configuration,
         new BulkIndexRequest(),
-        RestClientFactory.of(configuration),
+        ElasticsearchClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration),
         new ElasticsearchMetrics(meterRegistry));
   }
 
-  ElasticsearchClient(
+  ElasticsearchExporterClient(
       final ElasticsearchExporterConfiguration configuration,
       final MeterRegistry meterRegistry,
-      final co.elastic.clients.elasticsearch.ElasticsearchClient esClient) {
+      final ElasticsearchClient esClient) {
     this(
         configuration,
         new BulkIndexRequest(),
@@ -75,10 +77,10 @@ class ElasticsearchClient implements AutoCloseable {
         new ElasticsearchMetrics(meterRegistry));
   }
 
-  ElasticsearchClient(
+  ElasticsearchExporterClient(
       final ElasticsearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest,
-      final co.elastic.clients.elasticsearch.ElasticsearchClient esClient,
+      final ElasticsearchClient esClient,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
       final ElasticsearchMetrics metrics) {
@@ -288,10 +290,13 @@ class ElasticsearchClient implements AutoCloseable {
     try {
       // Use withJson to pass the settings as raw JSON because the ES Java client's typed builder
       // skips null values, but ES requires {"index.lifecycle.name": null} to remove a policy.
-      final var json =
-          policyName != null
-              ? "{\"index.lifecycle.name\": \"" + policyName + "\"}"
-              : "{\"index.lifecycle.name\": null}";
+      final String json;
+      if (policyName != null) {
+        // Use MAPPER to safely serialize the policy name, avoiding any JSON injection risk
+        json = MAPPER.writeValueAsString(Map.of("index.lifecycle.name", policyName));
+      } else {
+        json = "{\"index.lifecycle.name\": null}";
+      }
       final var response =
           esClient
               .indices()

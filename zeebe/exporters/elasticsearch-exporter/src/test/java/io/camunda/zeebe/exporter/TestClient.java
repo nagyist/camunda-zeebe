@@ -49,7 +49,7 @@ final class TestClient implements CloseableSilently {
     this.config = config;
     this.indexRouter = indexRouter;
 
-    restClient = RestClientFactory.ofRestClient(config);
+    restClient = ElasticsearchClientFactory.ofRestClient(config);
 
     final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
     esClient = new ElasticsearchClient(transport);

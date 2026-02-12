@@ -47,8 +47,8 @@ public class SchemaManagerIT {
   @Test
   public void shouldUseVersionedComponentTemplateForIndexTemplates() throws IOException {
     // given
-    final var restClient = RestClientFactory.ofRestClient(CONFIG);
-    final var esClient = new ElasticsearchClient(CONFIG, new SimpleMeterRegistry());
+    final var restClient = ElasticsearchClientFactory.ofRestClient(CONFIG);
+    final var esClient = new ElasticsearchExporterClient(CONFIG, new SimpleMeterRegistry());
 
     // when
     // we create an 8.5 component template
