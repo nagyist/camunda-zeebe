@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
 import java.util.regex.Matcher;
@@ -66,24 +67,35 @@ final class RdbmsRangeRestoreIT {
       "jdbc:h2:mem:rdbms-restore-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
 
   private static @TempDir Path backupDir;
+  private static final Map<String, Object> H2_PROPERTIES =
+      Map.of(
+          "camunda.data.secondary-storage.type",
+          "rdbms",
+          "spring.datasource.url",
+          H2_URL,
+          "spring.datasource.driver-class-name",
+          "org.h2.Driver",
+          "spring.datasource.username",
+          "sa",
+          "spring.datasource.password",
+          "");
   private Path workingDirectory;
 
   @TestZeebe
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
-          .withProperty("spring.datasource.url", H2_URL)
-          .withProperty("spring.datasource.driver-class-name", "org.h2.Driver")
-          .withProperty("spring.datasource.username", "sa")
-          .withProperty("spring.datasource.password", "")
+          .withAdditionalProperties(H2_PROPERTIES)
           .withUnifiedConfig(this::configureBroker);
 
   private BackupActuator backupActuator;
+  private ExporterPositionMapper exporterPositionMapper;
 
   @BeforeEach
   void setUp() {
     backupActuator = BackupActuator.of(broker);
     workingDirectory = broker.getWorkingDirectory();
+    exporterPositionMapper = broker.bean(ExporterPositionMapper.class);
   }
 
   @AfterEach
@@ -107,13 +119,18 @@ final class RdbmsRangeRestoreIT {
       processKey = deployTestProcess(client);
 
       // Create some process instances to have data to verify after restore
-      final var interval = deployProcessAndTakeContinuousBackups(client, processKey);
+      final var interval = deployProcessAndTakeBackups(client, processKey);
 
-      // Take a third backup and create instances outside the range that should NOT survive
-      Thread.sleep(Duration.ofSeconds(2));
+      final var lastBackup = takeAndAwaitBackup();
+      Thread.sleep(1000);
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
-      takeAndAwaitBackup();
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+
+      Awaitility.await("Until exported position is higher than backup")
+          .untilAsserted(
+              () ->
+                  assertThat(exporterPositionMapper.findOne(1).lastExportedPosition())
+                      .isGreaterThan(lastBackup.getDetails().getFirst().getCheckpointPosition()));
 
       // when - stop broker, delete data, restore from time range with RDBMS
       LOG.info("Stopping broker");
@@ -124,22 +141,7 @@ final class RdbmsRangeRestoreIT {
 
       LOG.info("Deleted working directory {}", workingDirectory);
 
-      assertThatThrownBy(
-              () -> {
-                try (final var restore =
-                    new TestRestoreApp()
-                        .withUnifiedConfig(this::configureRestoreApp)
-                        .withProperty("camunda.data.secondary-storage.type", "rdbms")
-                        .withProperty("spring.datasource.url", H2_URL)
-                        .withProperty("spring.datasource.driver-class-name", "org.h2.Driver")
-                        .withProperty("spring.datasource.username", "sa")
-                        .withProperty("spring.datasource.password", "")
-                        .withWorkingDirectory(workingDirectory)
-                        .withTimeRange(interval.start(), interval.end())
-                        .start()) {
-                  // empty
-                }
-              })
+      assertThatThrownBy(() -> testRestoreApp(interval).start())
           .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(IllegalStateException.class)
           .hasMessageContaining("is less than exporter position");
@@ -153,51 +155,38 @@ final class RdbmsRangeRestoreIT {
     // Thread.sleep to space out backups and ensure the from/to range reliably covers them.
     final long processKey;
 
+    final Interval<Instant> interval;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
-      final var interval = deployProcessAndTakeContinuousBackups(client, processKey);
-      // Take a third backup and create instances outside the range that should NOT survive
-      Thread.sleep(Duration.ofSeconds(2));
+      interval = deployProcessAndTakeBackups(client, processKey);
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
-      takeAndAwaitBackup();
-      final var exporterPositionMapper = broker.bean(ExporterPositionMapper.class);
-      Awaitility.await("Until backup is equal to exported position")
-          .pollDelay(Duration.ofSeconds(2))
-          .untilAsserted(
-              () -> {
-                final var backup = takeAndAwaitBackup();
-                final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
-                LOG.info("Exporter position for partition 1: {}", position);
-                LOG.info("Last backup is {}", backup);
-                final var details = backup.getDetails().getFirst();
-                assertThat(details)
-                    .returns(1, PartitionBackupInfo::getPartitionId)
-                    .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
-                assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
-              });
+    }
+    takeAndAwaitBackup();
+    Awaitility.await("Until backup is greater or equal to exported position")
+        .pollDelay(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> {
+              final var backup = takeAndAwaitBackup();
+              final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
+              LOG.info("Exporter position for partition 1: {}", position);
+              LOG.info("Last backup is {}", backup);
+              final var details = backup.getDetails().getFirst();
+              assertThat(details)
+                  .returns(1, PartitionBackupInfo::getPartitionId)
+                  .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
+              assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
+            });
+    // when - stop broker, delete data, restore from time range with RDBMS
+    LOG.info("Stopping broker");
+    broker.stop();
 
-      // when - stop broker, delete data, restore from time range with RDBMS
-      LOG.info("Stopping broker");
-      broker.stop();
+    FileUtil.deleteFolder(workingDirectory);
+    FileUtil.ensureDirectoryExists(workingDirectory);
 
-      FileUtil.deleteFolder(workingDirectory);
-      FileUtil.ensureDirectoryExists(workingDirectory);
+    LOG.info("Deleted working directory {}", workingDirectory);
 
-      LOG.info("Deleted working directory {}", workingDirectory);
-
-      try (final var restore =
-          new TestRestoreApp()
-              .withUnifiedConfig(this::configureRestoreApp)
-              .withProperty("camunda.data.secondary-storage.type", "rdbms")
-              .withProperty("spring.datasource.url", H2_URL)
-              .withProperty("spring.datasource.driver-class-name", "org.h2.Driver")
-              .withProperty("spring.datasource.username", "sa")
-              .withProperty("spring.datasource.password", "")
-              .withWorkingDirectory(workingDirectory)
-              .withTimeRange(interval.start(), interval.end())
-              .start()) {
-        // empty, just to ensure it's closed.
-      }
+    try (final var restore = testRestoreApp(interval).start()) {
+      // empty, just to ensure it's closed.
     }
 
     broker.start();
@@ -236,7 +225,7 @@ final class RdbmsRangeRestoreIT {
         .getProcessDefinitionKey();
   }
 
-  private Interval<Instant> deployProcessAndTakeContinuousBackups(
+  private Interval<Instant> deployProcessAndTakeBackups(
       final CamundaClient client, final long processKey) throws InterruptedException {
 
     // Create some process instances to have data to verify after restore
@@ -306,9 +295,19 @@ final class RdbmsRangeRestoreIT {
 
   private void configureRestoreApp(final Camunda cfg) {
     // Filesystem backup store (same as broker)
+    cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.rdbms);
     final var fsConfig = new Filesystem();
     fsConfig.setBasePath(backupDir.toAbsolutePath().toString());
     cfg.getData().getPrimaryStorage().getBackup().setFilesystem(fsConfig);
     cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.FILESYSTEM);
+  }
+
+  private TestRestoreApp testRestoreApp(final Interval<Instant> interval) {
+    return new TestRestoreApp()
+        .withUnifiedConfig(this::configureRestoreApp)
+        .withAdditionalProperties(H2_PROPERTIES)
+        .withWorkingDirectory(workingDirectory)
+        .withTimeRange(interval.start(), interval.end())
+        .start();
   }
 }
