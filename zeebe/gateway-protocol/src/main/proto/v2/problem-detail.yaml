@@ -30,6 +30,6 @@ components:
           example: Request property [maxJobsToActivates] cannot be parsed
         instance:
           type: string
-          format: uri-reference
+          format: uri
           description: A URI path identifying the origin of the problem.
           example: /v2/jobs/activation
