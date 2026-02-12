@@ -1179,6 +1179,10 @@
                   "wrapper": true
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
+                },
+                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -1258,7 +1262,10 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [{
+                "name": "rootProcessInstanceKey",
+                "type": "string"
+              }]
             }
           },
           {
@@ -1400,7 +1407,10 @@
             "type": "string"
           }
         ],
-        "optional": []
+        "optional": [{
+          "name": "rootProcessInstanceKey",
+          "type": "string"
+        }]
       }
     },
     {
@@ -1874,6 +1884,10 @@
                   "name": "tags",
                   "type": "array<string>",
                   "rawRefName": "TagSet"
+                },
+                {
+                   "name": "rootProcessInstanceKey",
+                   "type": "string"
                 }
               ]
             }
