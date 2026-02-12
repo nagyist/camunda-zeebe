@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.agrona.CloseHelper;
@@ -34,7 +35,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-final class ElasticsearchClientIT {
+final class ElasticsearchExporterClientIT {
   // configuring a superuser will allow us to create more users, which will let us test
   // authentication
   @Container
@@ -57,7 +58,7 @@ final class ElasticsearchClientIT {
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private TestClient testClient;
-  private ElasticsearchClient client;
+  private ElasticsearchExporterClient client;
 
   @BeforeEach
   public void beforeEach() {
@@ -67,10 +68,10 @@ final class ElasticsearchClientIT {
 
     testClient = new TestClient(config, indexRouter);
     client =
-        new ElasticsearchClient(
+        new ElasticsearchExporterClient(
             config,
             bulkRequest,
-            RestClientFactory.of(config),
+            ElasticsearchClientFactory.of(config),
             indexRouter,
             templateReader,
             new ElasticsearchMetrics(new SimpleMeterRegistry()));
@@ -169,7 +170,7 @@ final class ElasticsearchClientIT {
 
     // when
     // force recreating the client
-    final var authenticatedClient = new ElasticsearchClient(config, meterRegistry);
+    final var authenticatedClient = new ElasticsearchExporterClient(config, meterRegistry);
     authenticatedClient.putComponentTemplate();
 
     // then
@@ -205,8 +206,12 @@ final class ElasticsearchClientIT {
     assertThat(actualTemplate.version()).isEqualTo(expectedTemplate.version());
     assertThat(actualTemplate.template().aliases())
         .isEqualTo(expectedTemplate.template().aliases());
-    assertThat(actualTemplate.template().mappings())
-        .isEqualTo(expectedTemplate.template().mappings());
+    // Elasticsearch and the Java client normalize object-typed mapping fields by adding an
+    // implicit "type": "object" entry. This may or may not be present in the JSON resource files.
+    // Stripping it from both sides before comparing allows a direct equality check regardless of
+    // whether the source JSON includes the explicit type.
+    assertThat(stripObjectTypeFromMappings(actualTemplate.template().mappings()))
+        .isEqualTo(stripObjectTypeFromMappings(expectedTemplate.template().mappings()));
 
     // cannot compare settings because we never get flat settings, instead we get { index : {
     // number_of_shards: 1, queries: { cache : { enabled : false } } } }
@@ -220,5 +225,27 @@ final class ElasticsearchClientIT {
         .containsEntry("number_of_shards", "1")
         .containsEntry("number_of_replicas", "0")
         .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
+  }
+
+  /**
+   * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
+   * client normalize object-typed mapping fields by adding this implicit type. Stripping it from
+   * both actual and expected mappings allows direct comparison regardless of whether the JSON
+   * resource files include the explicit type or not.
+   */
+  @SuppressWarnings("unchecked")
+  private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
+    final var result = new LinkedHashMap<>(map);
+    // Remove "type": "object" at this level — it's implicit for any field with "properties"
+    if ("object".equals(result.get("type")) && result.containsKey("properties")) {
+      result.remove("type");
+    }
+    // Recurse into nested maps
+    for (final var entry : result.entrySet()) {
+      if (entry.getValue() instanceof Map) {
+        entry.setValue(stripObjectTypeFromMappings((Map<String, Object>) entry.getValue()));
+      }
+    }
+    return result;
   }
 }

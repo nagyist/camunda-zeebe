@@ -7,22 +7,20 @@
  */
 package io.camunda.zeebe.exporter;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.util.BinaryData;
+import co.elastic.clients.util.ContentType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Actions;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Delete;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.DeleteAction;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Phases;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Policy;
-import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyResponse;
-import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest;
-import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest.Index;
-import io.camunda.zeebe.exporter.dto.PutIndexSettingsRequest.Lifecycle;
-import io.camunda.zeebe.exporter.dto.PutIndexSettingsResponse;
-import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -30,17 +28,16 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Optional;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.http.entity.EntityTemplate;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
 
-class ElasticsearchClient implements AutoCloseable {
+class ElasticsearchExporterClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final RestClient client;
+  private final ElasticsearchClient esClient;
   private final ElasticsearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
@@ -56,40 +53,40 @@ class ElasticsearchClient implements AutoCloseable {
    */
   private Sample flushLatencyMeasurement;
 
-  ElasticsearchClient(
+  ElasticsearchExporterClient(
       final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
     this(
         configuration,
         new BulkIndexRequest(),
-        RestClientFactory.of(configuration),
+        ElasticsearchClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration),
         new ElasticsearchMetrics(meterRegistry));
   }
 
-  ElasticsearchClient(
+  ElasticsearchExporterClient(
       final ElasticsearchExporterConfiguration configuration,
       final MeterRegistry meterRegistry,
-      final RestClient restClient) {
+      final ElasticsearchClient esClient) {
     this(
         configuration,
         new BulkIndexRequest(),
-        restClient,
+        esClient,
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration),
         new ElasticsearchMetrics(meterRegistry));
   }
 
-  ElasticsearchClient(
+  ElasticsearchExporterClient(
       final ElasticsearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest,
-      final RestClient client,
+      final ElasticsearchClient esClient,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
       final ElasticsearchMetrics metrics) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
-    this.client = client;
+    this.esClient = esClient;
     this.indexRouter = indexRouter;
     this.templateReader = templateReader;
     this.metrics = metrics;
@@ -97,7 +94,7 @@ class ElasticsearchClient implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    client.close();
+    esClient._transport().close();
   }
 
   /**
@@ -188,45 +185,66 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   private void exportBulk() {
-    final BulkIndexResponse response;
-    try {
-      final var request = new Request("POST", "/_bulk");
-      final var body = new EntityTemplate(bulkIndexRequest);
-      body.setContentType("application/x-ndjson");
-      request.setEntity(body);
+    final var indexOperations = bulkIndexRequest.bulkOperations();
+    final long memoryLimit = configuration.bulk.memoryLimit;
+    final var allErrors = new ArrayList<String>();
 
-      response = sendRequest(request, BulkIndexResponse.class);
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to flush bulk", e);
+    var chunk = new ArrayList<BulkOperation>();
+    long chunkSize = 0;
+
+    for (final var op : indexOperations) {
+      final long opSize = op.source().length;
+
+      if (!chunk.isEmpty() && chunkSize + opSize > memoryLimit) {
+        flushBulkChunk(chunk, allErrors);
+        chunk = new ArrayList<>();
+        chunkSize = 0;
+      }
+
+      chunk.add(toBulkOperation(op));
+      chunkSize += opSize;
     }
 
-    if (response.errors()) {
-      throwCollectedBulkError(response);
+    if (!chunk.isEmpty()) {
+      flushBulkChunk(chunk, allErrors);
+    }
+
+    if (!allErrors.isEmpty()) {
+      throw new ElasticsearchExporterException("Failed to flush bulk request: " + allErrors);
     }
   }
 
-  private void throwCollectedBulkError(final BulkIndexResponse bulkResponse) {
-    final var collectedErrors = new ArrayList<String>();
-    bulkResponse.items().stream()
-        .flatMap(item -> Optional.ofNullable(item.index()).stream())
-        .flatMap(index -> Optional.ofNullable(index.error()).stream())
-        .collect(Collectors.groupingBy(Error::type))
-        .forEach(
-            (errorType, errors) ->
-                collectedErrors.add(
-                    String.format(
-                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
-                        errors.size(), errorType, errors.get(0).reason())));
+  private BulkOperation toBulkOperation(final BulkIndexRequest.IndexOperation op) {
+    return BulkOperation.of(
+        b ->
+            b.index(
+                i ->
+                    i.index(op.metadata().index())
+                        .id(op.metadata().id())
+                        .routing(op.metadata().routing())
+                        .document(BinaryData.of(op.source(), ContentType.APPLICATION_JSON))));
+  }
 
-    throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
+  private void flushBulkChunk(
+      final List<BulkOperation> operations, final List<String> errorCollector) {
+    try {
+      final var request = new BulkRequest.Builder().operations(operations).build();
+      final var response = esClient.bulk(request);
+      if (response.errors()) {
+        errorCollector.addAll(collectBulkErrors(response));
+      }
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to flush bulk chunk", e);
+    }
   }
 
   private boolean putIndexTemplate(final String templateName, final Template template) {
     try {
-      final var request = new Request("PUT", "/_index_template/" + templateName);
-      request.setJsonEntity(MAPPER.writeValueAsString(template));
-
-      final var response = sendRequest(request, PutIndexTemplateResponse.class);
+      final var json = MAPPER.writeValueAsString(template);
+      final var response =
+          esClient
+              .indices()
+              .putIndexTemplate(b -> b.name(templateName).withJson(new StringReader(json)));
       return response.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put index template", e);
@@ -235,16 +253,14 @@ class ElasticsearchClient implements AutoCloseable {
 
   private boolean putComponentTemplate(final Template template) {
     try {
-      final var request =
-          new Request(
-              "PUT",
-              "/_component_template/"
-                  + configuration.index.prefix
-                  + "-"
-                  + VersionUtil.getVersionLowerCase());
-      request.setJsonEntity(MAPPER.writeValueAsString(template));
-
-      final var response = sendRequest(request, PutIndexTemplateResponse.class);
+      final var json = MAPPER.writeValueAsString(template);
+      final var componentTemplateName =
+          configuration.index.prefix + "-" + VersionUtil.getVersionLowerCase();
+      final var response =
+          esClient
+              .cluster()
+              .putComponentTemplate(
+                  b -> b.name(componentTemplateName).withJson(new StringReader(json)));
       return response.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put component template", e);
@@ -253,12 +269,16 @@ class ElasticsearchClient implements AutoCloseable {
 
   public boolean putIndexLifecycleManagementPolicy() {
     try {
-      final var request =
-          new Request("PUT", "/_ilm/policy/" + configuration.retention.getPolicyName());
       final var requestEntity =
           buildPutIndexLifecycleManagementPolicyRequest(configuration.retention.getMinimumAge());
-      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
-      final var response = sendRequest(request, PutIndexLifecycleManagementPolicyResponse.class);
+      final var json = MAPPER.writeValueAsString(requestEntity);
+      final var response =
+          esClient
+              .ilm()
+              .putLifecycle(
+                  b ->
+                      b.name(configuration.retention.getPolicyName())
+                          .withJson(new StringReader(json)));
       return response.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
@@ -268,12 +288,23 @@ class ElasticsearchClient implements AutoCloseable {
 
   public boolean bulkPutIndexLifecycleSettings(final String policyName) {
     try {
-      final var request =
-          new Request(
-              "PUT", "/" + configuration.index.prefix + "*/_settings?allow_no_indices=true");
-      final var requestEntity = new PutIndexSettingsRequest(new Index(new Lifecycle(policyName)));
-      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
-      final var response = sendRequest(request, PutIndexSettingsResponse.class);
+      // Use withJson to pass the settings as raw JSON because the ES Java client's typed builder
+      // skips null values, but ES requires {"index.lifecycle.name": null} to remove a policy.
+      final String json;
+      if (policyName != null) {
+        // Use MAPPER to safely serialize the policy name, avoiding any JSON injection risk
+        json = MAPPER.writeValueAsString(Map.of("index.lifecycle.name", policyName));
+      } else {
+        json = "{\"index.lifecycle.name\": null}";
+      }
+      final var response =
+          esClient
+              .indices()
+              .putSettings(
+                  b ->
+                      b.index(configuration.index.prefix + "*")
+                          .allowNoIndices(true)
+                          .withJson(new StringReader(json)));
       return response.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to update indices lifecycle settings", e);
@@ -286,11 +317,17 @@ class ElasticsearchClient implements AutoCloseable {
         new Policy(new Phases(new Delete(minimumAge, new Actions(new DeleteAction())))));
   }
 
-  private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
-    final var response = client.performRequest(request);
-    // buffer the complete response in memory before parsing it; this will give us a better error
-    // message which contains the raw response should the deserialization fail
-    final var responseBody = response.getEntity().getContent().readAllBytes();
-    return MAPPER.readValue(responseBody, responseType);
+  private static List<String> collectBulkErrors(final BulkResponse bulkResponse) {
+    final var collectedErrors = new ArrayList<String>();
+    bulkResponse.items().stream()
+        .filter(item -> item.error() != null)
+        .collect(Collectors.groupingBy(item -> item.error().type()))
+        .forEach(
+            (errorType, errors) ->
+                collectedErrors.add(
+                    String.format(
+                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
+                        errors.size(), errorType, errors.get(0).error().reason())));
+    return collectedErrors;
   }
 }
