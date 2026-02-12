@@ -40,11 +40,8 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
   dataTestId,
 }) => {
   return (
-    <DataTable
-      size="sm"
-      headers={headers}
-      rows={rows}
-      render={({
+    <DataTable size="sm" headers={headers} rows={rows}>
+      {({
         rows,
         headers,
         getTableContainerProps,
@@ -112,7 +109,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
           </Table>
         </TableContainer>
       )}
-    />
+    </DataTable>
   );
 };
 
