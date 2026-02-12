@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 public class DispatcherImpl implements Dispatcher {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
+
+  // Single-threaded executor to execute jobs sequentially so events are processed in order
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final Semaphore semaphore;
   private final int maxJobsInFlight;
