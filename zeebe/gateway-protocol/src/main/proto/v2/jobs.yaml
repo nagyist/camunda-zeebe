@@ -415,6 +415,8 @@ components:
           $ref: '#/components/schemas/UserTaskProperties'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        rootProcessInstanceKey:
+          $ref: 'keys.yaml#/components/schemas/RootProcessInstanceKey'
 
     UserTaskProperties:
       type: object
