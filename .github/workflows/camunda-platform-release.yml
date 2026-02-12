@@ -724,7 +724,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: ${{ inputs.includeOptimize }}
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      contents: "write"
+      id-token: "write"
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
