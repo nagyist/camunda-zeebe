@@ -765,9 +765,11 @@ public final class RecordingExporter implements Exporter {
       final Function<RecordStream, T> consumer) {
     final var previousMaximumWaitTime = maximumWaitTime;
     maximumWaitTime = DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME;
-    final var records = consumer.apply(records());
-    maximumWaitTime = previousMaximumWaitTime;
-    return records;
+    try {
+      return consumer.apply(records());
+    } finally {
+      maximumWaitTime = previousMaximumWaitTime;
+    }
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {
