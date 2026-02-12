@@ -938,6 +938,10 @@
             "type": "string"
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "string"
+          },
+          {
             "name": "candidateGroups",
             "type": "array<string>"
           },
@@ -1716,6 +1720,10 @@
             "name": "tags",
             "type": "array<string>",
             "rawRefName": "TagSet"
+          },
+           {
+            "name": "rootProcessInstanceKey",
+             "type": "string"
           }
         ]
       }
@@ -2177,7 +2185,10 @@
       "status": "200",
       "schema": {
         "required": [],
-        "optional": []
+        "optional": [{
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
+                }]
       }
     },
     {
@@ -2304,6 +2315,10 @@
                 },
                 {
                   "name": "incidentKey",
+                  "type": "string"
+                },
+                 {
+                  "name": "rootProcessInstanceKey",
                   "type": "string"
                 }
               ]
