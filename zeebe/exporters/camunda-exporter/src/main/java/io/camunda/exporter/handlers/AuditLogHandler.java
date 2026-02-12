@@ -114,7 +114,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     // generic fields
     entity
         .setEntityKey(log.getEntityKey())
-        .setEntityType(mapEntityType(log))
+        .setEntityType(mapEntityType(log.getEntityType()))
         .setCategory(mapCategory(log))
         .setOperationType(mapOperationType(log))
         .setActorType(mapActorType(log))
@@ -146,7 +146,10 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setDeploymentKey(log.getDeploymentKey())
         .setFormKey(log.getFormKey())
         .setResourceKey(log.getResourceKey())
-        .setRootProcessInstanceKey(log.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(log.getRootProcessInstanceKey())
+        .setRelatedEntityKey(log.getRelatedEntityKey())
+        .setRelatedEntityType(mapEntityType(log.getRelatedEntityType()))
+        .setEntityDescription(log.getEntityDescription());
   }
 
   @VisibleForTesting
@@ -154,10 +157,9 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     return transformer;
   }
 
-  private AuditLogEntityType mapEntityType(final AuditLogEntry info) {
-    return Objects.nonNull(info.getEntityType())
-        ? AuditLogEntityType.valueOf(info.getEntityType().name())
-        : null;
+  private AuditLogEntityType mapEntityType(
+      final io.camunda.search.entities.AuditLogEntity.AuditLogEntityType entityType) {
+    return Objects.nonNull(entityType) ? AuditLogEntityType.valueOf(entityType.name()) : null;
   }
 
   private AuditLogOperationResult mapResult(final AuditLogEntry log) {
