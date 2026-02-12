@@ -15,7 +15,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
+import io.camunda.zeebe.protocol.record.WrittenRecord;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -141,8 +141,8 @@ public final class ExporterBatchWriter {
   }
 
   private long recordSize(final Record<?> record) {
-    if (record instanceof final TypedRecordImpl typedRecord) {
-      return typedRecord.getRawLength();
+    if (record instanceof final WrittenRecord writtenRecord) {
+      return writtenRecord.getRawLength();
     } else if (record instanceof final BufferWriter writer) {
       return writer.getLength();
     } else {
