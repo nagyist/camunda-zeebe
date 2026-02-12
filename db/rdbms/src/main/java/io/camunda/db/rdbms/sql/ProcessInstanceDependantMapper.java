@@ -14,7 +14,7 @@ import java.util.List;
  * interface should be extended by mappers that should delete process instance related data upon a
  * process instance deletion.
  */
-public interface RootProcessInstanceDependantMapper {
+public interface ProcessInstanceDependantMapper {
 
   int deleteRootProcessInstanceRelatedData(DeleteRootProcessInstanceRelatedDataDto dto);
 
