@@ -25,7 +25,8 @@ public class AuthorizationAuditLogTransformer
     final AuthorizationRecordValue value = record.getValue();
     log.setRelatedEntityKey(value.getOwnerId());
     switch (value.getOwnerType()) {
-      case USER, CLIENT -> log.setRelatedEntityType(AuditLogEntityType.USER);
+      case USER -> log.setRelatedEntityType(AuditLogEntityType.USER);
+      case CLIENT -> log.setRelatedEntityType(AuditLogEntityType.CLIENT);
       case GROUP -> log.setRelatedEntityType(AuditLogEntityType.GROUP);
       case ROLE -> log.setRelatedEntityType(AuditLogEntityType.ROLE);
       case MAPPING_RULE -> log.setRelatedEntityType(AuditLogEntityType.MAPPING_RULE);

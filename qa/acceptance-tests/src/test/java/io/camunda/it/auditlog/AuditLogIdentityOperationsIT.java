@@ -17,6 +17,7 @@ import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
+import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.AuditLogResult;
@@ -577,7 +578,8 @@ public class AuditLogIdentityOperationsIT {
             client,
             DEFAULT_USERNAME,
             ResourceType.PROCESS_DEFINITION,
-            PermissionType.READ_PROCESS_INSTANCE);
+            PermissionType.READ_PROCESS_INSTANCE,
+            OwnerType.CLIENT);
 
     // when
     final var auditLogs =
@@ -591,7 +593,7 @@ public class AuditLogIdentityOperationsIT {
         AuditLogEntityTypeEnum.AUTHORIZATION,
         AuditLogOperationTypeEnum.CREATE,
         authorizationKey);
-    assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.USER);
+    assertRelatedEntity(result, DEFAULT_USERNAME, AuditLogEntityTypeEnum.CLIENT);
   }
 
   @Test
@@ -755,12 +757,13 @@ public class AuditLogIdentityOperationsIT {
       final CamundaClient client,
       final String username,
       final ResourceType authorizationResourceType,
-      final PermissionType permission) {
+      final PermissionType permission,
+      final OwnerType ownerType) {
     final var authorization =
         client
             .newCreateAuthorizationCommand()
             .ownerId(username)
-            .ownerType(io.camunda.client.api.search.enums.OwnerType.USER)
+            .ownerType(ownerType)
             .resourceId("*")
             .resourceType(authorizationResourceType)
             .permissionTypes(permission)

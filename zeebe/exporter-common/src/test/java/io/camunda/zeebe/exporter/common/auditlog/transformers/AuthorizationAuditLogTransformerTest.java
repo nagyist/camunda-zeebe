@@ -33,7 +33,7 @@ class AuthorizationAuditLogTransformerTest {
   private static Stream<Arguments> ownerTypeToEntityTypeProvider() {
     return Stream.of(
         Arguments.of(AuthorizationOwnerType.USER, AuditLogEntityType.USER),
-        Arguments.of(AuthorizationOwnerType.CLIENT, AuditLogEntityType.USER),
+        Arguments.of(AuthorizationOwnerType.CLIENT, AuditLogEntityType.CLIENT),
         Arguments.of(AuthorizationOwnerType.GROUP, AuditLogEntityType.GROUP),
         Arguments.of(AuthorizationOwnerType.ROLE, AuditLogEntityType.ROLE),
         Arguments.of(AuthorizationOwnerType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE),
