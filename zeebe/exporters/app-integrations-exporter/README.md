@@ -38,7 +38,7 @@ zeebe:
   broker:
     exporters:
       app-integrations:
-        className: io.camunda.appint.exporter.AppIntegrationsExporter
+        className: io.camunda.exporter.appint.AppIntegrationsExporter
         args:
           url: "http://app-integration-backend:8080/events"
           apiKey: "myAPIKey"
@@ -49,7 +49,7 @@ or via environment variables:
 ```bash
 ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_ARGS_APIKEY=myApiKey
 ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_ARGS_URL=http://localhost:8088/app-int
-ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_CLASSNAME=io.camunda.appint.exporter.AppIntegrationsExporter
+ZEEBE_BROKER_EXPORTERS_APPINTEXPORTER_CLASSNAME=io.camunda.exporter.appint.AppIntegrationsExporter
 ```
 
 Additional configuration options:
@@ -61,7 +61,7 @@ Additional configuration options:
 - `requestTimeoutMs` (duration, optional): Total timeout for export request, including retries (default: 5000).
 - `batchSize` (integer, optional): Number of events to batch before sending (default: 50).
 - `batchIntervalMs` (duration, optional): Time interval to flush events if batch size is not reached (default: 2000).
-- `maxBatchesInFlight` (integer, optional): Maximum number of batches that are in-flight for sending (default: 2).
+- `maxBatchesInFlight` (integer, optional): Maximum number of finished batches that are in-flight for sending (default: 2).
 
 ### Authentication
 
