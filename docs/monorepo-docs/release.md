@@ -341,6 +341,12 @@ For C8 monorepo minor releases, we enforce two distinct stages to ensure quality
 - ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
 - ❌ No new features, scope extensions, or risky changes after this point
 - ✅ Bug fixes, stabilization work, and E2E testing continue
+- **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/<minor>` branch from `main` early, then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
+  - This allows non-critical bug fixes to be merged into `stable/<minor>` while the alpha release candidate is being processed
+  - Critical fixes can still be backported to the active alpha release branch if a new RC is needed
+- **Bug Fix Handling During Alpha Release**:
+  - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
+  - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
 - **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
 - **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
 - **Body**:
