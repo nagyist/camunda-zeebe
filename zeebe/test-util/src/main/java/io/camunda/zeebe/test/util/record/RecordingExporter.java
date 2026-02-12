@@ -145,7 +145,6 @@ public final class RecordingExporter implements Exporter {
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
   private static boolean overrideMaximumWaitTime = false;
-  private static final boolean failOnMaximumWaitTime = true;
 
   private Controller controller;
 
