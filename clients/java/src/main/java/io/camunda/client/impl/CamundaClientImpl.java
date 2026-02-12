@@ -71,6 +71,7 @@ import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -85,6 +86,7 @@ import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
@@ -234,6 +236,7 @@ import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
 import io.camunda.client.impl.command.EvaluateExpressionCommandImpl;
 import io.camunda.client.impl.command.GloballyScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.GloballyScopedDeleteClusterVariableImpl;
+import io.camunda.client.impl.command.GloballyScopedUpdateClusterVariableImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
@@ -250,6 +253,7 @@ import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
 import io.camunda.client.impl.command.TenantScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedDeleteClusterVariableImpl;
+import io.camunda.client.impl.command.TenantScopedUpdateClusterVariableImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignClientFromTenantCommandImpl;
@@ -1203,6 +1207,18 @@ public final class CamundaClientImpl implements CamundaClient {
   public TenantScopedClusterVariableCreationCommandStep1
       newTenantScopedClusterVariableCreateRequest(final String tenantId) {
     return new TenantScopedCreateClusterVariableImpl(httpClient, jsonMapper, tenantId);
+  }
+
+  @Override
+  public GloballyScopedClusterVariableUpdateCommandStep1
+      newGloballyScopedClusterVariableUpdateRequest() {
+    return new GloballyScopedUpdateClusterVariableImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public TenantScopedClusterVariableUpdateCommandStep1 newTenantScopedClusterVariableUpdateRequest(
+      final String tenantId) {
+    return new TenantScopedUpdateClusterVariableImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
