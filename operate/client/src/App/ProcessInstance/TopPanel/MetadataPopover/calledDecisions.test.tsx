@@ -130,11 +130,16 @@ describe('MetadataPopover', () => {
     mockSearchMessageSubscriptions().withSuccess(searchResult([]));
 
     mockSearchDecisionInstances().withSuccess(searchResult([]));
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render meta data for completed flow node', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
@@ -187,14 +192,9 @@ describe('MetadataPopover', () => {
     expect(screen.getByTestId('called-process-instance')).toHaveTextContent(
       `Called Process - ${mockProcessInstance.processInstanceKey}`,
     );
-
-    vi.clearAllTimers();
-    vi.useFakeTimers();
   });
 
   it('should render completed decision', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
     const mockBusinessRuleElementInstance: ElementInstance = {
       ...mockElementInstance,
       elementId: BUSINESS_RULE_FLOW_NODE_ID,
@@ -246,14 +246,9 @@ describe('MetadataPopover', () => {
         `/decisions/${calledDecisionInstanceMetadata!.decisionEvaluationInstanceKey}`,
       ),
     );
-
-    vi.clearAllTimers();
-    vi.useFakeTimers();
   });
 
   it('should render failed decision', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
     const mockBusinessRuleElementInstance: ElementInstance = {
       ...mockElementInstance,
       elementId: BUSINESS_RULE_FLOW_NODE_ID,
@@ -332,8 +327,5 @@ describe('MetadataPopover', () => {
         `/decisions/${mockFailedDecisionInstance.decisionEvaluationInstanceKey}`,
       ),
     );
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 });
