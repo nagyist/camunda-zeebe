@@ -162,6 +162,14 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         new TestArguments(
             """
       {
+          "filter": {
+              "decisionRequirementsKey": "123458"
+          }
+      }""",
+            q -> q.filter(f -> f.decisionRequirementsKeys(123458L))),
+        new TestArguments(
+            """
+      {
           "sort": [
                 {
                     "field": "decisionDefinitionName",
@@ -435,6 +443,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         "rootDecisionDefinitionKey",
         ops ->
             new DecisionInstanceFilter.Builder().rootDecisionDefinitionKeyOperations(ops).build());
+    keyOperationTestCases(
+        streamBuilder,
+        "decisionRequirementsKey",
+        ops -> new DecisionInstanceFilter.Builder().decisionRequirementsKeyOperations(ops).build());
     basicStringOperationTestCases(
         streamBuilder,
         "decisionEvaluationInstanceKey",
