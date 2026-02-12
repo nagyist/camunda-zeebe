@@ -48,6 +48,8 @@ public class RestGatewayPaths {
   private static final String URL_DECISION_INSTANCE = REST_API_PATH + "/decision-instances/%s";
   private static final String URL_DECISION_REQUIREMENTS =
       REST_API_PATH + "/decision-requirements/%s";
+  private static final String URL_DECISION_INSTANCE_DELETION =
+      REST_API_PATH + "/decision-instances/%s/deletion";
   private static final String URL_DECISION_INSTANCES_DELETION =
       REST_API_PATH + "/decision-instances/deletion";
   private static final String URL_DEPLOYMENTS = REST_API_PATH + "/deployments";
@@ -339,6 +341,10 @@ public class RestGatewayPaths {
 
   public static String getDecisionInstanceUrl(final String decisionInstanceId) {
     return String.format(URL_DECISION_INSTANCE, decisionInstanceId);
+  }
+
+  public static String getDeleteDecisionInstanceUrl(final long decisionInstanceKey) {
+    return String.format(URL_DECISION_INSTANCE_DELETION, decisionInstanceKey);
   }
 
   public static String getUserTaskFormUrl(final long userTaskKey) {
