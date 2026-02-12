@@ -23,6 +23,13 @@ import {
   TableHead,
 } from './styled';
 
+/**
+ * Non-paginated variant of PartiallyExpandableDataTable.
+ * Used for simple tables with all data loaded at once (e.g., IncidentsByError).
+ *
+ * For paginated tables with infinite scroll, use v2/PartiallyExpandableDataTable instead.
+ * Will be removed in the scope of #44728
+ */
 type Props = {
   headers: {key: string; header: string; width?: string}[];
   rows: React.ComponentProps<typeof DataTable>['rows'];
