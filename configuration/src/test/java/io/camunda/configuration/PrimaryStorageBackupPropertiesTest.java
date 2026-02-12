@@ -208,7 +208,7 @@ public class PrimaryStorageBackupPropertiesTest {
       assertThatThrownBy(app::run)
           .hasRootCauseInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Continuous backups are not compatible with document-based secondary storage. Please disable continuous backups");
+              "Continuous backups are not compatible with secondary storage: `elasticsearch`. Please disable continuous backups");
     }
 
     @Test
@@ -236,7 +236,7 @@ public class PrimaryStorageBackupPropertiesTest {
       assertThatThrownBy(app::run)
           .hasRootCauseInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Continuous backups are not compatible with document-based secondary storage. Please disable continuous backups");
+              "Continuous backups are not compatible with secondary storage: `opensearch`. Please disable continuous backups");
     }
 
     @Test
@@ -262,7 +262,7 @@ public class PrimaryStorageBackupPropertiesTest {
       assertThatThrownBy(app::run)
           .hasRootCauseInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Continuous backups are not compatible with document-based secondary storage. Please disable continuous backups");
+              "Continuous backups are not compatible with secondary storage: `opensearch`. Please disable continuous backups");
     }
 
     @Test
@@ -311,7 +311,7 @@ public class PrimaryStorageBackupPropertiesTest {
       assertThatThrownBy(app::run)
           .hasRootCauseInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining(
-              "Continuous backups are not compatible with document-based secondary storage. Please disable continuous backups");
+              "Continuous backups are not compatible with secondary storage: `opensearch`. Please disable continuous backups");
     }
 
     @Test

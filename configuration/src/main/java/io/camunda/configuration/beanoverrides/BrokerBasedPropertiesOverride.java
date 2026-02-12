@@ -789,10 +789,7 @@ public class BrokerBasedPropertiesOverride {
   private void populateBackupScheduler(
       final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
 
-    if (invalidContinuousBackupConfiguration(primaryStorageBackup)) {
-      throw new IllegalArgumentException(
-          "Continuous backups are not compatible with document-based secondary storage. Please disable continuous backups.");
-    }
+    validateSchedulerConfiguration(primaryStorageBackup);
 
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setRequired(primaryStorageBackup.isRequired());
@@ -803,12 +800,18 @@ public class BrokerBasedPropertiesOverride {
     backupCfg.setRetention(primaryStorageBackup.getRetention());
   }
 
-  private boolean invalidContinuousBackupConfiguration(
-      final PrimaryStorageBackup primaryStorageBackup) {
+  private void validateSchedulerConfiguration(final PrimaryStorageBackup primaryStorageBackup) {
     final var dbType = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType();
 
-    return (dbType.isElasticSearch() || dbType.isOpenSearch())
-        && (primaryStorageBackup.isContinuous() || hasScheduleConfig(primaryStorageBackup));
+    final var continuousBackupsEnabledOnDocumentBasedStore =
+        (dbType.isElasticSearch() || dbType.isOpenSearch())
+            && (primaryStorageBackup.isContinuous() || hasScheduleConfig(primaryStorageBackup));
+
+    if (continuousBackupsEnabledOnDocumentBasedStore) {
+      throw new IllegalArgumentException(
+          "Continuous backups are not compatible with secondary storage: `%s`. Please disable continuous backups."
+              .formatted(dbType));
+    }
   }
 
   private boolean hasScheduleConfig(final PrimaryStorageBackup primaryStorageBackup) {
