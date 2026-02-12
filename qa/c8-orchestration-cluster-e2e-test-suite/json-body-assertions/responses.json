@@ -1331,7 +1331,12 @@
                   "type": "string"
                 }
               ],
-              "optional": []
+              "optional": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string"
+                }
+              ]
             }
           },
           {
