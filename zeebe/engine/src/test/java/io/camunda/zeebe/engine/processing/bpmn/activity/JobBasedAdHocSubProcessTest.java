@@ -1199,8 +1199,8 @@ public class JobBasedAdHocSubProcessTest {
                     r ->
                         r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
                             && r.getKey() == processInstanceKey))
-        .hasSizeGreaterThan(15)
-        .allMatch(r -> r.getAgent() != null);
+        .isNotEmpty()
+        .allMatch(r -> AHSP_ELEMENT_ID.equals(r.getAgent().getElementId()));
   }
 
   private void completeJob(

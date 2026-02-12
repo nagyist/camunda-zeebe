@@ -139,8 +139,8 @@ public final class CompleteJobTest {
                     r ->
                         r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
                             && r.getKey() == recordValue.getProcessInstanceKey()))
-        .hasSizeGreaterThan(15)
-        .allMatch(r -> r.getAgent() != null);
+        .isNotEmpty()
+        .allMatch(r -> "task".equals(r.getAgent().getElementId()));
   }
 
   @Test

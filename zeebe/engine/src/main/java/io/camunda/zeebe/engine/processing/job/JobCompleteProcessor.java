@@ -203,9 +203,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private void preCompleteActions(final JobRecord job, final ProcessingContext context) {
     if (job.isAgentic()) {
       context.appendMetadataToAllFollowUps(
-          m ->
-              m.agent(
-                  new AgentInfo().setId(job.getElementInstanceKey()).setName(job.getElementId())));
+          m -> m.agent(new AgentInfo().setElementId(job.getElementId())));
     }
   }
 
