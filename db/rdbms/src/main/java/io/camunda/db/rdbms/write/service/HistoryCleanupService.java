@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
@@ -131,6 +132,8 @@ public class HistoryCleanupService {
         batchOperationKey,
         historyCleanupDate);
     batchOperationWriter.scheduleForHistoryCleanup(batchOperationKey, historyCleanupDate);
+    auditLogWriter.scheduleEntityRelatedAuditLogsHistoryCleanupTime(
+        batchOperationKey, AuditLogEntityType.BATCH, historyCleanupDate);
   }
 
   @VisibleForTesting
