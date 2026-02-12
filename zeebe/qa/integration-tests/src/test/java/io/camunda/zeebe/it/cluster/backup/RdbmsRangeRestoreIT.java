@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
+import static io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride.RDBMS_EXPORTER_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
@@ -21,8 +22,10 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.api.Interval;
+import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
+import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -34,7 +37,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
@@ -56,7 +58,7 @@ import org.springframework.util.unit.DataSize;
  * <p>Uses a filesystem backup store (no containers needed) and H2 in-memory database for RDBMS.
  */
 @ZeebeIntegration
-final class RdbmsRangeRestoreIT {
+final class RdbmsRangeRestoreIT implements ClockSupport {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreIT.class);
   // H2 in-memory DB URL shared across broker and restore app JVM lifecycles.
@@ -86,6 +88,7 @@ final class RdbmsRangeRestoreIT {
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
           .withAdditionalProperties(H2_PROPERTIES)
+          .withProperty("zeebe.clock.controlled", true)
           .withUnifiedConfig(this::configureBroker);
 
   private BackupActuator backupActuator;
@@ -96,23 +99,30 @@ final class RdbmsRangeRestoreIT {
     backupActuator = BackupActuator.of(broker);
     workingDirectory = broker.getWorkingDirectory();
     exporterPositionMapper = broker.bean(ExporterPositionMapper.class);
+    pinClock(broker);
+
+    try {
+      ExportersActuator.of(broker).enableExporter(RDBMS_EXPORTER_NAME);
+    } catch (final Exception e) {
+      if (!e.getMessage().contains("already enabled")) {
+        throw e;
+      }
+    }
   }
 
   @AfterEach
   void tearDown() throws SQLException {
     final var ds = broker.bean(DataSource.class);
-    try (final var connection = ds.getConnection()) {
-      connection.createStatement().execute("DROP ALL OBJECTS");
-    } catch (final NullPointerException e) {
-      // failed to get a connection, no need to drop anything
+    if (ds != null) {
+      try (final var connection = ds.getConnection()) {
+        connection.createStatement().execute("DROP ALL OBJECTS");
+      }
     }
   }
 
   @Test
   void shouldNotRestoreIfMissingBackupAfterRestorePosition() throws Exception {
     // given - deploy a process and create instances, then take continuous backups.
-    // The backup manifest's "created" timestamp uses Instant.now() (system clock), so we use
-    // Thread.sleep to space out backups and ensure the from/to range reliably covers them.
     final long processKey;
 
     try (final var client = broker.newClientBuilder().build()) {
@@ -122,7 +132,7 @@ final class RdbmsRangeRestoreIT {
       final var interval = deployProcessAndTakeBackups(client, processKey);
 
       final var lastBackup = takeAndAwaitBackup();
-      Thread.sleep(1000);
+      progressClock(broker, 2000);
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
 
@@ -142,7 +152,6 @@ final class RdbmsRangeRestoreIT {
       LOG.info("Deleted working directory {}", workingDirectory);
 
       assertThatThrownBy(() -> testRestoreApp(interval).start())
-          .isInstanceOf(CompletionException.class)
           .hasCauseInstanceOf(IllegalStateException.class)
           .hasMessageContaining("is less than exporter position");
     }
@@ -155,30 +164,43 @@ final class RdbmsRangeRestoreIT {
     // Thread.sleep to space out backups and ensure the from/to range reliably covers them.
     final long processKey;
 
-    final Interval<Instant> interval;
+    Interval<Instant> interval;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
       interval = deployProcessAndTakeBackups(client, processKey);
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
     }
     takeAndAwaitBackup();
+
+    final var exporterActuator = ExportersActuator.of(broker);
+    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final var exporterStatus =
+                  exporterActuator.getExporters().stream()
+                      .filter(exporter -> exporter.getExporterId().equals(RDBMS_EXPORTER_NAME))
+                      .findFirst()
+                      .get();
+              assertThat(exporterStatus.getStatus()).isEqualTo(StatusEnum.DISABLED);
+            });
+
     Awaitility.await("Until backup is greater or equal to exported position")
         .pollDelay(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(300))
         .untilAsserted(
             () -> {
               final var backup = takeAndAwaitBackup();
               final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
-              LOG.info("Exporter position for partition 1: {}", position);
-              LOG.info("Last backup is {}", backup);
               final var details = backup.getDetails().getFirst();
               assertThat(details)
                   .returns(1, PartitionBackupInfo::getPartitionId)
                   .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
               assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
             });
+    interval = interval.withEnd(currentTime(broker));
     // when - stop broker, delete data, restore from time range with RDBMS
     LOG.info("Stopping broker");
-    broker.stop();
 
     FileUtil.deleteFolder(workingDirectory);
     FileUtil.ensureDirectoryExists(workingDirectory);
@@ -234,28 +256,26 @@ final class RdbmsRangeRestoreIT {
 
     takeAndAwaitBackup();
     // Record "from" before the first backup, with a small sleep to create clear separation
-    Thread.sleep(Duration.ofSeconds(2));
-    final Instant from = Instant.now();
+
+    final var from = currentTime(broker);
     LOG.info("Time range from = {}", from);
 
     client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
     // Take first backup
-    Thread.sleep(Duration.ofSeconds(2));
     takeAndAwaitBackup();
 
     // Create another instance and take second backup
     client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
-    Thread.sleep(Duration.ofSeconds(2));
     takeAndAwaitBackup();
 
     // Record "to" after second backup
-    Thread.sleep(Duration.ofSeconds(2));
-    final Instant to = Instant.now();
+    final Instant to = currentTime(broker);
     LOG.info("Time range to = {}", to);
     return Interval.closed(from, to);
   }
 
   private BackupInfo takeAndAwaitBackup() {
+    progressClock(broker, 2000);
     final var res = backupActuator.take();
     LOG.debug("Took backup: {}", res.getMessage());
     final Pattern pattern = Pattern.compile("backup with id (\\d+)");
