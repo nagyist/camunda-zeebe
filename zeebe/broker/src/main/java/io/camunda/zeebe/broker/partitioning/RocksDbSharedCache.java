@@ -67,6 +67,8 @@ public class RocksDbSharedCache {
       // check that memoryFraction is between 0 and 1 and warn if it is too high
       warnIfTooHighFraction(rocksdbCfg);
     } else {
+      LOGGER.warn(
+          "Note: This configuration will be deprecated in 8.10, and the default behaviour will be per FRACTION strategy. Please use the recommended alternative configuration for memory allocation.");
       // for strategies other than FRACTION which are static sizes, we check if maxMemoryFraction is
       // correctly set, and if so, we validate the allocated memory does not go above the threshold.
       validateMaxMemoryFraction(rocksdbCfg, totalMemorySize, blockCacheBytes);
