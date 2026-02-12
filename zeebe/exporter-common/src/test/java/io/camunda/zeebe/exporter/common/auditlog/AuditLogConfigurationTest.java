@@ -15,10 +15,16 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration.ActorAuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class AuditLogConfigurationTest {
 
@@ -240,6 +246,25 @@ class AuditLogConfigurationTest {
       final var config = ActorAuditLogConfiguration.logAll();
 
       assertThat(config.getExcludes()).isEmpty();
+    }
+
+    private static Stream<Arguments> entityTypeToRelatedEntityTypeProvider() {
+      return Stream.of(
+          Arguments.of(EntityType.USER, AuditLogEntityType.USER),
+          Arguments.of(EntityType.GROUP, AuditLogEntityType.GROUP),
+          Arguments.of(EntityType.ROLE, AuditLogEntityType.ROLE),
+          Arguments.of(EntityType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE),
+          Arguments.of(EntityType.UNSPECIFIED, null),
+          Arguments.of(null, null));
+    }
+
+    @MethodSource("entityTypeToRelatedEntityTypeProvider")
+    @ParameterizedTest
+    void shouldMapOwnerTypeToEntityType(
+        final EntityType ownerType, final AuditLogEntityType expectedEntityType) {
+      final var entityType =
+          AuditLogTransformerConfigs.mapEntityTypeToAuditLogEntityType(ownerType);
+      assertThat(entityType).isEqualTo(expectedEntityType);
     }
   }
 }

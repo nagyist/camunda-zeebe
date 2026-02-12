@@ -30,6 +30,9 @@ public class AuditLogEntry {
   // the type of the affected entity
   private io.camunda.search.entities.AuditLogEntity.AuditLogEntityType entityType;
 
+  // the description of the affected entity
+  private String entityDescription;
+
   // the type of operation that was performed, i.e. the Zeebe record intent
   private io.camunda.search.entities.AuditLogEntity.AuditLogOperationType operationType;
 
@@ -97,6 +100,10 @@ public class AuditLogEntry {
 
   private Long rootProcessInstanceKey;
 
+  private String relatedEntityKey;
+
+  private AuditLogEntityType relatedEntityType;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -112,6 +119,15 @@ public class AuditLogEntry {
 
   public AuditLogEntry setEntityType(final AuditLogEntityType auditLogEntityType) {
     entityType = auditLogEntityType;
+    return this;
+  }
+
+  public String getEntityDescription() {
+    return entityDescription;
+  }
+
+  public AuditLogEntry setEntityDescription(final String entityDescription) {
+    this.entityDescription = entityDescription;
     return this;
   }
 
@@ -355,6 +371,24 @@ public class AuditLogEntry {
 
   public AuditLogEntry setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
     this.rootProcessInstanceKey = rootProcessInstanceKey;
+    return this;
+  }
+
+  public String getRelatedEntityKey() {
+    return relatedEntityKey;
+  }
+
+  public AuditLogEntry setRelatedEntityKey(final String relatedEntityKey) {
+    this.relatedEntityKey = relatedEntityKey;
+    return this;
+  }
+
+  public AuditLogEntityType getRelatedEntityType() {
+    return relatedEntityType;
+  }
+
+  public AuditLogEntry setRelatedEntityType(final AuditLogEntityType relatedEntityType) {
+    this.relatedEntityType = relatedEntityType;
     return this;
   }
 

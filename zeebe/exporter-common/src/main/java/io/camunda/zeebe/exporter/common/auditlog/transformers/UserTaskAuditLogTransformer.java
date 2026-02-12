@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 
 public class UserTaskAuditLogTransformer implements AuditLogTransformer<UserTaskRecordValue> {
@@ -25,6 +27,10 @@ public class UserTaskAuditLogTransformer implements AuditLogTransformer<UserTask
     final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
+    if (record.getIntent() == UserTaskIntent.ASSIGNED) {
+      log.setRelatedEntityKey(value.getAssignee());
+      log.setRelatedEntityType(AuditLogEntityType.USER);
     }
   }
 }
