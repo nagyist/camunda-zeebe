@@ -56,7 +56,14 @@ public final class GlobalListenerBatchConfigureProcessor
     final GlobalListenerBatchRecord listenerBatchRecord = command.getValue();
     listenerBatchRecord.setGlobalListenerBatchKey(configKey);
 
-    applyConfiguration(listenerBatchRecord);
+    // Compare the new configuration with the existing one to determine which listeners are created,
+    // updated or deleted.
+    // Then, enrich the record with this information so that it can be applied on the followers when
+    // the command is distributed.
+    fillConfigurationChangeMetadata(listenerBatchRecord);
+
+    // Apply the configuration changes defined in the previous step
+    emitChangeEvents(listenerBatchRecord);
 
     // Distribute the command to the other partitions
     distributionBehavior
@@ -68,13 +75,15 @@ public final class GlobalListenerBatchConfigureProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<GlobalListenerBatchRecord> command) {
     final var record = command.getValue();
-    applyConfiguration(record);
+    // Apply the configuration changes defined in the record, which were determined by the leader
+    // when the command was first processed and included in the record before distribution
+    emitChangeEvents(record);
 
     distributionBehavior.acknowledgeCommand(command);
   }
 
-  private void applyConfiguration(final GlobalListenerBatchRecord listenerBatchRecord) {
-
+  private void fillConfigurationChangeMetadata(
+      final GlobalListenerBatchRecord listenerBatchRecord) {
     // Retrieve existing listeners from state, mapped by ID
     final GlobalListenerBatchRecord currentConfig = globalListenersState.getCurrentConfig();
     final Map<String, GlobalListenerRecord> existingListeners =
@@ -95,7 +104,12 @@ public final class GlobalListenerBatchConfigureProcessor
         .filter(l -> l.getSource() == GlobalListenerSource.CONFIGURATION)
         // filter out listeners which are still present in the new configuration
         .filter(l -> !newListeners.containsKey(l.getId()))
-        .forEach(listener -> writers.state().appendFollowUpEvent(listener.getGlobalListenerKey(), GlobalListenerIntent.DELETED, listener));
+        .forEach(
+            listener -> {
+              listenerBatchRecord.addDeletedListener(listener);
+              // Add the listener information to the record since it is missing
+              listenerBatchRecord.addListener(listener);
+            });
     // New or updated listeners should be created or updated accordingly
     newListeners
         .values()
@@ -106,13 +120,47 @@ public final class GlobalListenerBatchConfigureProcessor
                 // Ensure the old key is kept for updated listeners to correlate with existing state
                 listener.setGlobalListenerKey(
                     existingListeners.get(listener.getId()).getGlobalListenerKey());
-                writers.state().appendFollowUpEvent(listener.getGlobalListenerKey(), GlobalListenerIntent.UPDATED, listener);
+                listenerBatchRecord.addUpdatedListener(listener);
               } else {
                 // Generate a new key for created listeners
                 listener.setGlobalListenerKey(keyGenerator.nextKey());
-                writers.state().appendFollowUpEvent(listener.getGlobalListenerKey(), GlobalListenerIntent.CREATED, listener);
+                listenerBatchRecord.addCreatedListener(listener);
               }
             });
+  }
+
+  private void emitChangeEvents(final GlobalListenerBatchRecord listenerBatchRecord) {
+    final Map<Long, GlobalListenerRecord> listenersByKey =
+        listenerBatchRecord.getTaskListeners().stream()
+            .collect(
+                Collectors.toMap(
+                    GlobalListenerRecordValue::getGlobalListenerKey, Function.identity()));
+
+    // Apply individual listener changes
+    listenerBatchRecord
+        .getDeletedListenerKeys()
+        .forEach(
+            key ->
+                writers
+                    .state()
+                    .appendFollowUpEvent(
+                        key, GlobalListenerIntent.DELETED, listenersByKey.get(key)));
+    listenerBatchRecord
+        .getUpdatedListenerKeys()
+        .forEach(
+            key ->
+                writers
+                    .state()
+                    .appendFollowUpEvent(
+                        key, GlobalListenerIntent.UPDATED, listenersByKey.get(key)));
+    listenerBatchRecord
+        .getCreatedListenerKeys()
+        .forEach(
+            key ->
+                writers
+                    .state()
+                    .appendFollowUpEvent(
+                        key, GlobalListenerIntent.CREATED, listenersByKey.get(key)));
 
     // Finally, update the configuration key so that following commands can correctly reference it
     writers
