@@ -45,6 +45,6 @@ public class DeleteDecisionDefinitionHistoryTest {
     // then
     assertThat(deletedEvent.getValue())
         .hasResourceKey(decisionRequirementsKey)
-        .hasResourceType(HistoryDeletionType.DECISION_DEFINITION);
+        .hasResourceType(HistoryDeletionType.DECISION_REQUIREMENTS);
   }
 }

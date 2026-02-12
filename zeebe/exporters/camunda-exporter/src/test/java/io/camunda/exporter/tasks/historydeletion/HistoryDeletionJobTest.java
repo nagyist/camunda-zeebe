@@ -502,14 +502,14 @@ final class HistoryDeletionJobTest {
         new HistoryDeletionEntity()
             .setId("id1")
             .setResourceKey(1L)
-            .setResourceType(HistoryDeletionType.DECISION_DEFINITION)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
             .setBatchOperationKey(2L)
             .setPartitionId(1);
     final var entity2 =
         new HistoryDeletionEntity()
             .setId("id2")
             .setResourceKey(2L)
-            .setResourceType(HistoryDeletionType.DECISION_DEFINITION)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
             .setBatchOperationKey(2L)
             .setPartitionId(1);
     when(repository.getNextBatch())
@@ -547,7 +547,7 @@ final class HistoryDeletionJobTest {
         new HistoryDeletionEntity()
             .setId("id1")
             .setResourceKey(1L)
-            .setResourceType(HistoryDeletionType.DECISION_DEFINITION)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
             .setBatchOperationKey(2L)
             .setPartitionId(1);
     when(repository.getNextBatch())
@@ -575,7 +575,7 @@ final class HistoryDeletionJobTest {
         new HistoryDeletionEntity()
             .setId("id1")
             .setResourceKey(1L)
-            .setResourceType(HistoryDeletionType.DECISION_DEFINITION)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
             .setBatchOperationKey(2L)
             .setPartitionId(1);
     when(repository.getNextBatch())
@@ -609,7 +609,7 @@ final class HistoryDeletionJobTest {
         new HistoryDeletionEntity()
             .setId("id2")
             .setResourceKey(2L)
-            .setResourceType(HistoryDeletionType.DECISION_DEFINITION)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
             .setBatchOperationKey(2L)
             .setPartitionId(1);
     when(repository.getNextBatch())
@@ -662,7 +662,7 @@ final class HistoryDeletionJobTest {
         new HistoryDeletionEntity()
             .setId("id2")
             .setResourceKey(2L)
-            .setResourceType(HistoryDeletionType.DECISION_DEFINITION)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
             .setBatchOperationKey(2L)
             .setPartitionId(1);
     when(repository.getNextBatch())

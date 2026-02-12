@@ -238,7 +238,8 @@ public class HistoryDeletionJob implements BackgroundTask {
    */
   private CompletionStage<List<String>> deleteDecisionRequirements(
       final HistoryDeletionBatch batch, final List<String> deletedResourceIds) {
-    final var decisionRequirements = batch.getResourceKeys(HistoryDeletionType.DECISION_DEFINITION);
+    final var decisionRequirements =
+        batch.getResourceKeys(HistoryDeletionType.DECISION_REQUIREMENTS);
     if (decisionRequirements.isEmpty()) {
       return CompletableFuture.completedFuture(deletedResourceIds);
     }
@@ -256,7 +257,7 @@ public class HistoryDeletionJob implements BackgroundTask {
         .thenApply(
             ignored -> {
               final var ids = new ArrayList<>(deletedResourceIds);
-              ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_DEFINITION));
+              ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_REQUIREMENTS));
               return ids;
             });
   }
