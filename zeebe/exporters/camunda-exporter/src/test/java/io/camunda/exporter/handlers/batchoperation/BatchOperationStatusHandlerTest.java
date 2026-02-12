@@ -277,9 +277,17 @@ class BatchOperationStatusHandlerTest {
     }
 
     @Test
+    void shouldExtractCorrectItemKeyTest() {
+      shouldExtractCorrectItemKey();
+    }
+
     abstract void shouldExtractCorrectItemKey();
 
     @Test
+    void shouldExtractCorrectProcessInstanceKeyTest() {
+      shouldExtractCorrectProcessInstanceKey();
+    }
+
     abstract void shouldExtractCorrectProcessInstanceKey();
 
     abstract Record<T> createSuccessRecord();
