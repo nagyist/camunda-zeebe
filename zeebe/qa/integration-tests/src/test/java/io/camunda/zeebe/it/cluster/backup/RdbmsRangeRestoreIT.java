@@ -168,7 +168,6 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
       interval = deployProcessAndTakeBackups(client, processKey);
-      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
     }
     takeAndAwaitBackup();
 
@@ -222,7 +221,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
       // The exact count depends on which backups were selected by the RDBMS-aware range resolver,
       // but we should have at least 2 jobs (from the first two instances created before any
       // backup).
-      assertThat(jobs.getJobs()).hasSizeGreaterThanOrEqualTo(2);
+      assertThat(jobs.getJobs()).hasSize(4);
 
       for (final var job : jobs.getJobs()) {
         client.newCompleteCommand(job.getKey()).send().join();
