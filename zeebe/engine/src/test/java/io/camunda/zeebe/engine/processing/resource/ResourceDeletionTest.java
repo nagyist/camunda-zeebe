@@ -809,7 +809,7 @@ public class ResourceDeletionTest {
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
     verifyResourceDeletionRecords(processDefinitionKey);
-    verifyBatchOperationIsCreated(
+    followUpCommandHistoryDeletionType(
         processDefinitionKey,
         BatchOperationType.DELETE_PROCESS_INSTANCE,
         HistoryDeletionType.PROCESS_DEFINITION,
@@ -911,7 +911,7 @@ public class ResourceDeletionTest {
     verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
     verifyDecisionRequirementsIsDeleted(drgKey);
     verifyResourceDeletionRecords(drgKey);
-    verifyBatchOperationIsCreated(
+    followUpCommandHistoryDeletionType(
         drgKey,
         BatchOperationType.DELETE_DECISION_INSTANCE,
         HistoryDeletionType.DECISION_DEFINITION,
@@ -1419,7 +1419,7 @@ public class ResourceDeletionTest {
         .build();
   }
 
-  private static void verifyBatchOperationIsCreated(
+  private static void followUpCommandHistoryDeletionType(
       final long resourceKey,
       final BatchOperationType batchOperationType,
       final HistoryDeletionType historyDeletionType,
