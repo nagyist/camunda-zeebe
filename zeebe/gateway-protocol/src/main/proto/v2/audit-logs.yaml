@@ -394,6 +394,7 @@ components:
         - USER
         - USER_TASK
         - VARIABLE
+        - CLIENT
 
     AuditLogOperationTypeEnum:
       type: string

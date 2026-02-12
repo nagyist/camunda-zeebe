@@ -26,6 +26,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -48,6 +49,8 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 
 public class AuditLogTransformerConfigs {
   public static final TransformerConfig AUTHORIZATION_CONFIG =
@@ -158,4 +161,19 @@ public class AuditLogTransformerConfigs {
 
   public static final TransformerConfig VARIABLE_ADD_UPDATE_CONFIG =
       TransformerConfig.with(VARIABLE).withIntents(VariableIntent.CREATED, VariableIntent.UPDATED);
+
+  private static final Map<EntityType, AuditLogEntityType> ENTITY_TYPE_AUDIT_LOG_ENTITY_TYPE_MAP =
+      Map.ofEntries(
+          Map.entry(EntityType.USER, AuditLogEntityType.USER),
+          Map.entry(EntityType.CLIENT, AuditLogEntityType.USER),
+          Map.entry(EntityType.GROUP, AuditLogEntityType.GROUP),
+          Map.entry(EntityType.ROLE, AuditLogEntityType.ROLE),
+          Map.entry(EntityType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE));
+
+  public static AuditLogEntityType mapEntityTypeToAuditLogEntityType(final EntityType entityType) {
+    if (entityType == null) {
+      return null;
+    }
+    return ENTITY_TYPE_AUDIT_LOG_ENTITY_TYPE_MAP.getOrDefault(entityType, null);
+  }
 }

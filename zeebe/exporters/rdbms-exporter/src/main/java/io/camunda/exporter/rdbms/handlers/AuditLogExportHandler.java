@@ -73,6 +73,7 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             // Generic fields
             .entityKey(log.getEntityKey())
             .entityType(log.getEntityType())
+            .entityDescription(log.getEntityDescription())
             .category(log.getCategory())
             .operationType(log.getOperationType())
             .actorId(log.getActor().actorId())
@@ -104,6 +105,8 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .deploymentKey(log.getDeploymentKey())
             .formKey(log.getFormKey())
             .resourceKey(log.getResourceKey())
+            .relatedEntityKey(log.getRelatedEntityKey())
+            .relatedEntityType(log.getRelatedEntityType())
             .partitionId(record.getPartitionId());
 
     return auditLog.build();

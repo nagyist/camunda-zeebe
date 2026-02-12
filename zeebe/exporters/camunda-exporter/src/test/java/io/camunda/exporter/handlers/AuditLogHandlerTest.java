@@ -27,6 +27,7 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
@@ -51,7 +52,7 @@ class AuditLogHandlerTest {
           .from(factory.generateObject(ImmutableProcessInstanceModificationRecordValue.class))
           .withTenantId(TENANT)
           .build();
-  private final Record record =
+  private final Record<RecordValue> record =
       factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MODIFICATION,
           r ->
@@ -60,14 +61,14 @@ class AuditLogHandlerTest {
                   .withAuthorizations(Map.of(Authorization.AUTHORIZED_USERNAME, USERNAME)));
 
   private AuditLogConfiguration config;
-  private AuditLogTransformer transformer;
-  private AuditLogHandler handler;
+  private AuditLogTransformer<RecordValue> transformer;
+  private AuditLogHandler<RecordValue> handler;
 
   @BeforeEach
   void setUp() {
     config = mock(AuditLogConfiguration.class);
     transformer = mock(AuditLogTransformer.class);
-    handler = new AuditLogHandler(INDEX_NAME, transformer, config);
+    handler = new AuditLogHandler<>(INDEX_NAME, transformer, config);
   }
 
   @Test
@@ -107,8 +108,7 @@ class AuditLogHandlerTest {
     final var idList = handler.generateIds(record);
 
     assertThat(idList).hasSize(1);
-    assertThat((String) idList.getFirst())
-        .isEqualTo(record.getPartitionId() + "-" + record.getPosition());
+    assertThat(idList.getFirst()).isEqualTo(record.getPartitionId() + "-" + record.getPosition());
   }
 
   @Test
@@ -173,7 +173,10 @@ class AuditLogHandlerTest {
             .setDeploymentKey(606L)
             .setFormKey(707L)
             .setResourceKey(808L)
-            .setRootProcessInstanceKey(909L);
+            .setRootProcessInstanceKey(909L)
+            .setRelatedEntityKey("related-entity-key")
+            .setRelatedEntityType(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.USER)
+            .setEntityDescription("entity-description");
 
     when(transformer.create(record)).thenReturn(entry);
     handler.updateEntity(record, entity);
@@ -218,5 +221,8 @@ class AuditLogHandlerTest {
     assertThat(entity.getFormKey()).isEqualTo(707L);
     assertThat(entity.getResourceKey()).isEqualTo(808L);
     assertThat(entity.getRootProcessInstanceKey()).isEqualTo(909L);
+    assertThat(entity.getRelatedEntityKey()).isEqualTo("related-entity-key");
+    assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.USER);
+    assertThat(entity.getEntityDescription()).isEqualTo("entity-description");
   }
 }

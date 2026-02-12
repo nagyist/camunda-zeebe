@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public interface AuditLogTransformer<R extends RecordValue> {
 
-  public static final Logger LOG = LoggerFactory.getLogger(AuditLogTransformer.class);
+  Logger LOG = LoggerFactory.getLogger(AuditLogTransformer.class);
 
   TransformerConfig config();
 
@@ -48,6 +48,7 @@ public interface AuditLogTransformer<R extends RecordValue> {
     if (log.getResult() == null) {
       if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
         log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
+        log.setEntityDescription(record.getRejectionType().name());
       } else {
         log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS);
       }
@@ -58,11 +59,11 @@ public interface AuditLogTransformer<R extends RecordValue> {
 
   default void transform(final Record<R> record, final AuditLogEntry log) {}
 
-  default boolean supports(final Record record) {
+  default boolean supports(final Record<?> record) {
     return config().supports(record);
   }
 
-  public record TransformerConfig(
+  record TransformerConfig(
       ValueType valueType,
       Set<Intent> supportedIntents,
       Set<Intent> supportedRejections,
@@ -93,16 +94,14 @@ public interface AuditLogTransformer<R extends RecordValue> {
           valueType(), supportedIntents(), supportedRejections(), Set.of(rejectionTypes));
     }
 
-    boolean supports(final Record record) {
-      switch (record.getRecordType()) {
-        case EVENT:
-          return supportedIntents().contains(record.getIntent());
-        case COMMAND_REJECTION:
-          return supportedRejections().contains(record.getIntent())
-              && supportedRejectionTypes().contains(record.getRejectionType());
-        default:
-          return false;
-      }
+    boolean supports(final Record<?> record) {
+      return switch (record.getRecordType()) {
+        case EVENT -> supportedIntents().contains(record.getIntent());
+        case COMMAND_REJECTION ->
+            supportedRejections().contains(record.getIntent())
+                && supportedRejectionTypes().contains(record.getRejectionType());
+        default -> false;
+      };
     }
   }
 }

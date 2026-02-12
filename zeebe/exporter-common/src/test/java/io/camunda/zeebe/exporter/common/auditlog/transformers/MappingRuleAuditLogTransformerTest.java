@@ -49,5 +49,6 @@ class MappingRuleAuditLogTransformerTest {
     // then
     assertThat(entity.getEntityKey()).isEqualTo("mapping-rule-1");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(entity.getEntityDescription()).isEqualTo("Engineering Mapping");
   }
 }
