@@ -330,6 +330,46 @@ In addition to the standard steps above, recent minor releases have surfaced sev
 > - The release workflow validates `project.previousVersion` for minor releases (X.Y.0) when cutting stable branches, and should also validate that main has been properly updated when releasing new alpha versions for the next minor line.
 > - **Action:** Monitor completion of [issue #40258](https://github.com/camunda/camunda/issues/40258) to automate this step and eliminate the manual requirement.
 
+### Feature Freeze vs Code Freeze (Minor Releases)
+
+For C8 monorepo minor releases, we enforce two distinct stages to ensure quality and predictable delivery:
+
+**🔒 Feature Freeze (Minor Releases)**
+- **Purpose**: Lock in the feature scope for the upcoming minor release
+- **Timing**: Occurs with the **last alpha** before the minor release (e.g., for `8.9.0`, this would be `8.9.0-alpha5`)
+- **What Changes**:
+- ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
+- ❌ No new features, scope extensions, or risky changes after this point
+- ✅ Bug fixes, stabilization work, and E2E testing continue
+- **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
+- **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
+- **Body**:
+
+```
+Hey all,
+
+        This appointment marks the feature freeze for the camunda/camunda repository: <minor_version> (minor).
+        <last_alpha_version> is the last alpha before the minor and defines the scope of what will ship in <minor_version>. Any new features or scope changes must be merged before this point to make it into the minor.
+
+        After this date, we focus on bug fixing, stabilization, and end-to-end testing for <minor_version>. New features should target future alphas/minors instead.
+
+        Overall release manager is <release_manager_name>
+
+        Have a nice week!
+        ```
+
+**🚫 Code Freeze (Minor Releases)**
+- **Purpose**: Minimize code changes to ensure release stability
+- **Timing**: On the day of the official minor release start date
+- **What Changes**:
+- ✅ Only **critical** changes allowed (release blockers, severe regressions, security issues)
+- ❌ Non-critical changes deferred to future alphas or patch releases
+- **Coordination**: Scheduled via dedicated calendar invite managed by respective teams
+
+**📅 Important References**
+- **Release Dates**: All upcoming alpha, minor, and feature freeze dates are maintained on the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) page
+- **Detailed Policy**: See [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze) for comprehensive guidelines
+
 ## Troubleshooting
 
 ### How to correlate [Git commits](https://github.com/camunda/zeebe-engineering-processes/commits) with deployed process version in C8 Operate?
