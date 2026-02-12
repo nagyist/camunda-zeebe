@@ -21,6 +21,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CorrelateMessageResponse;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
@@ -48,6 +49,7 @@ import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -65,6 +67,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 
 /**
  * This class provides several static methods to facilitate common operations such as deploying
@@ -979,6 +983,31 @@ public final class TestHelper {
         1,
         1);
     return decisionDeployment;
+  }
+
+  public static Decision deployDmnModel(
+      final CamundaClient camundaClient,
+      final DmnModelInstance dmnModel,
+      final String resourceName) {
+    final DeploymentEvent deploymentEvent =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceStream(
+                new ByteArrayInputStream(Dmn.convertToString(dmnModel).getBytes()),
+                resourceName + ".dmn")
+            .send()
+            .join();
+    return deploymentEvent.getDecisions().stream().findFirst().get();
+  }
+
+  public static EvaluateDecisionResponse evaluateDecision(
+      final CamundaClient camundaClient, final long decisionKey, final String variables) {
+    return camundaClient
+        .newEvaluateDecisionCommand()
+        .decisionKey(decisionKey)
+        .variables(variables)
+        .send()
+        .join();
   }
 
   public static Process startDefaultTestDecisionProcessInstance(
