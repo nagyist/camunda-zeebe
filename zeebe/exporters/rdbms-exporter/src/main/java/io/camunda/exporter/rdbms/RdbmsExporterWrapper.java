@@ -105,7 +105,8 @@ public class RdbmsExporterWrapper implements Exporter {
     config.validate(); // throws exception if configuration is invalid
 
     final int partitionId = context.getPartitionId();
-    final var rdbmsWriterConfig = config.createRdbmsWriterConfig(partitionId);
+    final var rdbmsWriterConfig =
+        config.createRdbmsWriterConfig(partitionId, vendorDatabaseProperties);
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =
