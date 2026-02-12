@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
@@ -15,7 +16,11 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup.BackupStoreType;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
+import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -24,11 +29,16 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.util.FileUtil;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.sql.DataSource;
+import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -50,6 +60,7 @@ final class RdbmsRangeRestoreIT {
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsRangeRestoreIT.class);
   // H2 in-memory DB URL shared across broker and restore app JVM lifecycles.
   // DB_CLOSE_DELAY=-1 keeps the DB alive after last connection closes.
+  // This is necessary so that the broker can restart without losing the exported data
   // MODE=PostgreSQL for SQL compatibility with the RDBMS module.
   private static final String H2_URL =
       "jdbc:h2:mem:rdbms-restore-" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL";
@@ -75,8 +86,18 @@ final class RdbmsRangeRestoreIT {
     workingDirectory = broker.getWorkingDirectory();
   }
 
+  @AfterEach
+  void tearDown() throws SQLException {
+    final var ds = broker.bean(DataSource.class);
+    try (final var connection = ds.getConnection()) {
+      connection.createStatement().execute("DROP ALL OBJECTS");
+    } catch (final NullPointerException e) {
+      // failed to get a connection, no need to drop anything
+    }
+  }
+
   @Test
-  void canRestoreFromTimeRangeWithRdbms() throws Exception {
+  void shouldNotRestoreIfMissingBackupAfterRestorePosition() throws Exception {
     // given - deploy a process and create instances, then take continuous backups.
     // The backup manifest's "created" timestamp uses Instant.now() (system clock), so we use
     // Thread.sleep to space out backups and ensure the from/to range reliably covers them.
@@ -86,29 +107,7 @@ final class RdbmsRangeRestoreIT {
       processKey = deployTestProcess(client);
 
       // Create some process instances to have data to verify after restore
-      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
-      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
-
-      takeAndAwaitBackup();
-      // Record "from" before the first backup, with a small sleep to create clear separation
-      Thread.sleep(Duration.ofSeconds(2));
-      final Instant from = Instant.now();
-      LOG.info("Time range from = {}", from);
-
-      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
-      // Take first backup
-      Thread.sleep(Duration.ofSeconds(2));
-      takeAndAwaitBackup();
-
-      // Create another instance and take second backup
-      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
-      Thread.sleep(Duration.ofSeconds(2));
-      takeAndAwaitBackup();
-
-      // Record "to" after second backup
-      Thread.sleep(Duration.ofSeconds(2));
-      final Instant to = Instant.now();
-      LOG.info("Time range to = {}", to);
+      final var interval = deployProcessAndTakeContinuousBackups(client, processKey);
 
       // Take a third backup and create instances outside the range that should NOT survive
       Thread.sleep(Duration.ofSeconds(2));
@@ -125,7 +124,68 @@ final class RdbmsRangeRestoreIT {
 
       LOG.info("Deleted working directory {}", workingDirectory);
 
-      final var restore =
+      assertThatThrownBy(
+              () -> {
+                try (final var restore =
+                    new TestRestoreApp()
+                        .withUnifiedConfig(this::configureRestoreApp)
+                        .withProperty("camunda.data.secondary-storage.type", "rdbms")
+                        .withProperty("spring.datasource.url", H2_URL)
+                        .withProperty("spring.datasource.driver-class-name", "org.h2.Driver")
+                        .withProperty("spring.datasource.username", "sa")
+                        .withProperty("spring.datasource.password", "")
+                        .withWorkingDirectory(workingDirectory)
+                        .withTimeRange(interval.start(), interval.end())
+                        .start()) {
+                  // empty
+                }
+              })
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("is less than exporter position");
+    }
+  }
+
+  @Test
+  void shouldRestoreFromATimeRange() throws Exception {
+    // given - deploy a process and create instances, then take continuous backups.
+    // The backup manifest's "created" timestamp uses Instant.now() (system clock), so we use
+    // Thread.sleep to space out backups and ensure the from/to range reliably covers them.
+    final long processKey;
+
+    try (final var client = broker.newClientBuilder().build()) {
+      processKey = deployTestProcess(client);
+      final var interval = deployProcessAndTakeContinuousBackups(client, processKey);
+      // Take a third backup and create instances outside the range that should NOT survive
+      Thread.sleep(Duration.ofSeconds(2));
+      client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+      takeAndAwaitBackup();
+      final var exporterPositionMapper = broker.bean(ExporterPositionMapper.class);
+      Awaitility.await("Until backup is equal to exported position")
+          .pollDelay(Duration.ofSeconds(2))
+          .untilAsserted(
+              () -> {
+                final var backup = takeAndAwaitBackup();
+                final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
+                LOG.info("Exporter position for partition 1: {}", position);
+                LOG.info("Last backup is {}", backup);
+                final var details = backup.getDetails().getFirst();
+                assertThat(details)
+                    .returns(1, PartitionBackupInfo::getPartitionId)
+                    .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
+                assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
+              });
+
+      // when - stop broker, delete data, restore from time range with RDBMS
+      LOG.info("Stopping broker");
+      broker.stop();
+
+      FileUtil.deleteFolder(workingDirectory);
+      FileUtil.ensureDirectoryExists(workingDirectory);
+
+      LOG.info("Deleted working directory {}", workingDirectory);
+
+      try (final var restore =
           new TestRestoreApp()
               .withUnifiedConfig(this::configureRestoreApp)
               .withProperty("camunda.data.secondary-storage.type", "rdbms")
@@ -134,13 +194,13 @@ final class RdbmsRangeRestoreIT {
               .withProperty("spring.datasource.username", "sa")
               .withProperty("spring.datasource.password", "")
               .withWorkingDirectory(workingDirectory)
-              .withTimeRange(from, to)
-              .start();
-      restore.close();
-
-      // then - broker starts and data from backed-up instances survives
-      broker.start();
+              .withTimeRange(interval.start(), interval.end())
+              .start()) {
+        // empty, just to ensure it's closed.
+      }
     }
+
+    broker.start();
 
     try (final var client = broker.newClientBuilder().build()) {
       final var jobs =
@@ -176,7 +236,37 @@ final class RdbmsRangeRestoreIT {
         .getProcessDefinitionKey();
   }
 
-  private long takeAndAwaitBackup() {
+  private Interval<Instant> deployProcessAndTakeContinuousBackups(
+      final CamundaClient client, final long processKey) throws InterruptedException {
+
+    // Create some process instances to have data to verify after restore
+    client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+    client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+
+    takeAndAwaitBackup();
+    // Record "from" before the first backup, with a small sleep to create clear separation
+    Thread.sleep(Duration.ofSeconds(2));
+    final Instant from = Instant.now();
+    LOG.info("Time range from = {}", from);
+
+    client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+    // Take first backup
+    Thread.sleep(Duration.ofSeconds(2));
+    takeAndAwaitBackup();
+
+    // Create another instance and take second backup
+    client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+    Thread.sleep(Duration.ofSeconds(2));
+    takeAndAwaitBackup();
+
+    // Record "to" after second backup
+    Thread.sleep(Duration.ofSeconds(2));
+    final Instant to = Instant.now();
+    LOG.info("Time range to = {}", to);
+    return Interval.closed(from, to);
+  }
+
+  private BackupInfo takeAndAwaitBackup() {
     final var res = backupActuator.take();
     LOG.debug("Took backup: {}", res.getMessage());
     final Pattern pattern = Pattern.compile("backup with id (\\d+)");
@@ -192,7 +282,7 @@ final class RdbmsRangeRestoreIT {
                 assertThat(backupActuator.status(backupId).getState())
                     .isEqualTo(StateCode.COMPLETED));
 
-    return backupId;
+    return backupActuator.status(backupId);
   }
 
   private void configureBroker(final Camunda cfg) {
