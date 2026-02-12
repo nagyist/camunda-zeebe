@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.resource;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -221,7 +222,7 @@ public class ResourceDeletionDeleteProcessor
           PermissionType.DELETE_DRD,
           bufferAsString(drg.getDecisionRequirementsId()),
           drg.getTenantId(),
-          () -> deleteDecisionRequirements(drg));
+          () -> deleteDecisionRequirements(drg, command, eventKey));
     }
 
     final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
@@ -266,11 +267,18 @@ public class ResourceDeletionDeleteProcessor
     return true;
   }
 
-  private void deleteDecisionRequirements(final DeployedDrg drg) {
+  private void deleteDecisionRequirements(
+      final DeployedDrg drg,
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey) {
     decisionState
         .findDecisionsByTenantAndDecisionRequirementsKey(
             drg.getTenantId(), drg.getDecisionRequirementsKey())
         .forEach(this::deleteDecision);
+
+    if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
+      deleteDecisionInstanceHistory(drg.getDecisionRequirementsKey(), eventKey, command.getValue());
+    }
 
     final var drgRecord =
         new DecisionRequirementsRecord()
@@ -301,6 +309,7 @@ public class ResourceDeletionDeleteProcessor
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey())
             .setTenantId(persistedDecision.getTenantId())
             .setDeploymentKey(persistedDecision.getDeploymentKey());
+
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
@@ -382,6 +391,36 @@ public class ResourceDeletionDeleteProcessor
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+  }
+
+  private void deleteDecisionInstanceHistory(
+      final long decisionRequirementsKey,
+      final long eventKey,
+      final ResourceDeletionRecord resourceDeletionRecord) {
+    final var filter =
+        new DecisionInstanceFilter.Builder()
+            .decisionRequirementsKeys(decisionRequirementsKey)
+            .build();
+    final long batchOperationKey = keyGenerator.nextKey();
+    final var batchOperationRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setAuthentication(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(CamundaAuthentication.anonymous())))
+            .setFollowUpCommand(
+                ValueType.HISTORY_DELETION,
+                HistoryDeletionIntent.DELETE,
+                new HistoryDeletionRecord()
+                    .setResourceKey(decisionRequirementsKey)
+                    .setResourceType(HistoryDeletionType.DECISION_DEFINITION));
+    commandWriter.appendFollowUpCommand(
+        eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
+
+    resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
+    resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {

@@ -175,6 +175,13 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if
+        test="filter.decisionRequirementsKeyOperations != null and !filter.decisionRequirementsKeyOperations.isEmpty()">
+        <foreach collection="filter.decisionRequirementsKeyOperations" item="operation">
+          AND di.DECISION_REQUIREMENTS_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.partitionId != null">
         AND di.PARTITION_ID = #{filter.partitionId}
       </if>

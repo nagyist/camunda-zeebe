@@ -274,6 +274,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getRootDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::rootDecisionDefinitionKeyOperations);
+      ofNullable(filter.getDecisionRequirementsKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::decisionRequirementsKeyOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
