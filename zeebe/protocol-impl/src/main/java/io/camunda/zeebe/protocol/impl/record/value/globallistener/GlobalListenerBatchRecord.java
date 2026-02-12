@@ -15,6 +15,8 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.List;
+import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public final class GlobalListenerBatchRecord extends UnifiedRecordValue
@@ -55,5 +57,24 @@ public final class GlobalListenerBatchRecord extends UnifiedRecordValue
     return listenersProp.stream()
         .filter(listener -> listener.getListenerType() == GlobalListenerType.USER_TASK)
         .toList();
+  }
+
+  /**
+   * Check if two global listener batches lead to equivalent configurations, ignoring the keys of
+   * the batch and the listeners.
+   */
+  public boolean isSameConfiguration(final GlobalListenerBatchRecord other) {
+    final UnaryOperator<GlobalListenerRecord> makeComparable =
+        listener -> {
+          final GlobalListenerRecord copy = new GlobalListenerRecord();
+          copy.copyFrom(listener);
+          copy.setGlobalListenerKey(-1L); // ignore keys when comparing listeners
+          return copy;
+        };
+    final Set<GlobalListenerRecord> thisListeners =
+        listenersProp.stream().map(makeComparable).collect(Collectors.toSet());
+    final Set<GlobalListenerRecord> otherListeners =
+        other.listenersProp.stream().map(makeComparable).collect(Collectors.toSet());
+    return thisListeners.equals(otherListeners);
   }
 }
