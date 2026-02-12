@@ -1,6 +1,7 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.9
+enable_optimize ?= __ENABLE_OPTIMIZE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -75,6 +76,7 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		$(additional_platform_configuration)
 
@@ -87,6 +89,7 @@ install-platform-stable: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		-f camunda-platform-values.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		-f values-stable.yaml \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		$(additional_platform_configuration)
@@ -120,6 +123,7 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) camunda/$(helm_chart) \
 		-f camunda-platform-values.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		--output-dir .
 
@@ -128,6 +132,7 @@ template-stable:
 	helm template $(namespace) camunda/$(helm_chart) \
 		-f camunda-platform-values.yaml \
 		-f values-stable.yaml \
+		$(if $(filter true,$(enable_optimize)),-f camunda-platform-values-optimize.yaml) \
 		$(if $(storage_values_file),-f $(storage_values_file)) \
 		--output-dir .
 
