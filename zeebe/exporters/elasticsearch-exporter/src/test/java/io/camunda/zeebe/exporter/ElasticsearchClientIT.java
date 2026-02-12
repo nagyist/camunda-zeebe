@@ -206,11 +206,12 @@ final class ElasticsearchClientIT {
     assertThat(actualTemplate.template().aliases())
         .isEqualTo(expectedTemplate.template().aliases());
     // Use recursive comparison to tolerate ES and the Java client normalizing object-typed mapping
-    // fields by adding "type": "object" — this is functionally correct but absent from the JSON
-    // resource files. The ignoringOverriddenEqualsForFields approach doesn't work for nested maps,
-    // so we strip the extra "type" entries before comparing.
+    // fields by adding "type": "object" — this is functionally correct and may or may not be
+    // present in the JSON resource files. The ignoringOverriddenEqualsForFields approach doesn't
+    // work for nested maps, so we strip the implicit "type" entries from both sides before
+    // comparing.
     assertThat(stripObjectTypeFromMappings(actualTemplate.template().mappings()))
-        .isEqualTo(expectedTemplate.template().mappings());
+        .isEqualTo(stripObjectTypeFromMappings(expectedTemplate.template().mappings()));
 
     // cannot compare settings because we never get flat settings, instead we get { index : {
     // number_of_shards: 1, queries: { cache : { enabled : false } } } }
@@ -228,9 +229,9 @@ final class ElasticsearchClientIT {
 
   /**
    * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
-   * client normalize object-typed mapping fields by adding this implicit type, but the JSON
-   * resource files omit it. Removing it from the actual result allows direct comparison with
-   * expected.
+   * client normalize object-typed mapping fields by adding this implicit type. Stripping it from
+   * both actual and expected mappings allows direct comparison regardless of whether the JSON
+   * resource files include the explicit type or not.
    */
   @SuppressWarnings("unchecked")
   private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
