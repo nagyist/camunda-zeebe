@@ -6,18 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {screen} from '@testing-library/react';
+import {screen, waitForElementToBeRemoved} from '@testing-library/react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
-import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {cancelAllTokens} from 'modules/utils/modifications';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {Paths} from 'modules/Routes';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 
 const stats = {
   items: [
@@ -95,6 +96,10 @@ describe.skip('Modification Dropdown - Multi Scopes', () => {
     );
     mockFetchFlownodeInstancesStatistics().withSuccess(stats);
     mockFetchFlownodeInstancesStatistics().withSuccess(stats);
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     modificationsStore.enableModificationMode();
   });
 
@@ -125,16 +130,7 @@ describe.skip('Modification Dropdown - Multi Scopes', () => {
       ],
     });
 
-    renderPopover();
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'TaskB',
-        },
-      );
-    });
+    renderPopover([`${Paths.processInstance('instance_id')}?elementId=TaskB`]);
 
     expect(
       await screen.findByText(/Flow Node Modifications/),
@@ -148,16 +144,9 @@ describe.skip('Modification Dropdown - Multi Scopes', () => {
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
     'should not support add modification for task with multiple inner parent scopes',
     async () => {
-      renderPopover();
-
-      act(() => {
-        selectFlowNode(
-          {},
-          {
-            flowNodeId: 'TaskB',
-          },
-        );
-      });
+      renderPopover([
+        `${Paths.processInstance('instance_id')}?elementId=TaskB`,
+      ]);
 
       expect(
         await screen.findByText(/Flow Node Modifications/),
@@ -197,16 +186,9 @@ describe.skip('Modification Dropdown - Multi Scopes', () => {
         ],
       });
 
-      renderPopover();
-
-      act(() => {
-        selectFlowNode(
-          {},
-          {
-            flowNodeId: 'TaskB',
-          },
-        );
-      });
+      renderPopover([
+        `${Paths.processInstance('instance_id')}?elementId=TaskB`,
+      ]);
 
       expect(
         await screen.findByText(/Flow Node Modifications/),
@@ -217,49 +199,58 @@ describe.skip('Modification Dropdown - Multi Scopes', () => {
     },
   );
 
-  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
-    'should render no modifications available',
-    async () => {
-      renderPopover();
+  it('should render no modifications available when multi sub process instance is selected', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: 'OuterSubProcess',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
 
-      act(() => cancelAllTokens('TaskB', 0, 0, {}));
+    mockFetchElementInstance('2251799813686156').withSuccess({
+      elementInstanceKey: '2251799813686156',
+      processInstanceKey: '1',
+      processDefinitionKey: 'processName',
+      processDefinitionId: 'processName',
+      state: 'ACTIVE' as const,
+      type: 'SUB_PROCESS' as const,
+      elementId: 'OuterSubProcess',
+      elementName: 'Outer Sub Process',
+      hasIncident: false,
+      tenantId: '<default>',
+      startDate: '2018-12-12T00:00:02.000+0000',
+      endDate: '2018-12-12T00:00:03.000+0000',
+    });
 
-      act(() =>
-        selectFlowNode(
-          {},
-          {
-            flowNodeId: 'TaskB',
-          },
-        ),
-      );
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=OuterSubProcess&elementInstanceKey=2251799813686156`,
+    ]);
 
-      expect(
-        await screen.findByText(/Flow Node Modifications/),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/No modifications available/),
-      ).toBeInTheDocument();
-      expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    },
-  );
+    expect(
+      await screen.findByText(/Flow Node Modifications/),
+    ).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() => screen.queryByTitle(/loading/i));
+
+    expect(screen.getByText(/No modifications available/)).toBeInTheDocument();
+    expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
 
   (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
     'should render add modification for flow nodes that has multiple running scopes',
     async () => {
-      renderPopover();
+      cancelAllTokens('TaskB', 0, 0, {});
 
-      act(() => cancelAllTokens('TaskB', 0, 0, {}));
-
-      act(() =>
-        selectFlowNode(
-          {},
-          {
-            flowNodeId: 'TaskB',
-          },
-        ),
-      );
+      renderPopover([
+        `${Paths.processInstance('instance_id')}?elementId=TaskB`,
+      ]);
 
       expect(
         await screen.findByText(/Flow Node Modifications/),
@@ -269,5 +260,4 @@ describe.skip('Modification Dropdown - Multi Scopes', () => {
       expect(screen.getByText(/Add/)).toBeInTheDocument();
     },
   );
-  /* eslint-enable vitest/no-standalone-expect */
 });
