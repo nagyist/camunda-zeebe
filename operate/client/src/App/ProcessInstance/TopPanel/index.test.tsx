@@ -11,8 +11,9 @@ import {
   waitForElementToBeRemoved,
   screen,
   waitFor,
+  fireEvent,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes, useSearchParams} from 'react-router-dom';
+import {MemoryRouter, Route, Routes, useNavigate} from 'react-router-dom';
 import {TopPanel} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createIncident, searchResult} from 'modules/testUtils';
@@ -123,13 +124,21 @@ const mockElementInstance: ElementInstance = {
 };
 
 /** Used to programmatically update search params after initial render. */
-let updateSearchParams = (_params: Record<string, string>) => {};
+const updateSearchParams = (params: Record<string, string>) => {
+  const paramsString = Object.entries(params)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+  fireEvent.change(screen.getByTestId('new-search-params'), {
+    target: {value: paramsString},
+  });
+};
 const SearchParamsUpdater: React.FC = () => {
-  const [, setSearchParams] = useSearchParams();
-  updateSearchParams = (newParams) => {
-    setSearchParams(newParams, {replace: true});
+  const navigate = useNavigate();
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+    navigate({search: `?${event.currentTarget.value}`}, {replace: true});
+    event.currentTarget.value = '';
   };
-  return null;
+  return <input data-testid="new-search-params" onChange={handleChange} />;
 };
 
 const getWrapper = (searchParams?: Record<string, string>) => {
