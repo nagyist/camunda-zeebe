@@ -22,7 +22,7 @@ additional_options=${3:-}
 # Validate event type and map to async-profiler event names
 case "$event" in
   cpu)
-    profiler_event="itimer"
+    profiler_event="cpu"
     ;;
   wall)
     profiler_event="wall"
