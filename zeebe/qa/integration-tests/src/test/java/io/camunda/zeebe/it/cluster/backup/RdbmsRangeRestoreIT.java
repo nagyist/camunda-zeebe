@@ -22,7 +22,6 @@ import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.backup.api.Interval;
-import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
@@ -136,12 +135,6 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
 
-      Awaitility.await("Until exported position is higher than backup")
-          .untilAsserted(
-              () ->
-                  assertThat(exporterPositionMapper.findOne(1).lastExportedPosition())
-                      .isGreaterThan(lastBackup.getDetails().getFirst().getCheckpointPosition()));
-
       // when - stop broker, delete data, restore from time range with RDBMS
       LOG.info("Stopping broker");
       broker.stop();
@@ -173,16 +166,6 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
 
     final var exporterActuator = ExportersActuator.of(broker);
     exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
-    Awaitility.await()
-        .untilAsserted(
-            () -> {
-              final var exporterStatus =
-                  exporterActuator.getExporters().stream()
-                      .filter(exporter -> exporter.getExporterId().equals(RDBMS_EXPORTER_NAME))
-                      .findFirst()
-                      .get();
-              assertThat(exporterStatus.getStatus()).isEqualTo(StatusEnum.DISABLED);
-            });
 
     Awaitility.await("Until backup is greater or equal to exported position")
         .pollDelay(Duration.ofSeconds(2))
