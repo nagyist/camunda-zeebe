@@ -105,6 +105,46 @@ describe('authentication store', () => {
     expect(getStateLocally('wasReloaded')).toBe(false);
   });
 
+  it('should throw an error on logout with invalid JSON response', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
+      canLogout: true,
+      isLoginDelegated: true,
+    });
+
+    nodeMockServer.use(
+      http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
+      http.post(
+        '/logout',
+        () => new HttpResponse('{"invalid": "json response"}'),
+        {once: true},
+      ),
+    );
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    const result = authenticationStore.handleLogout();
+
+    await expect(result).resolves.not.toBeUndefined();
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(window.location.href).toBe(unchangedHref);
+    expect(getStateLocally('wasReloaded')).toBe(false);
+  });
+
   it('should throw an error on logout failure', async () => {
     nodeMockServer.use(
       http.post('/logout', () => new HttpResponse('', {status: 500}), {

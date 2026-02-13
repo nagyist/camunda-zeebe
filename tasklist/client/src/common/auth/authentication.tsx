@@ -26,7 +26,7 @@ type Status =
 const DEFAULT_STATUS: Status = 'initial';
 
 const logoutResponseSchema = z.object({
-  url: z.url({error: 'no redirect URL provided'}),
+  url: z.url({message: 'No redirect URL provided'}),
 });
 
 async function parseRedirectUrl(response: Response): Promise<string> {
@@ -99,10 +99,16 @@ class Authentication {
        * its logout endpoint will be returned in a JSON response.
        * For Basic Auth and unsupported IdPs, there will be a 204 response.
        */
-      const idpLogoutUrl =
-        response.status === 200 ? await parseRedirectUrl(response) : undefined;
-      this.#handleThirdPartySessionExpiration(idpLogoutUrl);
-      return;
+      try {
+        const idpLogoutUrl =
+          response.status === 200
+            ? await parseRedirectUrl(response)
+            : undefined;
+        this.#handleThirdPartySessionExpiration(idpLogoutUrl);
+        return;
+      } catch (e) {
+        return e;
+      }
     }
 
     this.setStatus('logged-out');

@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getLoginApiUrl, getLogoutApiUrl } from "src/configuration";
+import { getBaseUrl, getLoginApiUrl, getLogoutApiUrl } from "src/configuration";
+import { z } from "zod";
 
 let loggedIn = false;
 
@@ -22,12 +23,14 @@ export function isLoggedIn() {
   return loggedIn;
 }
 
+const logoutResponseSchema = z.object({
+  url: z.url({ message: "No redirect URL provided" }),
+});
+
 async function parseRedirectUrl(response: Response): Promise<string> {
   const json = await response.json();
-  if (!json || !json.url) {
-    throw new Error("no redirect URL supplied");
-  }
-  return json.url;
+  const result = logoutResponseSchema.parse(json);
+  return result.url;
 }
 
 export async function login(
@@ -77,7 +80,7 @@ export async function logout(): Promise<void> {
     if (idpLogoutUrl) {
       window.location.href = idpLogoutUrl;
     } else {
-      window.location.reload();
+      window.location.href = `${getBaseUrl()}/`;
     }
   } catch (e) {
     console.log(e);
