@@ -7,7 +7,8 @@
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
 #
-# ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" for flamegraph format)
+# ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" to profile threads separately)
+# See https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md for potential options
 set -oxe pipefail
 
 if [ -z "$1" ]; then
@@ -19,28 +20,10 @@ node=$1
 event=${2:-cpu}
 additional_options=${3:-}
 
-# Validate event type and map to async-profiler event names
-case "$event" in
-  cpu)
-    profiler_event="cpu"
-    ;;
-  wall)
-    profiler_event="wall"
-    # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
-    if [ -z "$additional_options" ]; then
-      additional_options="-t"
-    else
-      additional_options="-t $additional_options"
-    fi
-    ;;
-  alloc)
-    profiler_event="alloc"
-    ;;
-  *)
-    echo "Error: Invalid event type '$event'. Must be one of: cpu, wall, alloc"
-    exit 1
-    ;;
-esac
+if [[ event == "wall" ]]; then
+  # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
+  additional_options="-t $additional_options"
+fi
 
 # Determine right container path
 containerPath=/usr/local/camunda/data

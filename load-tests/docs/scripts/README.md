@@ -8,6 +8,7 @@ This folder contains several scripts we wrote to test or debug things.
 Run executeProfiling.sh with a pod name, optional event type, and optional profiler options. It will download the async profiler package, run in your current namespace, copy necessary binaries to the pod, run the async profiler, and copy the resulting flamegraph back to your local disk.
 
 **Syntax:**
+
 ```
 ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
 ```
@@ -19,9 +20,11 @@ Run executeProfiling.sh with a pod name, optional event type, and optional profi
 
 **Additional Options:**
 You can pass additional flags to async-profiler as the third parameter. Common options include:
-- `-t` - Generate output in flamegraph format (useful for more detailed visualization)
+- `-t` - to profile threads separately
 - `--title "My Title"` - Set a custom title for the flamegraph
 - `--minwidth <percent>` - Omit frames smaller than specified percentage
+
+See [async-profiler documentation](https://github.com/async-profiler/async-profiler/blob/master/docs/ProfilerOptions.md) for potential options.
 
 Example with CPU profiling (default):
 
