@@ -20,4 +20,13 @@ const OperationLogName = styled.div`
   gap: var(--cds-spacing-02);
 `;
 
-export {Container, OperationLogName};
+const ReferenceText = styled.div`
+  font-style: italic;
+`;
+
+const PropertyText = styled.div`
+  font-size: 0.75rem;
+  font-weight: 400;
+`;
+
+export {Container, OperationLogName, ReferenceText, PropertyText};

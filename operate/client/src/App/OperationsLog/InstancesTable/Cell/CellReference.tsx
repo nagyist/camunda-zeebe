@@ -10,13 +10,14 @@ import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {formatBatchTitle} from 'modules/utils/operationsLog';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
+import {ReferenceText} from '../styled';
 
 type Props = {
   item: AuditLog;
   processDefinitionName?: string;
 };
 
-const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
+const CellReference: React.FC<Props> = ({item, processDefinitionName}) => {
   if (!item) {
     return null;
   }
@@ -25,7 +26,6 @@ const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
     case 'BATCH':
       return (
         <>
-          <div>Multiple {formatBatchTitle(item.batchOperationType)}</div>
           <div>
             {item.batchOperationKey ? (
               <Link
@@ -38,28 +38,33 @@ const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
               item.batchOperationKey
             )}
           </div>
+          <ReferenceText>
+            Multiple {formatBatchTitle(item.batchOperationType)}
+          </ReferenceText>
         </>
       );
     case 'RESOURCE':
       return (
         <>
-          <div>Deployed resource</div>
           <div>{item.entityKey}</div>
+          <ReferenceText>Deployed resource</ReferenceText>
         </>
       );
+    case 'INCIDENT':
+    case 'VARIABLE':
     case 'PROCESS_INSTANCE':
       return (
-        <>
-          <div>{processDefinitionName}</div>
+        <div>
           <div>
             <Link
-              to={Paths.processInstance(item.entityKey)}
-              aria-label={`View process instance ${item.entityKey}`}
+              to={Paths.processInstance(item.processInstanceKey)}
+              aria-label={`View process instance ${item.processInstanceKey}`}
             >
-              {item.entityKey}
+              {item.processInstanceKey}
             </Link>
           </div>
-        </>
+          <ReferenceText>{processDefinitionName}</ReferenceText>
+        </div>
       );
     case 'DECISION':
       return (
@@ -79,4 +84,4 @@ const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
   }
 };
 
-export {CellAppliedTo};
+export {CellReference};
