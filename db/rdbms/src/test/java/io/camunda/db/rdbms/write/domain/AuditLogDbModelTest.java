@@ -55,6 +55,7 @@ class AuditLogDbModelTest {
             .deploymentKey(300L)
             .formKey(1000L)
             .resourceKey(1100L)
+            .rootProcessInstanceKey(1200L)
             .build();
 
     assertThat(auditLog.auditLogKey()).isEqualTo("audit-key-123");
@@ -86,6 +87,7 @@ class AuditLogDbModelTest {
     assertThat(auditLog.deploymentKey()).isEqualTo(300L);
     assertThat(auditLog.formKey()).isEqualTo(1000L);
     assertThat(auditLog.resourceKey()).isEqualTo(1100L);
+    assertThat(auditLog.rootProcessInstanceKey()).isEqualTo(1200L);
   }
 
   @Test

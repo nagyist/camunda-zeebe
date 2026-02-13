@@ -97,7 +97,8 @@ public record AuditLogDbModel(
         .relatedEntityKey(relatedEntityKey)
         .entityDescription(entityDescription)
         .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate);
+        .historyCleanupDate(historyCleanupDate)
+        .rootProcessInstanceKey(rootProcessInstanceKey);
   }
 
   public AuditLogDbModel truncateEntityDescription(final int sizeLimit, final Integer byteLimit) {
