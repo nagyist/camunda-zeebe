@@ -30,8 +30,10 @@ import {
   type DetailsModalState,
 } from 'modules/components/OperationsLogDetailsModal';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
+import {EmptyMessageContainer} from '../styled';
+import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 
 type Props = {
   isVisible: boolean;
@@ -72,10 +74,13 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
   };
   const sortByParsed = auditLogSortFieldEnum.safeParse(sortParams.sortBy);
   const sortBy = sortByParsed.success ? sortByParsed.data : 'timestamp';
-  const {data: processInstance} = useProcessInstance();
-  const {resolvedElementInstance, isFetchingElement} =
+  const {processInstanceId: processInstanceKey} =
+    useProcessInstancePageParams();
+  const {resolvedElementInstance, isFetchingElement, hasSelection} =
     useProcessInstanceElementSelection();
   const elementInstanceKey = resolvedElementInstance?.elementInstanceKey;
+  const hasMultipleInstances =
+    resolvedElementInstance?.elementInstanceKey === undefined && hasSelection;
 
   const request = useMemo(
     (): QueryAuditLogsRequestBody => ({
@@ -87,16 +92,11 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
       ],
       filter: {
         category: {$neq: 'ADMIN'},
-        processInstanceKey: processInstance?.processInstanceKey,
+        processInstanceKey,
         elementInstanceKey: elementInstanceKey ?? undefined,
       },
     }),
-    [
-      sortBy,
-      sortParams.sortOrder,
-      processInstance?.processInstanceKey,
-      elementInstanceKey,
-    ],
+    [sortBy, sortParams.sortOrder, processInstanceKey, elementInstanceKey],
   );
 
   const {
@@ -110,7 +110,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
     hasNextPage,
     fetchNextPage,
   } = useAuditLogs(request, {
-    enabled: isVisible && !isFetchingElement,
+    enabled: isVisible && !isFetchingElement && !hasMultipleInstances,
     select: (data) => {
       tracking.track({
         eventName: 'audit-logs-loaded',
@@ -179,15 +179,31 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
   const getTableState = () => {
     if (!isVisible) {
       return 'skeleton';
-    } else if (isLoading) {
+    }
+
+    if (isLoading) {
       return 'loading';
-    } else if (error) {
+    }
+
+    if (error) {
       return 'error';
-    } else if (rows.length === 0) {
+    }
+
+    if (rows.length === 0) {
       return 'empty';
     }
     return 'content';
   };
+
+  if (hasMultipleInstances) {
+    return (
+      <Container>
+        <EmptyMessageContainer>
+          <EmptyMessage message="To view the Operations Log, select a single Element Instance in the Instance History." />
+        </EmptyMessageContainer>
+      </Container>
+    );
+  }
 
   return (
     <Container>
