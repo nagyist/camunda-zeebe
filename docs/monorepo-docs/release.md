@@ -289,10 +289,23 @@ Minor releases happen less often than other release types, so not all steps are 
    * This can be done with the following command `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
 2. Create the `stable/8.x` release branch from latest `release-8.x.0-alphaN`, to enforce code freeze
    * Ensure all expected SNAPSHOT artifacts are produced correctly.
+
+:::note
+For 8.9.0 we evaluate the following approach (to be decided if kept for future minor versions)
+
+- **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/<minor>` branch from `main` early (at the latest alpha code freeze day), then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
+  - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
+    - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
+  - **Bug Fix Handling After Last Alpha Release (Minor Version Feature Freeze)**:
+    :::
+
 3. [Configure `unified-ci-merges-stable-branches` branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
-   * This may need temporary admin permissions for the initial manual push of the new branch.
+
+* This may need temporary admin permissions for the initial manual push of the new branch.
+
 4. Bump configured versions in upgrade tests of the previous minor version to `8.x`
-   * TODO: add references to known upgrade tests if possible
+
+* TODO: add references to known upgrade tests if possible
 
 Also, we have to do similar steps for the [ZPT repository](https://github.com/camunda/zeebe-process-test) in coordination with stakeholders from Camunda Ex team:
 
@@ -323,12 +336,13 @@ In addition to the standard steps above, recent minor releases have surfaced sev
 - **Optimize Previous Version Management (8.9+)**
   - Starting with 8.9, Optimize is included in the monorepo release process (`includeOptimize=true`).
 
-> [!WARNING]
-> - **Manual Step Required:** Two manual updates are needed:
-> 1. Before cutting a new stable branch (performing the first minor release X.Y.0), set `project.previousVersion` in the [Optimize root `pom.xml`](https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47) to the previous minor version (e.g., for 8.9.0 release, set to `8.8.0`).
-> 2. After cutting the stable branch, bump `project.previousVersion` in the [Optimize root `pom.xml`](https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47) on main to prepare for the next minor version line (e.g., after 8.9.0 release, update main to `8.9.0` for future 8.10.x alphas).
-> - The release workflow validates `project.previousVersion` for minor releases (X.Y.0) when cutting stable branches, and should also validate that main has been properly updated when releasing new alpha versions for the next minor line.
-> - **Action:** Monitor completion of [issue #40258](https://github.com/camunda/camunda/issues/40258) to automate this step and eliminate the manual requirement.
+:::warning
+- **Manual Step Required:** Two manual updates are needed:
+1. Before cutting a new stable branch (performing the first minor release X.Y.0), set `project.previousVersion` in the [Optimize root `pom.xml`](https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47) to the previous minor version (e.g., for 8.9.0 release, set to `8.8.0`).
+2. After cutting the stable branch, bump `project.previousVersion` in the [Optimize root `pom.xml`](https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47) on main to prepare for the next minor version line (e.g., after 8.9.0 release, update main to `8.9.0` for future 8.10.x alphas).
+- The release workflow validates `project.previousVersion` for minor releases (X.Y.0) when cutting stable branches, and should also validate that main has been properly updated when releasing new alpha versions for the next minor line.
+- **Action:** Monitor completion of [issue #40258](https://github.com/camunda/camunda/issues/40258) to automate this step and eliminate the manual requirement.
+:::
 
 ### Feature Freeze vs Code Freeze (Minor Releases)
 
