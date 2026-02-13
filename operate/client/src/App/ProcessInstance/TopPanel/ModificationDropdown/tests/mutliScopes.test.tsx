@@ -139,9 +139,9 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
 
-  /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */
-  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
+  it(
     'should not support add modification for task with multiple inner parent scopes',
+    {skip: IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED},
     async () => {
       renderPopover([
         `${Paths.processInstance('instance_id')}?elementId=TaskB`,
@@ -156,8 +156,9 @@ describe('Modification Dropdown - Multi Scopes', () => {
     },
   );
 
-  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
+  it(
     'should not support add modification for task with multiple outer parent scopes',
+    {skip: IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED},
     async () => {
       mockFetchFlownodeInstancesStatistics().withSuccess({
         items: [
@@ -242,8 +243,9 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
 
-  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
+  it(
     'should render add modification for flow nodes that has multiple running scopes',
+    {skip: !IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED},
     async () => {
       cancelAllTokens('TaskB', 0, 0, {});
 
