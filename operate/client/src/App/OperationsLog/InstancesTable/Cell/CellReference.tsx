@@ -10,7 +10,6 @@ import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {formatBatchTitle} from 'modules/utils/operationsLog';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
-import {ReferenceText} from '../styled';
 
 type Props = {
   item: AuditLog;
@@ -38,16 +37,14 @@ const CellReference: React.FC<Props> = ({item, processDefinitionName}) => {
               item.batchOperationKey
             )}
           </div>
-          <ReferenceText>
-            Multiple {formatBatchTitle(item.batchOperationType)}
-          </ReferenceText>
+          <em>Multiple {formatBatchTitle(item.batchOperationType)}</em>
         </>
       );
     case 'RESOURCE':
       return (
         <>
           <div>{item.entityKey}</div>
-          <ReferenceText>Deployed resource</ReferenceText>
+          <em>Deployed resource</em>
         </>
       );
     case 'INCIDENT':
@@ -63,7 +60,7 @@ const CellReference: React.FC<Props> = ({item, processDefinitionName}) => {
               {item.processInstanceKey}
             </Link>
           </div>
-          <ReferenceText>{processDefinitionName}</ReferenceText>
+          <em>{processDefinitionName}</em>
         </div>
       );
     case 'DECISION':

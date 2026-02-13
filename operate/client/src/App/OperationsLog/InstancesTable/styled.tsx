@@ -7,6 +7,7 @@
  */
 
 import styled from 'styled-components';
+import {styles} from '@carbon/elements';
 
 const Container = styled.section`
   height: 100%;
@@ -20,13 +21,8 @@ const OperationLogName = styled.div`
   gap: var(--cds-spacing-02);
 `;
 
-const ReferenceText = styled.div`
-  font-style: italic;
-`;
-
 const PropertyText = styled.div`
-  font-size: 0.75rem;
-  font-weight: 400;
+  ${styles.caption01}
 `;
 
-export {Container, OperationLogName, ReferenceText, PropertyText};
+export {Container, OperationLogName, PropertyText};
