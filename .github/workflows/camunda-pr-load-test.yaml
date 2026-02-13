@@ -88,6 +88,13 @@ jobs:
             const artifactPath = 'artifacts';
             const artifacts = fs.readdirSync(artifactPath);
 
+            // Get artifact IDs from GitHub API
+            const { data: workflowArtifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: context.runId,
+            });
+
             let comment = '## Profiling Results\n\n';
             comment += 'The benchmark has been profiled with the following events:\n\n';
             comment += '| Event | Pod | Artifact |\n';
@@ -98,11 +105,19 @@ jobs:
               if (match) {
                 const event = match[1];
                 const pod = match[2];
-                comment += `| ${event} | ${pod} | [Download](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |\n`;
+                
+                // Find the artifact ID for this artifact name
+                const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
+                if (artifactInfo) {
+                  const downloadUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${artifactInfo.id}`;
+                  comment += `| ${event} | ${pod} | [Download](${downloadUrl}) |\n`;
+                } else {
+                  comment += `| ${event} | ${pod} | N/A |\n`;
+                }
               }
             });
 
-            comment += '\n**Note:** Download artifacts from the workflow run page linked above.\n';
+            comment += '\n📊 [View all artifacts and workflow summary](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
