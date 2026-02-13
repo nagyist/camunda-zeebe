@@ -14,7 +14,7 @@ Run executeProfiling.sh with a pod name, optional event type, and optional profi
 
 **Event Types:**
 - `cpu` - CPU profiling (default)
-- `wall` - Wall clock time profiling (includes waiting/blocking time)
+- `wall` - Wall clock time profiling (includes waiting/blocking time). Automatically uses `-t` flag to split by thread for better analysis.
 - `alloc` - Memory allocation profiling
 
 **Additional Options:**

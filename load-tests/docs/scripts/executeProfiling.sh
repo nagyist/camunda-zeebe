@@ -26,6 +26,12 @@ case "$event" in
     ;;
   wall)
     profiler_event="wall"
+    # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
+    if [ -z "$additional_options" ]; then
+      additional_options="-t"
+    else
+      additional_options="-t $additional_options"
+    fi
     ;;
   alloc)
     profiler_event="alloc"
