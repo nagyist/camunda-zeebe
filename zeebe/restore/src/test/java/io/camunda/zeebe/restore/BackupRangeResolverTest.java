@@ -72,10 +72,7 @@ final class BackupRangeResolverTest {
     // Time interval covers all backups
     store
         .forPartition(1)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30))
-        .addBackup(300, 3000, 2001, minutesAfterBase(60));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
 
     // when - time interval covers all backups [0, 60]
     final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(60), Map.of(1, 2500L));
@@ -91,10 +88,7 @@ final class BackupRangeResolverTest {
     for (int p = 1; p <= 3; p++) {
       store
           .forPartition(p)
-          .withRange(100, 300)
-          .addBackup(100, 1000, 1, minutesAfterBase(0))
-          .addBackup(200, 2000, 1001, minutesAfterBase(30))
-          .addBackup(300, 3000, 2001, minutesAfterBase(60));
+          .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
     }
 
     // when - time interval covers all backups
@@ -117,24 +111,15 @@ final class BackupRangeResolverTest {
     // All share [100, 200, 300], max common = 300
     store
         .forPartition(1)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(20))
-        .addBackup(300, 3000, 2001, minutesAfterBase(40));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(40), 3);
 
     store
         .forPartition(2)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(20))
-        .addBackup(300, 3000, 2001, minutesAfterBase(40));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(40), 3);
 
     store
         .forPartition(3)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(20))
-        .addBackup(300, 3000, 2001, minutesAfterBase(40));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(40), 3);
 
     // when
     final var result =
@@ -150,11 +135,7 @@ final class BackupRangeResolverTest {
     // But time interval only covers [200, 300]
     store
         .forPartition(1)
-        .withRange(100, 400)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(20))
-        .addBackup(300, 3000, 2001, minutesAfterBase(40))
-        .addBackup(400, 4000, 3001, minutesAfterBase(60));
+        .withBackupsInRange(100, 400, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
 
     // when - time interval [20, 40] covers only checkpoints 200 and 300
     final var result = resolve(1, minutesAfterBase(20), minutesAfterBase(40), Map.of(1, 2500L));
@@ -177,12 +158,43 @@ final class BackupRangeResolverTest {
           .addBackup(400, 4000, 3001, minutesAfterBase(60));
     }
 
-    // when - time interval [20, 40] covers only checkpoints 200 and 300
-    final var result = resolve(1, minutesAfterBase(20), null, Map.of(1, 2500L));
+    // when - timeInterval [from, infinity) contains 200, 300, 400
+    final var result = resolve(1, minutesAfterBase(20), null, Map.of(1, 2500L, 2, 2300L));
 
+    // then - only backups within time interval are returned
+    assertThat(result.globalCheckpointId()).isEqualTo(400L);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L, 400L);
+  }
+
+  @Test
+  void shouldRestoreToCompleteBackupRangeWhenNoExtremesAreProvided() {
+    // given
+    store
+        .forPartition(1)
+        .withBackupsInRange(100, 400, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
+    store
+        .forPartition(2)
+        .withBackupsInRange(100, 400, 700, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
+
+    // when - no interval
+    final var result = resolve(1, null, null, Map.of(1, 2500L, 2, 2300L));
     // then - all backups after `from` are returned
     assertThat(result.globalCheckpointId()).isEqualTo(400L);
     assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L, 400L);
+  }
+
+  @Test
+  void shouldNotRestoreWhenOnlyToIsProvided() {
+    // given
+    store
+        .forPartition(1)
+        .withBackupsInRange(100, 400, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
+
+    // when/then
+    assertThatThrownBy(() -> resolve(1, null, minutesAfterBase(30), Map.of(1, 2500L)))
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .hasRootCauseMessage(
+            "Expected (from, to) to be both null or `from` to have a value, but got (from=null, to=2026-01-20T10:30:00Z)");
   }
 
   @Test
@@ -190,17 +202,11 @@ final class BackupRangeResolverTest {
     // given - partitions have different exported positions, so different safe starts
     store
         .forPartition(1)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30))
-        .addBackup(300, 3000, 2001, minutesAfterBase(60));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
 
     store
         .forPartition(2)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30))
-        .addBackup(300, 3000, 2001, minutesAfterBase(60));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
 
     // when - P1 has higher exported position (safe start = 200), P2 lower (safe start = 100)
     final var result =
@@ -232,9 +238,7 @@ final class BackupRangeResolverTest {
     // given - backup range exists but doesn't cover requested time interval
     store
         .forPartition(1)
-        .withRange(100, 200)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30));
+        .withBackupsInRange(100, 200, 1000, 1000, minutesAfterBase(0), minutesAfterBase(30), 2);
 
     // when/then - requesting interval before backups exist
     assertThatThrownBy(
@@ -255,9 +259,7 @@ final class BackupRangeResolverTest {
     // given - backup exists but exported position is too low
     store
         .forPartition(1)
-        .withRange(100, 200)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30));
+        .withBackupsInRange(100, 200, 1000, 1000, minutesAfterBase(0), minutesAfterBase(30), 2);
 
     // when/then - exported position 500 is below all checkpoint positions
     assertThatThrownBy(() -> resolve(1, minutesAfterBase(0), minutesAfterBase(30), Map.of(1, 500L)))
@@ -277,15 +279,11 @@ final class BackupRangeResolverTest {
     // P2: [300, 400] at times [0, 30]
     store
         .forPartition(1)
-        .withRange(100, 200)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30));
+        .withBackupsInRange(100, 200, 1000, 1000, minutesAfterBase(0), minutesAfterBase(30), 2);
 
     store
         .forPartition(2)
-        .withRange(300, 400)
-        .addBackup(300, 3000, 1, minutesAfterBase(0))
-        .addBackup(400, 4000, 3001, minutesAfterBase(30));
+        .withBackupsInRange(300, 400, 3000, 1000, minutesAfterBase(0), minutesAfterBase(30), 2);
 
     // when/then
     assertThatThrownBy(
@@ -300,15 +298,11 @@ final class BackupRangeResolverTest {
     // given - P1 has backups in interval, P2 has backups outside interval
     store
         .forPartition(1)
-        .withRange(100, 200)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30));
+        .withBackupsInRange(100, 200, 1000, 1000, minutesAfterBase(0), minutesAfterBase(30), 2);
 
     store
         .forPartition(2)
-        .withRange(100, 200)
-        .addBackup(100, 1000, 1, minutesAfterBase(120)) // outside requested interval
-        .addBackup(200, 2000, 1001, minutesAfterBase(150));
+        .withBackupsInRange(100, 200, 1000, 1000, minutesAfterBase(120), minutesAfterBase(150), 2);
 
     // when/then
     assertThatThrownBy(
@@ -345,10 +339,7 @@ final class BackupRangeResolverTest {
     for (int i = 1; i <= 2; i++) {
       store
           .forPartition(i)
-          .withRange(100, 300)
-          .addBackup(100, 1000, 1, minutesAfterBase(0))
-          .addBackup(200, 2000, 1, minutesAfterBase(30))
-          .addBackup(300, 3000, 2001, minutesAfterBase(60));
+          .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
     }
 
     store.forPartition(partitionWithDeletion).withDeletion(300);
@@ -372,10 +363,7 @@ final class BackupRangeResolverTest {
     for (int i = 1; i <= 2; i++) {
       store
           .forPartition(i)
-          .withRange(100, 300)
-          .addBackup(100, 1000, 1, minutesAfterBase(0))
-          .addBackup(200, 2000, 1, minutesAfterBase(30))
-          .addBackup(300, 3000, 2001, minutesAfterBase(60));
+          .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
     }
 
     // P1 exported position 3500 means safe start = 300 (beyond global checkpoint 200)
@@ -393,10 +381,7 @@ final class BackupRangeResolverTest {
     // given - backups in time interval start at 200, but safe start is 100
     store
         .forPartition(1)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30))
-        .addBackup(300, 3000, 2001, minutesAfterBase(60));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
 
     // when - time interval [30, 60] returns backups [200, 300]
     // but safe start based on exported position 1500 is checkpoint 100
@@ -423,9 +408,7 @@ final class BackupRangeResolverTest {
 
     store
         .forPartition(2)
-        .withRange(100, 200)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30)); // valid
+        .withBackupsInRange(100, 200, 1000, 1000, minutesAfterBase(0), minutesAfterBase(30), 2);
 
     store
         .forPartition(3)
@@ -453,11 +436,8 @@ final class BackupRangeResolverTest {
     // given - partition with multiple backups for the same checkpoint (different nodes)
     store
         .forPartition(1)
-        .withRange(100, 300)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(new BackupIdentifierImpl(NODE_ID + 1, 1, 100L), 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(30))
-        .addBackup(300, 3000, 2001, minutesAfterBase(45));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(45), 3)
+        .addBackup(new BackupIdentifierImpl(NODE_ID + 1, 1, 100L), 1000, 1, minutesAfterBase(0));
 
     // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
     final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(40), Map.of(1, 2500L));
@@ -483,7 +463,7 @@ final class BackupRangeResolverTest {
 
   private GlobalRestoreInfo resolve(
       final int partitionCount,
-      final Instant from,
+      @Nullable final Instant from,
       @Nullable final Instant to,
       final Map<Integer, Long> exportedPositions) {
     return resolver
@@ -690,6 +670,27 @@ final class BackupRangeResolverTest {
       PartitionBuilder(final TestBackupStore store, final int partitionId) {
         this.store = store;
         this.partitionId = partitionId;
+      }
+
+      PartitionBuilder withBackupsInRange(
+          final long startCheckpoint,
+          final long endCheckpoint,
+          final long startCheckpointPosition,
+          final long eventsPerBackup,
+          final Instant startTimestamp,
+          final Instant endTimestamp,
+          final int count) {
+        withRange(startCheckpoint, endCheckpoint);
+        final long checkpointIdDelta = (endCheckpoint - startCheckpoint) / (count - 1);
+        final long timeDelta =
+            (endTimestamp.toEpochMilli() - startTimestamp.toEpochMilli()) / (count - 1);
+        for (int i = 0; i < count; i++) {
+          final long checkpointId = startCheckpoint + i * checkpointIdDelta;
+          final long logPosition = startCheckpointPosition + i * eventsPerBackup;
+          final Instant timestamp = startTimestamp.plusMillis(i * timeDelta);
+          addBackup(checkpointId, logPosition, logPosition - eventsPerBackup, timestamp);
+        }
+        return this;
       }
 
       PartitionBuilder withRange(final long startCheckpoint, final long endCheckpoint) {
