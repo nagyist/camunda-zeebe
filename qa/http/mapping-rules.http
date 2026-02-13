@@ -270,7 +270,7 @@ Accept: application/json
     let returnedUsers = response.body.items.map(u => u.username);
 
     expectedUsers.forEach(u => {
-      client.assert(returnedUsers.includes(u), "Expected user '" + u + "' not found in tenant");
+      client.assert(returnedUsers.includes(u), "Expected user '" + u + "' not found in user search results");
     });
   });
 %}
@@ -305,7 +305,7 @@ Accept: application/json
     let returnedGroups = response.body.items.map(g => g.groupId);
 
     expectedGroups.forEach(g => {
-      client.assert(returnedGroups.includes(g), "Expected group '" + g + "' not found in tenant");
+      client.assert(returnedGroups.includes(g), "Expected group '" + g + "' not found in group search results");
     });
   });
 %}
@@ -340,7 +340,7 @@ Accept: application/json
     let returnedClients = response.body.items.map(c => c.clientId);
 
     expectedClients.forEach(c => {
-      client.assert(returnedClients.includes(c), "Expected client '" + c + "' not found in tenant");
+      client.assert(returnedClients.includes(c), "Expected client '" + c + "' not found in client search results");
     });
   });
 %}
@@ -411,7 +411,7 @@ Accept: application/json
     let returnedUsers = response.body.items.map(u => u.username);
 
     expectedUsers.forEach(u => {
-      client.assert(returnedUsers.includes(u), "Expected user '" + u + "' not found in tenant");
+      client.assert(returnedUsers.includes(u), "Expected user '" + u + "' not found in user search results");
     });
   });
 %}
@@ -447,7 +447,7 @@ Accept: application/json
     let returnedRoles = response.body.items.map(r => r.roleId);
 
     expectedRoles.forEach(r => {
-      client.assert(returnedRoles.includes(r), "Expected role '" + r + "' not found in tenant");
+      client.assert(returnedRoles.includes(r), "Expected role '" + r + "' not found in role search results");
     });
     client.assert(
         !returnedRoles.includes(notExistentRole),
@@ -486,7 +486,7 @@ Accept: application/json
     let returnedClients = response.body.items.map(c => c.clientId);
 
     expectedClients.forEach(c => {
-      client.assert(returnedClients.includes(c), "Expected client '" + c + "' not found in tenant");
+      client.assert(returnedClients.includes(c), "Expected client '" + c + "' not found in client search results");
     });
   });
 %}
