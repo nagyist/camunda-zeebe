@@ -967,6 +967,16 @@ camunda: # Type: io.camunda.configuration.Camunda
       gateway-address: null # Type: String, Env: CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS
       secure: null # Type: Boolean, Env: CAMUNDA_OPERATE_ZEEBE_SECURE
   
+  process-instance-creation: # Type: io.camunda.configuration.ProcessInstanceCreation  
+    # Whether to enable business id uniqueness check when creating process instances using a BusinessId.
+    # If enabled, the broker will check if there is already an existing active root process instance with
+    # the same business id and reject the creation if there is.
+    # This is disabled by default, but can be enabled to prevent duplicate process instances with the same
+    # business id from being created.
+    # Note: When enabled, BusinessId Uniqueness validation will only be applied to process instances
+    # created using a BusinessId after enabling the feature.
+    business-id-uniqueness-enabled: false # Type: Boolean, Env: CAMUNDA_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED
+  
   processing: # Type: io.camunda.configuration.Processing  
     # While disabled, checking the Time-To-Live of buffered messages blocks all other executions that
     # occur on the stream processor, including process execution and job activation/completion. When
