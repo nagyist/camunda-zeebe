@@ -14,7 +14,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createvariable,
+  createVariable,
   mockProcessWithInputOutputMappingsXML,
   searchResult,
 } from 'modules/testUtils';
@@ -128,7 +128,7 @@ describe('VariablePanel', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockSearchVariables().withSuccess(searchResult([createvariable()]));
+    mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -162,7 +162,7 @@ describe('VariablePanel', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockSearchVariables().withSuccess(searchResult([createvariable()]));
+    mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -217,7 +217,7 @@ describe('VariablePanel', () => {
       await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
 
-    mockSearchVariables().withSuccess(searchResult([createvariable()]));
+    mockSearchVariables().withSuccess(searchResult([createVariable()]));
     mockSearchJobs().withSuccess(searchResult([]));
 
     act(() => {

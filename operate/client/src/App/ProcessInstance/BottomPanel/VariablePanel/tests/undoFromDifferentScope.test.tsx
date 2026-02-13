@@ -9,7 +9,7 @@
 import {VariablePanel} from '../index';
 import {render, screen, waitFor, type UserEvent} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {createvariable} from 'modules/testUtils';
+import {createVariable} from 'modules/testUtils';
 import {
   modificationsStore,
   type FlowNodeModification,

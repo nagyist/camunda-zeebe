@@ -14,7 +14,7 @@ import {
   fireEvent,
 } from 'modules/testing-library';
 import {ProcessInstance} from '../index';
-import {createUser, createvariable} from 'modules/testUtils';
+import {createUser, createVariable} from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -172,13 +172,13 @@ describe('ProcessInstance - modification mode', () => {
   // TODO: fix test with #45539
   it.skip('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
@@ -210,7 +210,7 @@ describe('ProcessInstance - modification mode', () => {
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
@@ -223,7 +223,7 @@ describe('ProcessInstance - modification mode', () => {
     );
 
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
