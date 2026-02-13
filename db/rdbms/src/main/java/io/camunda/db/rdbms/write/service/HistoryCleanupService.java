@@ -266,7 +266,7 @@ public class HistoryCleanupService {
     return usageMetricsCleanup;
   }
 
-  public Duration cleanupJobBatchMetricsHistory(final OffsetDateTime now) {
+  public Duration cleanupJobBatchMetricsHistory(final int partitionId, final OffsetDateTime now) {
 
     final var cleanupDate = now.minus(jobBatchMetricsTTL);
     LOG.trace("Cleanup job batch metrics history with date before {}", cleanupDate);
@@ -280,7 +280,7 @@ public class HistoryCleanupService {
 
       final long end = System.currentTimeMillis();
 
-      logCleanUpInfo("Job Batch Metrics", 0, numDeletedRecords, cleanupDate, end, start);
+      logCleanUpInfo("Job Batch Metrics", partitionId, numDeletedRecords, cleanupDate, end, start);
     }
 
     return jobBatchMetricsCleanup;

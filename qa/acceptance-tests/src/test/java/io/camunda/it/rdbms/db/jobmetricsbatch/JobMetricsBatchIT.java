@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.jobmetricsbatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -118,7 +119,8 @@ public class JobMetricsBatchIT {
     // when
     rdbmsWriters.flush();
 
-    // then - no exception means successful insertion
+    // when - then
+    assertThatCode(rdbmsWriters::flush).doesNotThrowAnyException();
   }
 
   @TestTemplate
@@ -129,7 +131,8 @@ public class JobMetricsBatchIT {
     writeJobMetricsBatch(jobMetricsBatchWriter, NOW, TENANT2, JOB_TYPE_1, WORKER_1, 3, 6, 9, false);
     rdbmsWriters.flush();
 
-    // then - no exception means successful insertion with different tenants
+    // when - then
+    assertThatCode(rdbmsWriters::flush).doesNotThrowAnyException();
   }
 
   @TestTemplate

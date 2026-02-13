@@ -214,7 +214,7 @@ public class ExporterConfiguration {
                 history.getHistoryCleanupProcessInstanceBatchSize())
             .usageMetricsCleanup(history.getUsageMetricsCleanup())
             .usageMetricsTTL(history.getUsageMetricsTTL())
-            .jobBatchMetricsCleanup(history.getJobBatchMetricsCleanup())
+            .jobBatchMetricsCleanupInterval(history.getJobBatchMetricsCleanup())
             .jobBatchMetricsTTL(history.getJobBatchMetricsTTL())
             .build();
 
@@ -408,7 +408,8 @@ public class ExporterConfiguration {
     private Duration usageMetricsCleanup =
         RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_CLEANUP;
     private Duration usageMetricsTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_TTL;
-    private Duration jobBatchMetricsCleanup = HistoryConfig.DEFAULT_JOB_METRICS_BATCH_CLEANUP;
+    private Duration jobBatchMetricsCleanup =
+        HistoryConfig.DEFAULT_JOB_METRICS_BATCH_CLEANUP_INTERVAL;
     private Duration jobBatchMetricsTTL = HistoryConfig.DEFAULT_HISTORY_TTL;
 
     public Duration getDefaultHistoryTTL() {

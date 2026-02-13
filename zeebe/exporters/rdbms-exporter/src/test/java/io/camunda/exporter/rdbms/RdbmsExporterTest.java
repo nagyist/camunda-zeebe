@@ -585,7 +585,7 @@ class RdbmsExporterTest {
     when(historyCleanupService.cleanupHistory(anyInt(), any())).thenReturn(Duration.ofSeconds(1));
     when(historyCleanupService.cleanupUsageMetricsHistory(anyInt(), any()))
         .thenReturn(Duration.ofSeconds(1));
-    when(historyCleanupService.cleanupJobBatchMetricsHistory(any()))
+    when(historyCleanupService.cleanupJobBatchMetricsHistory(anyInt(), any()))
         .thenReturn(Duration.ofSeconds(1));
 
     historyDeletionService = mock(HistoryDeletionService.class);
