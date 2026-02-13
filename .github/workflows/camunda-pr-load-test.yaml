@@ -38,8 +38,8 @@ jobs:
       ref: ${{ github.event.pull_request.head.ref }}
       scenario: 'max'
 
-  profile-benchmark:
-    name: Profile Benchmark
+  await-benchmark:
+    name: Await Benchmark
     needs: [sanitize-branch-name, create-benchmark]
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
@@ -52,7 +52,7 @@ jobs:
 
   run-profiling:
     name: Run Profiling
-    needs: [sanitize-branch-name, profile-benchmark]
+    needs: [sanitize-branch-name, await-benchmark]
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
@@ -105,7 +105,7 @@ jobs:
               if (match) {
                 const event = match[1];
                 const pod = match[2];
-                
+
                 // Find the artifact ID for this artifact name
                 const artifactInfo = workflowArtifacts.artifacts.find(a => a.name === artifact);
                 if (artifactInfo) {
