@@ -31,7 +31,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -549,25 +548,20 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public long getProcessInstanceKeyByBusinessId(
+  public boolean hasActiveProcessInstanceWithBusinessId(
       final String businessId, final long processDefinitionKey, final String tenantId) {
-    if (businessId == null || businessId.isEmpty()) {
-      return -1;
-    }
-
     this.businessId.wrapString(businessId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.tenantId.wrapString(tenantId);
-
-    final AtomicLong processInstanceKey = new AtomicLong(-1);
+    final var exists = new AtomicBoolean(false);
     processInstanceByBusinessIdIndexKeyColumnFamily.whileEqualPrefix(
         businessIdIndexKey,
         (key, value) -> {
-          processInstanceKey.set(key.processInstanceKey());
+          exists.set(true);
           // just find the first, and then stop iterating
           return false;
         });
-    return processInstanceKey.get();
+    return exists.get();
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {

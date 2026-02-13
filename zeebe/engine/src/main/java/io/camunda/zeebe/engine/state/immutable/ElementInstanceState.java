@@ -140,9 +140,9 @@ public interface ElementInstanceState {
    * @param businessId the business id to look up
    * @param processDefinitionKey the process definition key
    * @param tenantId the tenant id
-   * @return the process instance key, or -1 if not found
+   * @return true if an active process instance exists with the given business id, false otherwise
    */
-  long getProcessInstanceKeyByBusinessId(
+  boolean hasActiveProcessInstanceWithBusinessId(
       String businessId, long processDefinitionKey, String tenantId);
 
   @FunctionalInterface

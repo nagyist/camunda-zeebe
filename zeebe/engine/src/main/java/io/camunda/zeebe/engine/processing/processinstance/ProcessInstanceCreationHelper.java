@@ -431,11 +431,8 @@ public class ProcessInstanceCreationHelper {
     }
 
     // Check if a process instance with this business id already exists
-    final long existingProcessInstanceKey =
-        elementInstanceState.getProcessInstanceKeyByBusinessId(
-            businessId, processDefinitionKey, tenantId);
-
-    if (existingProcessInstanceKey != -1) {
+    if (elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        businessId, processDefinitionKey, tenantId)) {
       return Either.left(
           new Rejection(
               RejectionType.ALREADY_EXISTS,
