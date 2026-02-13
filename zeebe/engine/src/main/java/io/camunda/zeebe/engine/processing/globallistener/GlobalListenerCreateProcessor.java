@@ -69,6 +69,11 @@ public final class GlobalListenerCreateProcessor
 
     emitChangeEvents(record);
 
+    writers
+        .response()
+        .writeEventOnCommand(
+            record.getGlobalListenerKey(), GlobalListenerIntent.CREATED, record, command);
+
     // Note: the configuration key is used as the command key for distribution, ensuring
     // configuration changes are applied in order
     distributionBehavior

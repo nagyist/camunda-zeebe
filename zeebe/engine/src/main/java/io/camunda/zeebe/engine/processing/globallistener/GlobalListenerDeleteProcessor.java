@@ -67,6 +67,11 @@ public final class GlobalListenerDeleteProcessor
 
     emitChangeEvents(record);
 
+    writers
+        .response()
+        .writeEventOnCommand(
+            record.getGlobalListenerKey(), GlobalListenerIntent.DELETED, record, command);
+
     // Note: the configuration key is used as the command key for distribution, ensuring
     // configuration changes are applied in order
     distributionBehavior
