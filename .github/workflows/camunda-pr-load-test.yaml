@@ -10,6 +10,12 @@ on:
       - synchronize
       - closed
 
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
 jobs:
   sanitize-branch-name:
     name: Sanitize Branch Name
