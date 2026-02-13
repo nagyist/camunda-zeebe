@@ -78,6 +78,16 @@ jobs:
             ## Profiling \`${{ inputs.name }}\` - ${{ matrix.event }} on ${{ matrix.pod }}
             Async profiling (${{ matrix.event }}) has been executed on ${{ inputs.name }}-${{ matrix.pod }}. Please download the artifact.
           EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "Profile ${{ matrix.event }} on ${{ matrix.pod }}"
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   profile-single-pod:
     name: Profile CPU on single pod ${{ inputs.pod }}
@@ -114,3 +124,12 @@ jobs:
             ## Profiling \`${{ inputs.name }}\` - CPU on ${{ inputs.pod }}
             Async profiling (CPU) has been executed on ${{ inputs.name }}-${{ inputs.pod }}. Please download the artifact.
           EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
