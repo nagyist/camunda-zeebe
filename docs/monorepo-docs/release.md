@@ -291,14 +291,13 @@ Minor releases happen less often than other release types, so not all steps are 
    * Ensure all expected SNAPSHOT artifacts are produced correctly.
 
 :::note
-For 8.9.0 we would like to try this other approach
-- **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/> <minor>` branch from `main` early, then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
-- This allows non-critical bug fixes to be merged into `stable/<minor>` while the alpha release candidate is being processed
-- Critical fixes can still be backported to the active alpha release branch if a new RC is needed
-- **Bug Fix Handling During Alpha Release**:
-- ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
-- Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
-:::
+For 8.9.0 we evaluate the following approach (to be decided if kept for future minor versions)
+
+- **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/<minor>` branch from `main` early (at the latest alpha code freeze day), then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
+  - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
+    - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
+  - **Bug Fix Handling After Last Alpha Release (Minor Version Feature Freeze)**:
+    :::
 
 3. [Configure `unified-ci-merges-stable-branches` branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
 
