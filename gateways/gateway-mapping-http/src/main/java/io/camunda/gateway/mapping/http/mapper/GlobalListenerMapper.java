@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.mapper;
 
 import io.camunda.gateway.mapping.http.RequestMapper;
+import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
 import io.camunda.gateway.protocol.model.GlobalListenerBase;
 import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
@@ -19,12 +20,14 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.Either;
-import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class GlobalListenerMapper {
 
-  public GlobalListenerMapper() {
+  private final GlobalListenerRequestValidator requestValidator;
+
+  public GlobalListenerMapper(final GlobalListenerRequestValidator requestValidator) {
+    this.requestValidator = requestValidator;
   }
 
   //
@@ -34,7 +37,7 @@ public class GlobalListenerMapper {
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerCreateRequest(
       final CreateGlobalTaskListenerRequest request) {
     return RequestMapper.getResult(
-        Optional.empty(),
+        requestValidator.validateCreateRequest(request),
         () -> {
           final var record = new GlobalListenerRecord();
           fillDataFromGlobalTaskListenerRequest(record, request);
@@ -46,7 +49,7 @@ public class GlobalListenerMapper {
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerUpdateRequest(
       final String id, final UpdateGlobalTaskListenerRequest request) {
     return RequestMapper.getResult(
-        Optional.empty(),
+        requestValidator.validateUpdateRequest(id, request),
         () -> {
           final var record = new GlobalListenerRecord();
           fillDataFromGlobalTaskListenerRequest(record, request);
@@ -59,7 +62,7 @@ public class GlobalListenerMapper {
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerDeleteRequest(
       final String id) {
     return RequestMapper.getResult(
-        Optional.empty(),
+        requestValidator.validateDeleteRequest(id),
         () -> {
           final var record = new GlobalListenerRecord();
           // Ensure basic data for a task listener request is set

@@ -8,9 +8,11 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.gateway.mapping.http.mapper.GlobalListenerMapper;
+import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -37,10 +39,12 @@ public class GlobalListenerController {
 
   public GlobalListenerController(
       final GlobalListenerServices globalListenerServices,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final IdentifierValidator identifierValidator) {
     this.globalListenerServices = globalListenerServices;
     this.authenticationProvider = authenticationProvider;
-    globalListenerMapper = new GlobalListenerMapper();
+    globalListenerMapper =
+        new GlobalListenerMapper(new GlobalListenerRequestValidator(identifierValidator));
   }
 
   @CamundaPostMapping(path = TASK_LISTENER_PATH)
