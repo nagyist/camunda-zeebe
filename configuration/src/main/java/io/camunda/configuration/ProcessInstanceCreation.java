@@ -17,17 +17,15 @@ public class ProcessInstanceCreation {
           "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled");
 
   /**
-   * Whether to enable business id uniqueness check when creating process instances using a
-   * BusinessId.
+   * Controls uniqueness enforcement of business IDs across active process instances.
    *
-   * <p>If enabled, the broker will check if there is already an existing active root process
-   * instance with the same business id and reject the creation if there is.
-   *
-   * <p>This is disabled by default, but can be enabled to prevent duplicate process instances with
-   * the same business id from being created.
-   *
-   * <p>Note: When enabled, BusinessId Uniqueness validation will only be applied to process
-   * instances created using a BusinessId after enabling the feature.
+   * <ul>
+   *   <li><b>Disabled (default):</b> Multiple active process instances can share the same business
+   *       ID. No tracking or validation is performed.
+   *   <li><b>Enabled:</b> Creating a process instance with a business ID that is already in use by
+   *       an active process instance will be rejected. Business IDs of process instances created
+   *       before enabling this setting are not tracked, so duplicates with those are not detected.
+   * </ul>
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
 
