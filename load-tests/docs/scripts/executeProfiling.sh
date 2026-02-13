@@ -1,14 +1,37 @@
 #!/bin/bash -xeu
 # Usage:
-#   ./executeProfiling.sh <POD-NAME>
+#   ./executeProfiling.sh <POD-NAME> [EVENT-TYPE]
+#
+# EVENT-TYPE can be:
+#   cpu   - CPU profiling (default)
+#   wall  - Wall clock time profiling
+#   alloc - Memory allocation profiling
 set -oxe pipefail
 
 if [ -z "$1" ]; then
   echo "Error: Missing required argument <POD-NAME>."
-  echo "Usage: ./executeProfiling.sh <POD-NAME>"
+  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE]"
   exit 1
 fi
 node=$1
+event=${2:-cpu}
+
+# Validate event type and map to async-profiler event names
+case "$event" in
+  cpu)
+    profiler_event="itimer"
+    ;;
+  wall)
+    profiler_event="wall"
+    ;;
+  alloc)
+    profiler_event="alloc"
+    ;;
+  *)
+    echo "Error: Invalid event type '$event'. Must be one of: cpu, wall, alloc"
+    exit 1
+    ;;
+esac
 
 # Determine right container path
 containerPath=/usr/local/camunda/data
@@ -35,7 +58,7 @@ then
 fi
 
 # Run profiling
-filename=flamegraph-$(date +%Y-%m-%d_%H-%M-%S).html
+filename=flamegraph-$event-$(date +%Y-%m-%d_%H-%M-%S).html
 # Extracting the PID:
 #
 #  $ k exec camunda-0 -it -- ps -ax
@@ -47,7 +70,9 @@ filename=flamegraph-$(date +%Y-%m-%d_%H-%M-%S).html
 #   to check the fifth input whether it contains "/java/"
 #   If so we return the first input, which is the PID
 PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
-kubectl exec "$node" -- ./data/asprof -e itimer -d 100 -t -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" "$PID"
+
+# Run profiling
+kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d 100 -t -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" "$PID"
 
 # Copy result
 kubectl cp "$node:$containerPath/$filename" "$node-$filename"
