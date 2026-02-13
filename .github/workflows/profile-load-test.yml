@@ -80,7 +80,7 @@ jobs:
           EOF
 
   profile-single-pod:
-    name: Profile CPU on ${{ inputs.pod }}
+    name: Profile CPU on single pod ${{ inputs.pod }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: ${{ inputs.pod != '' }}
