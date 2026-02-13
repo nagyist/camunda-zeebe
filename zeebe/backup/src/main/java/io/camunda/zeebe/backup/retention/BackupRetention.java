@@ -314,8 +314,8 @@ public class BackupRetention extends Actor {
       final var marker = context.previousStartMarker.get();
       LOG.debug(
           "Advancing range start marker for partition {} from {} to {}",
-          context.previousStartMarker.get(),
           context.partitionId,
+          context.previousStartMarker.get(),
           context.earliestBackupInNewRange);
       backupStore
           .storeRangeMarker(
