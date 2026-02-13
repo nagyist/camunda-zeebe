@@ -139,7 +139,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
-  public void appendMetadataToAllFollowUps(final Consumer<RecordMetadata> decorator) {
+  public void appendMetadataToFollowUps(final Consumer<RecordMetadata> decorator) {
     metadataDecorators.add(decorator);
   }
 

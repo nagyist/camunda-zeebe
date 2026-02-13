@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
-
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -18,8 +15,6 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.log.WriteContext;
-import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -805,30 +800,21 @@ public final class ProcessingStateMachine {
 
   private BufferedProcessingResultBuilder newProcessingResultBuilder(final TypedRecord<?> command) {
 
-    return new BufferedProcessingResultBuilder(
-        logStreamWriter::canWriteEvents,
-        metadata -> {
-          // `operationReference` from `metadata` should have a higher precedence
-          if (metadata.getOperationReference() == operationReferenceNullValue()) {
-            if (command.getOperationReference() != operationReferenceNullValue()) {
-              metadata.operationReference(command.getOperationReference());
-            }
-          }
+    final var builder = new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
 
-          if (command.getBatchOperationReference() != batchOperationReferenceNullValue()) {
-            metadata.batchOperationReference(command.getBatchOperationReference());
-          }
+    builder.appendOperationReferenceToFollowUps(command.getOperationReference());
+    builder.appendBatchOperationReferenceToFollowUps(command.getBatchOperationReference());
 
-          if (command.getAuthorizations() != null && !command.getAuthorizations().isEmpty()) {
-            metadata.authorization(new AuthInfo().setClaims(command.getAuthorizations()));
-          }
+    // Ensure auth information is forwarded also to all follow-up commands & events
+    // e.g. to attribute changes to the right actor in the audit log
+    builder.appendAuthInfoToFollowUps(command.getAuthInfo());
 
-          // make sure the agent information is forwarded also to follow up commands/events that
-          // will be processed in a separate batch
-          if (command.getAgent() != null) {
-            metadata.agent(AgentInfo.of(command.getAgent()));
-          }
-        });
+    // Ensure agent information is forwarded also to all follow-up commands & events
+    // event when they are processed in a separate batch
+    // e.g. to have the full agent trail in the audit log
+    builder.appendAgentInfoToFollowUps(command.getAgent());
+
+    return builder;
   }
 
   private record BatchProcessingStepResult(
