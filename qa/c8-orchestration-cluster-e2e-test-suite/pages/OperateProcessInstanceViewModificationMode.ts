@@ -185,7 +185,8 @@ export class OperateProcessInstanceViewModificationModePage {
           .nth(1)
           .getByRole('presentation')
           .getByRole('dialog')
-          .getByRole('textbox'),
+          .getByRole('code')
+          .getByRole('textbox', { name: 'Editor content' }),
       },
       valueErrorMessage: this.page
         .getByTestId(`variable-newVariables[${index}]`)
@@ -237,7 +238,8 @@ export class OperateProcessInstanceViewModificationModePage {
           .nth(1)
           .getByRole('presentation')
           .getByRole('dialog')
-          .getByRole('textbox'),
+          .getByRole('code')
+          .getByRole('textbox', { name: 'Editor content' }),
       },
       valueErrorMessage: this.page
         .getByTestId(`variable-${name}`)
@@ -600,12 +602,15 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
+    await this.newVariableByIndex(variableIndex)
+      .value.clear();
     await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await jsonEditorModal.inputField.clear();
-    await jsonEditorModal.inputField.fill(json);
+    await expect(jsonEditorModal.inputField).toBeVisible();
+    await expect(jsonEditorModal.inputField).toBeEnabled();
+    await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
     await this.page.keyboard.press('Tab');
   }
@@ -618,12 +623,17 @@ export class OperateProcessInstanceViewModificationModePage {
     const jsonEditorModal =
       this.editableExistingVariableByName(variableName).jsonEditorModal;
     await expect(jsonEditorModal.header).toBeVisible();
-    await jsonEditorModal.inputField.clear();
-    await jsonEditorModal.inputField.fill(json);
+    await expect(jsonEditorModal.inputField).toBeVisible();
+    await expect(jsonEditorModal.inputField).toBeEnabled();
+    await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
     await this.editableExistingVariableByName(
       variableName,
     ).value.click();
     await this.page.keyboard.press('Tab');
+  }
+
+  async fillMonacoEditor(editor: Locator, value: string) {
+    await this.page.keyboard.type(value, {delay: 0});
   }
 }

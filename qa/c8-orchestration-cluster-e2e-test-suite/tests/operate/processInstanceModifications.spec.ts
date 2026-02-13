@@ -418,14 +418,11 @@ test.describe('Process Instance Modifications', () => {
         'Value has to be JSON',
         'value',
       );
-      await operateProcessInstanceViewModificationModePage
-        .newVariableByIndex(1)
-        .value.clear();
-
       await operateProcessInstanceViewModificationModePage.editNewVariableJSONInModal(
         1,
         JSON.stringify(validJSONValue1),
       );
+      
       await expect(
         operateProcessInstanceViewModificationModePage.newVariableByIndex(1)
           .value,
