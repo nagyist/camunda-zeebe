@@ -8,29 +8,24 @@
 
 import {VariablePanel} from '../index';
 import {render, screen, waitFor, type UserEvent} from 'modules/testing-library';
-
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {createInstance, createvariable} from 'modules/testUtils';
+import {createvariable} from 'modules/testUtils';
 import {
   modificationsStore,
   type FlowNodeModification,
 } from 'modules/stores/modifications';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 
 const INITIAL_ADD_MODIFICATION: FlowNodeModification = {
   type: 'token',
@@ -90,6 +85,29 @@ const editLastNewVariableValue = async (user: UserEvent, value: string) => {
   await user.tab();
 };
 
+const TestSelectionControls: React.FC = () => {
+  const {selectElementInstance, clearSelection} =
+    useProcessInstanceElementSelection();
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'different_flow_node',
+            elementInstanceKey: 'different_instance_id',
+          })
+        }
+      >
+        select different scope
+      </button>
+      <button type="button" onClick={() => clearSelection()}>
+        clear selection
+      </button>
+    </>
+  );
+};
+
 const getWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
@@ -98,20 +116,28 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        flowNodeSelectionStore.reset();
-        flowNodeMetaDataStore.reset();
         modificationsStore.reset();
       };
     }, []);
 
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={initialEntries}>
-          <Routes>
-            <Route path={Paths.processInstance()} element={children} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TestSelectionControls />
+                    {children}
+                  </>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
   return Wrapper;
@@ -129,242 +155,174 @@ describe('Undo variable modifications from different scope', () => {
     processDefinitionName: 'someProcessName',
     hasIncident: false,
   };
-  const mockProcessInstanceDeprecated = createInstance({id: 'instance_id'});
 
   beforeEach(async () => {
-    const statisticsData = [
-      {
-        elementId: 'TEST_FLOW_NODE',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        elementId: 'Activity_0qtp1k6',
-        active: 0,
-        canceled: 0,
-        incidents: 1,
-        completed: 0,
-      },
-    ];
-
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statisticsData,
-    });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessDefinitionXml().withSuccess('');
+  });
 
-    flowNodeSelectionStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
+  it('should preserve earlier edit modifications after undoing from a different scope', async () => {
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
+
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({name: 'foo', value: '"bar"', isTruncated: false}),
+        createVariable({name: 'test', value: '123', isTruncated: false}),
+      ],
+      page: {totalItems: 2},
+    });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
     );
-  });
 
-  describe('Scenario 1: Editing existing variables', () => {
-    it('should preserve earlier edit modifications after undoing from a different scope', async () => {
-      vi.useFakeTimers({shouldAdvanceTime: true});
-      modificationsStore.enableModificationMode();
-      modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
+    expect(await screen.findByDisplayValue('"bar"')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('123')).toBeInTheDocument();
 
-      mockFetchProcessInstanceDeprecated().withSuccess(
-        mockProcessInstanceDeprecated,
-      );
-      mockFetchProcessInstanceDeprecated().withSuccess(
-        mockProcessInstanceDeprecated,
-      );
-      mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-      mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-      mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-
-      mockSearchVariables().withSuccess({
-        items: [
-          createvariable({name: 'foo', value: '"bar"', isTruncated: false}),
-          createvariable({name: 'test', value: '123', isTruncated: false}),
-        ],
-        page: {totalItems: 2},
-      });
-
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={vi.fn()} />,
-        {wrapper: getWrapper()},
-      );
-
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('"bar"')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('123')).toBeInTheDocument();
-      });
-
-      await editExistingVariableValue(user, 'foo', '1');
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-      });
-
-      await editExistingVariableValue(user, 'test', '2');
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('2')).toBeInTheDocument();
-      });
-
-      await editExistingVariableValue(user, 'foo', '3');
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('3')).toBeInTheDocument();
-      });
-
-      act(() => {
-        modificationsStore.removeLastModification();
-      });
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-      });
-
-      mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-      mockSearchVariables().withSuccess({
-        items: [],
-        page: {totalItems: 0},
-      });
-
-      act(() => {
-        selectFlowNode(
-          {flowNodeInstanceId: 'different_instance_id', isMultiInstance: false},
-          {
-            flowNodeInstanceId: 'different_instance_id',
-            isMultiInstance: false,
-          },
-        );
-      });
-
-      act(() => {
-        modificationsStore.removeLastModification();
-      });
-
-      mockSearchVariables().withSuccess({
-        items: [
-          createvariable({name: 'foo', value: '"bar"', isTruncated: false}),
-          createvariable({name: 'test', value: '123', isTruncated: false}),
-        ],
-        page: {totalItems: 2},
-      });
-
-      act(() => {
-        selectFlowNode(
-          {flowNodeInstanceId: 'instance_id', isMultiInstance: false},
-          {
-            flowNodeInstanceId: 'instance_id',
-            isMultiInstance: false,
-          },
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('123')).toBeInTheDocument();
-      });
-
-      vi.clearAllTimers();
-      vi.useRealTimers();
-    });
-  });
-
-  describe('Scenario 2: Adding new variables', () => {
-    it('should preserve earlier added variable modifications after undoing from a different scope', async () => {
-      vi.useFakeTimers({shouldAdvanceTime: true});
-      modificationsStore.enableModificationMode();
-      modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
-
-      mockFetchProcessInstanceDeprecated().withSuccess(
-        mockProcessInstanceDeprecated,
-      );
-      mockFetchProcessInstanceDeprecated().withSuccess(
-        mockProcessInstanceDeprecated,
-      );
-      mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-      mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-      mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-
-      mockSearchVariables().withSuccess({
-        items: [],
-        page: {totalItems: 0},
-      });
-
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={vi.fn()} />,
-        {wrapper: getWrapper()},
-      );
-
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', {name: /add variable/i}),
-        ).toBeEnabled();
-      });
-
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      expect(
-        await screen.findByTestId('new-variable-name'),
-      ).toBeInTheDocument();
-      await editLastNewVariableName(user, 'test2');
-      await editLastNewVariableValue(user, '1');
-
-      expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
+    await editExistingVariableValue(user, 'foo', '1');
+    await waitFor(() => {
       expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      await waitFor(() => {
-        expect(screen.getAllByTestId('new-variable-name')).toHaveLength(2);
-      });
-      await editLastNewVariableName(user, 'test3');
-      await editLastNewVariableValue(user, '2');
-
-      expect(screen.getByDisplayValue('test3')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('2')).toBeInTheDocument();
-
-      mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-      mockSearchVariables().withSuccess({
-        items: [],
-        page: {totalItems: 0},
-      });
-
-      act(() => {
-        selectFlowNode(
-          {flowNodeInstanceId: 'different_instance_id', isMultiInstance: false},
-          {
-            flowNodeInstanceId: 'different_instance_id',
-            isMultiInstance: false,
-          },
-        );
-      });
-
-      act(() => {
-        modificationsStore.removeLastModification();
-      });
-
-      mockSearchVariables().withSuccess({
-        items: [],
-        page: {totalItems: 0},
-      });
-
-      act(() => {
-        selectFlowNode(
-          {flowNodeInstanceId: 'instance_id', isMultiInstance: false},
-          {
-            flowNodeInstanceId: 'instance_id',
-            isMultiInstance: false,
-          },
-        );
-      });
-
-      await waitFor(() => {
-        expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-      });
-
-      expect(screen.queryByDisplayValue('test3')).not.toBeInTheDocument();
-      expect(screen.queryByDisplayValue('2')).not.toBeInTheDocument();
-
-      vi.clearAllTimers();
-      vi.useRealTimers();
     });
+
+    await editExistingVariableValue(user, 'test', '2');
+    expect(screen.getByDisplayValue('2')).toBeInTheDocument();
+
+    await editExistingVariableValue(user, 'foo', '3');
+    expect(screen.getByDisplayValue('3')).toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.removeLastModification();
+    });
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockFetchElementInstance('different_instance_id').withSuccess({
+      elementInstanceKey: 'different_instance_id',
+      elementId: 'different_flow_node',
+      elementName: 'Different Flow Node',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      hasIncident: false,
+      tenantId: '<default>',
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /select different scope/i}),
+    );
+
+    act(() => {
+      modificationsStore.removeLastModification();
+    });
+
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariable({name: 'foo', value: '"bar"', isTruncated: false}),
+        createVariable({name: 'test', value: '123', isTruncated: false}),
+      ],
+      page: {totalItems: 2},
+    });
+
+    await user.click(screen.getByRole('button', {name: /clear selection/i}));
+
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('123')).toBeInTheDocument();
+  });
+
+  it('should preserve earlier added variable modifications after undoing from a different scope', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
+
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    });
+
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
+    await editLastNewVariableName(user, 'test2');
+    await editLastNewVariableValue(user, '1');
+
+    expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    await waitFor(() => {
+      expect(screen.getAllByTestId('new-variable-name')).toHaveLength(2);
+    });
+    await editLastNewVariableName(user, 'test3');
+    await editLastNewVariableValue(user, '2');
+
+    expect(screen.getByDisplayValue('test3')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2')).toBeInTheDocument();
+
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockFetchElementInstance('different_instance_id').withSuccess({
+      elementInstanceKey: 'different_instance_id',
+      elementId: 'different_flow_node',
+      elementName: 'Different Flow Node',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      hasIncident: false,
+      tenantId: '<default>',
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /select different scope/i}),
+    );
+
+    act(() => {
+      modificationsStore.removeLastModification();
+    });
+
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    await user.click(screen.getByRole('button', {name: /clear selection/i}));
+
+    expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
+
+    expect(screen.queryByDisplayValue('test3')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('2')).not.toBeInTheDocument();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });
