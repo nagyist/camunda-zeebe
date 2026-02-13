@@ -58,7 +58,7 @@ const validJSONValue2 = {
 };
 
 const neverFailsNode = 'neverFails';
-const neverFailsHistoryItem = 'Never fails'
+const neverFailsHistoryItem = 'Never fails';
 const endElement = 'end';
 
 test.beforeAll(async () => {
@@ -128,7 +128,10 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Move token to the end element to enable variable modification', async () => {
-      await operateProcessInstanceViewModificationModePage.moveInstanceFromSelectedFlowNodeToTarget(neverFailsNode, endElement);
+      await operateProcessInstanceViewModificationModePage.moveInstanceFromSelectedFlowNodeToTarget(
+        neverFailsNode,
+        endElement,
+      );
       await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
         neverFailsNode,
         -1,
@@ -236,7 +239,12 @@ test.describe('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
       ).toBeVisible();
-      await expect(operateProcessInstancePage.getMoveInstanceModificationText(neverFailsHistoryItem, endElement)).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getMoveInstanceModificationText(
+          neverFailsHistoryItem,
+          endElement,
+        ),
+      ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
       ).toHaveValue('123');
@@ -276,7 +284,12 @@ test.describe('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
       ).toBeVisible();
-      await expect(operateProcessInstancePage.getMoveInstanceModificationText(neverFailsHistoryItem, endElement)).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getMoveInstanceModificationText(
+          neverFailsHistoryItem,
+          endElement,
+        ),
+      ).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
       ).toHaveValue('"bar"');
@@ -306,7 +319,10 @@ test.describe('Process Instance Modifications', () => {
     await test.step('Enter modification mode and verify variables are not editable', async () => {
       await operateProcessInstancePage.enterModificationMode();
       await expect(operateProcessInstancePage.addVariableButton).toBeHidden();
-      await expect(operateProcessInstancePage.existingVariableByName('testVariableString').editVariableModal.button).toBeHidden();
+      await expect(
+        operateProcessInstancePage.existingVariableByName('testVariableString')
+          .editVariableModal.button,
+      ).toBeHidden();
     });
 
     await test.step('Select an element from the process diagram and verify variables are not addable', async () => {
@@ -567,12 +583,12 @@ test.describe('Process Instance Modifications', () => {
         const row =
           operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
             i,
-        );
+          );
         if (!(await row.nameValue.isVisible())) {
           break;
         }
         const variableName = await row.nameValue.innerText();
-    
+
         expect(variableName).not.toContain('testVariableToMeow');
       }
 
@@ -874,8 +890,8 @@ test.describe('Process Instance Modifications', () => {
         const variableNameValue = await row.nameValue.innerText();
         const scope = await row.scope.innerText();
         if (scope === 'Never fails' && variableNameValue === 'test3: 1') {
-          expect(row.nameValue).toHaveText('test3: 1');
-          expect(row.scope).toHaveText('Never fails');
+          await expect(row.nameValue).toHaveText('test3: 1');
+          await expect(row.scope).toHaveText('Never fails');
           await row.deleteVariableModificationButton.click();
           variableModificationFound = true;
           break;
@@ -903,7 +919,7 @@ test.describe('Process Instance Modifications', () => {
         }
         const variableNameValue = await row.nameValue.innerText();
         const scope = await row.scope.innerText();
-        
+
         await expect(row.nameValue).toHaveText('test3: 1');
         await expect(row.scope).toHaveText('Without Incidents Process');
       }

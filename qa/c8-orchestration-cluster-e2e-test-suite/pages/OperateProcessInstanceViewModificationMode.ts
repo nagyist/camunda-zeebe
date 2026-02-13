@@ -186,7 +186,7 @@ export class OperateProcessInstanceViewModificationModePage {
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', { name: 'Editor content' }),
+          .getByRole('textbox', {name: 'Editor content'}),
       },
       valueErrorMessage: this.page
         .getByTestId(`variable-newVariables[${index}]`)
@@ -239,7 +239,7 @@ export class OperateProcessInstanceViewModificationModePage {
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', { name: 'Editor content' }),
+          .getByRole('textbox', {name: 'Editor content'}),
       },
       valueErrorMessage: this.page
         .getByTestId(`variable-${name}`)
@@ -419,7 +419,7 @@ export class OperateProcessInstanceViewModificationModePage {
 
   async moveInstanceFromSelectedFlowNodeToTarget(
     sourceFlowNodeName: string,
-    targetFlowNodeName: string, 
+    targetFlowNodeName: string,
   ): Promise<void> {
     await this.clickFlowNode(sourceFlowNodeName);
     await this.clickMoveInstanceButtononPopup();
@@ -616,8 +616,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
-    await this.newVariableByIndex(variableIndex)
-      .value.clear();
+    await this.newVariableByIndex(variableIndex).value.clear();
     await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
@@ -641,9 +640,7 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(jsonEditorModal.inputField).toBeEnabled();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
-    await this.editableExistingVariableByName(
-      variableName,
-    ).value.click();
+    await this.editableExistingVariableByName(variableName).value.click();
     await this.page.keyboard.press('Tab');
   }
 
