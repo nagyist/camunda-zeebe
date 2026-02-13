@@ -205,6 +205,7 @@ public class GatewayBasedPropertiesOverride {
 
     override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
     override.getCluster().setClusterName(cluster.getName());
+    override.getCluster().setSendOnLegacySubject(cluster.isSendOnLegacySubject());
 
     override
         .getCluster()

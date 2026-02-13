@@ -78,8 +78,10 @@ public final class GatewayBasedConfiguration {
 
   @Bean
   public BrokerClientCfg brokerClientConfig() {
-    // In 8.9, there is no need to expose those properties via Gateway Configuration.
-    return new BrokerClientCfg(properties.getCluster().getRequestTimeout(), true, "default");
+    return new BrokerClientCfg(
+        properties.getCluster().getRequestTimeout(),
+        properties.getCluster().isSendOnLegacySubject(),
+        properties.getCluster().getDefaultEngineName());
   }
 
   @Bean
