@@ -75,7 +75,6 @@ public class AuditLogAgentIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              Thread.sleep(3000);
               final var result =
                   client
                       .newAuditLogSearchRequest()
@@ -103,11 +102,13 @@ public class AuditLogAgentIT {
             .join();
 
     // then - audit logs should have the agent element id set
-    assertThat(result.items().getLast())
-        .isNotNull()
-        .satisfies(
+    assertThat(result.items())
+        .isNotEmpty()
+        .anySatisfy(
             auditLog -> {
               assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
+              assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+              assertThat(auditLog.getEntityDescription()).isEqualTo("testVar");
               assertThat(auditLog.getAgentElementId()).isEqualTo(AGENT_ELEMENT_ID);
             });
   }
