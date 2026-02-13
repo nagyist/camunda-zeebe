@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
@@ -56,47 +57,7 @@ public record AuditLogDbModel(
   @Override
   public AuditLogDbModel copy(
       final Function<ObjectBuilder<AuditLogDbModel>, ObjectBuilder<AuditLogDbModel>> copyFunction) {
-    return copyFunction
-        .apply(
-            new Builder()
-                .auditLogKey(auditLogKey)
-                .entityKey(entityKey)
-                .entityType(entityType)
-                .operationType(operationType)
-                .entityVersion(entityVersion)
-                .entityValueType(entityValueType)
-                .entityOperationIntent(entityOperationIntent)
-                .batchOperationKey(batchOperationKey)
-                .batchOperationType(batchOperationType)
-                .timestamp(timestamp)
-                .actorType(actorType)
-                .actorId(actorId)
-                .tenantId(tenantId)
-                .tenantScope(tenantScope)
-                .result(result)
-                .annotation(annotation)
-                .category(category)
-                .processDefinitionId(processDefinitionId)
-                .decisionRequirementsId(decisionRequirementsId)
-                .decisionDefinitionId(decisionDefinitionId)
-                .processDefinitionKey(processDefinitionKey)
-                .processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey)
-                .elementInstanceKey(elementInstanceKey)
-                .jobKey(jobKey)
-                .userTaskKey(userTaskKey)
-                .decisionRequirementsKey(decisionRequirementsKey)
-                .decisionDefinitionKey(decisionDefinitionKey)
-                .decisionEvaluationKey(decisionEvaluationKey)
-                .deploymentKey(deploymentKey)
-                .formKey(formKey)
-                .resourceKey(resourceKey)
-                .relatedEntityType(relatedEntityType)
-                .relatedEntityKey(relatedEntityKey)
-                .entityDescription(entityDescription)
-                .partitionId(partitionId)
-                .historyCleanupDate(historyCleanupDate))
-        .build();
+    return copyFunction.apply(toBuilder()).build();
   }
 
   public Builder toBuilder() {
@@ -137,6 +98,38 @@ public record AuditLogDbModel(
         .entityDescription(entityDescription)
         .partitionId(partitionId)
         .historyCleanupDate(historyCleanupDate);
+  }
+
+  public AuditLogDbModel truncateRelatedEntities(final int sizeLimit, final Integer byteLimit) {
+    final String truncatedRelatedEntityKey =
+        relatedEntityKey() != null
+            ? TruncateUtil.truncateValue(relatedEntityKey(), sizeLimit, byteLimit)
+            : null;
+    final String truncatedEntityDescription =
+        entityDescription() != null
+            ? TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit)
+            : null;
+
+    boolean shouldCopy = false;
+    Function<ObjectBuilder<AuditLogDbModel>, ObjectBuilder<AuditLogDbModel>> copyFunction =
+        builder -> builder;
+    if (truncatedEntityDescription != null
+        && truncatedEntityDescription.length() < entityDescription().length()) {
+      shouldCopy = true;
+      copyFunction =
+          copyFunction.andThen(fn -> ((Builder) fn).entityDescription(truncatedEntityDescription));
+    }
+    if (truncatedRelatedEntityKey != null
+        && truncatedRelatedEntityKey.length() < relatedEntityKey().length()) {
+      shouldCopy = true;
+      copyFunction =
+          copyFunction.andThen(fn -> ((Builder) fn).relatedEntityKey(truncatedRelatedEntityKey));
+    }
+
+    if (shouldCopy) {
+      return copy(copyFunction);
+    }
+    return this;
   }
 
   public static class Builder implements ObjectBuilder<AuditLogDbModel> {

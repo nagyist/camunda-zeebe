@@ -330,4 +330,17 @@ class AuditLogDbModelTest {
     assertThat(auditLog.tenantId()).isEqualTo("tenant-1");
     assertThat(auditLog.tenantScope()).isEqualTo(AuditLogTenantScope.GLOBAL);
   }
+
+  @Test
+  void shouldTruncateFields() {
+    final AuditLogDbModel auditLog =
+        new AuditLogDbModel.Builder()
+            .relatedEntityKey("a".repeat(1000))
+            .entityDescription("a".repeat(1000))
+            .build();
+
+    final AuditLogDbModel truncatedModel = auditLog.truncateRelatedEntities(10, 100);
+    assertThat(truncatedModel.relatedEntityKey()).hasSize(10);
+    assertThat(truncatedModel.entityDescription()).hasSize(10);
+  }
 }
