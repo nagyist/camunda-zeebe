@@ -229,7 +229,7 @@ public class HistoryDeletionJob implements BackgroundTask {
   }
 
   /**
-   * This method will delete a batch of decision definitions. It will first delete any decisions
+   * This method will delete a batch of decision requirements. It will first delete any decisions
    * that belong to the decision requirements. After it will delete the decision requirements
    * themselves.
    *

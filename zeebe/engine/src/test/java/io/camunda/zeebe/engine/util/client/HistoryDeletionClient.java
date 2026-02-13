@@ -54,7 +54,7 @@ public class HistoryDeletionClient {
     return this;
   }
 
-  public HistoryDeletionClient decisionDefinition(final long decisionRequirementsKey) {
+  public HistoryDeletionClient decisionRequirements(final long decisionRequirementsKey) {
     record.setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS);
     record.setResourceKey(decisionRequirementsKey);
     return this;

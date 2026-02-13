@@ -40,7 +40,7 @@ public class DeleteDecisionDefinitionHistoryTest {
 
     // when
     final var deletedEvent =
-        ENGINE.historyDeletion().decisionDefinition(decisionRequirementsKey).delete();
+        ENGINE.historyDeletion().decisionRequirements(decisionRequirementsKey).delete();
 
     // then
     assertThat(deletedEvent.getValue())
