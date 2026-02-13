@@ -133,6 +133,7 @@ public class WebSecurityConfig {
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
+  public static final String REDIRECT_URI = "/sso-callback";
   public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
@@ -955,7 +956,7 @@ public class WebSecurityConfig {
                         .userInfoEndpoint(c -> c.oidcUserService(oidcUserService))
                         .redirectionEndpoint(
                             redirectionEndpointConfig ->
-                                redirectionEndpointConfig.baseUri("/sso-callback"))
+                                redirectionEndpointConfig.baseUri(REDIRECT_URI))
                         .authorizationEndpoint(
                             authorization ->
                                 authorization.authorizationRequestResolver(

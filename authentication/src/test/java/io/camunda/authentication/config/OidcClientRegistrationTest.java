@@ -10,6 +10,8 @@ package io.camunda.authentication.config;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.mockito.Mockito;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 
@@ -97,5 +99,19 @@ class OidcClientRegistrationTest {
       Assertions.assertThat(clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri())
           .isNull();
     }
+  }
+
+  @ParameterizedTest
+  @NullAndEmptySource
+  public void shouldFallbackToValidDefaultRedirectUri(final String blankRedirectUri) {
+    final var config = new OidcAuthenticationConfiguration();
+    config.setClientId("clientId");
+    config.setAuthorizationUri("authorizationUri");
+    config.setRedirectUri(blankRedirectUri);
+    config.setTokenUri("tokenUri");
+    config.setClientAuthenticationMethod("client_secret_basic");
+
+    Assertions.assertThat(ClientRegistrationFactory.createClientRegistration("foo", config))
+        .returns("{baseUrl}/sso-callback", ClientRegistration::getRedirectUri);
   }
 }
