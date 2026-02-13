@@ -32,18 +32,18 @@ const VariablesFinalForm: React.FC<Props> = ({scopeKey}) => {
     processInstanceId,
   );
 
-  const initialValues = useMemo<Partial<VariableFormValues> | undefined>(() => {
+  const initialValues = useMemo(() => {
     if (!modificationsStore.isModificationModeEnabled) {
-      return undefined;
+      return {};
     }
     const addVariableModifications =
       modificationsStore.getAddVariableModifications(scopeKey);
     if (addVariableModifications.length === 0) {
-      return undefined;
+      return {};
     }
     return {
       newVariables: addVariableModifications,
-    } as Partial<VariableFormValues>;
+    };
   }, [scopeKey]);
 
   return (
