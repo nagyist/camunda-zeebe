@@ -125,7 +125,7 @@ public class RestoreManager implements CloseableSilently {
 
   private void restoreRdbms(
       final Instant from,
-      final Instant to,
+      @Nullable final Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
@@ -137,7 +137,7 @@ public class RestoreManager implements CloseableSilently {
     final var restoreInfos =
         rangeResolver
             .getRestoreInfoForAllPartitions(
-                interval, partitionCount, exportedPositions, checkpointIdGenerator, executor)
+                from, to, partitionCount, exportedPositions, checkpointIdGenerator, executor)
             .join();
 
     LOG.info(
