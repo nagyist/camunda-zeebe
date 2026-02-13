@@ -114,10 +114,10 @@
           databaseId="oracle">
     DELETE
     FROM ${prefix}JOB_METRICS_BATCH
-    WHERE rowid IN (SELECT rowid
-                    FROM ${prefix}JOB_METRICS_BATCH
-                    WHERE END_TIME &lt; #{cleanupDate}
-                      AND ROWNUM &lt;= #{limit})
+    WHERE JOB_METRICS_BATCH_KEY IN (SELECT JOB_METRICS_BATCH_KEY
+                                    FROM ${prefix}JOB_METRICS_BATCH
+                                    WHERE END_TIME &lt; #{cleanupDate}
+                                      AND ROWNUM &lt;= #{limit})
   </delete>
 
   <delete flushCache="true"
@@ -126,10 +126,10 @@
           databaseId="postgresql">
     DELETE
     FROM ${prefix}JOB_METRICS_BATCH
-    WHERE ctid IN (SELECT ctid
-                   FROM ${prefix}JOB_METRICS_BATCH
-                   WHERE END_TIME &lt; #{cleanupDate}
-                   LIMIT #{limit})
+    WHERE JOB_METRICS_BATCH_KEY IN (SELECT JOB_METRICS_BATCH_KEY
+                                    FROM ${prefix}JOB_METRICS_BATCH
+                                    WHERE END_TIME &lt; #{cleanupDate}
+      LIMIT #{limit})
   </delete>
 
 </mapper>
