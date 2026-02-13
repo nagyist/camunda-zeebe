@@ -100,34 +100,14 @@ public record AuditLogDbModel(
         .historyCleanupDate(historyCleanupDate);
   }
 
-  public AuditLogDbModel truncateRelatedEntities(final int sizeLimit, final Integer byteLimit) {
-    final String truncatedRelatedEntityKey =
-        relatedEntityKey() != null
-            ? TruncateUtil.truncateValue(relatedEntityKey(), sizeLimit, byteLimit)
-            : null;
-    final String truncatedEntityDescription =
-        entityDescription() != null
-            ? TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit)
-            : null;
+  public AuditLogDbModel truncateEntityDescription(final int sizeLimit, final Integer byteLimit) {
+    if (TruncateUtil.shouldTruncate(entityDescription(), sizeLimit, byteLimit)) {
 
-    boolean shouldCopy = false;
-    Function<ObjectBuilder<AuditLogDbModel>, ObjectBuilder<AuditLogDbModel>> copyFunction =
-        builder -> builder;
-    if (truncatedEntityDescription != null
-        && truncatedEntityDescription.length() < entityDescription().length()) {
-      shouldCopy = true;
-      copyFunction =
-          copyFunction.andThen(fn -> ((Builder) fn).entityDescription(truncatedEntityDescription));
-    }
-    if (truncatedRelatedEntityKey != null
-        && truncatedRelatedEntityKey.length() < relatedEntityKey().length()) {
-      shouldCopy = true;
-      copyFunction =
-          copyFunction.andThen(fn -> ((Builder) fn).relatedEntityKey(truncatedRelatedEntityKey));
-    }
-
-    if (shouldCopy) {
-      return copy(copyFunction);
+      return copy(
+          fn ->
+              ((Builder) fn)
+                  .entityDescription(
+                      TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit)));
     }
     return this;
   }

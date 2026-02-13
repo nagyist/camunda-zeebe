@@ -58,7 +58,7 @@ public class AuditLogWriter extends RootProcessInstanceDependant implements Rdbm
 
     final var charColumnBytes = vendorDatabaseProperties.charColumnMaxBytes();
     final var userCharColumnSize = vendorDatabaseProperties.userCharColumnSize();
-    finalAuditLog = finalAuditLog.truncateRelatedEntities(userCharColumnSize, charColumnBytes);
+    finalAuditLog = finalAuditLog.truncateEntityDescription(userCharColumnSize, charColumnBytes);
 
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(

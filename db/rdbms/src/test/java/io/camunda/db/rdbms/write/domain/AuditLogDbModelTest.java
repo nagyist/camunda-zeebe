@@ -334,13 +334,9 @@ class AuditLogDbModelTest {
   @Test
   void shouldTruncateFields() {
     final AuditLogDbModel auditLog =
-        new AuditLogDbModel.Builder()
-            .relatedEntityKey("a".repeat(1000))
-            .entityDescription("a".repeat(1000))
-            .build();
+        new AuditLogDbModel.Builder().entityDescription("a".repeat(1000)).build();
 
-    final AuditLogDbModel truncatedModel = auditLog.truncateRelatedEntities(10, 100);
-    assertThat(truncatedModel.relatedEntityKey()).hasSize(10);
+    final AuditLogDbModel truncatedModel = auditLog.truncateEntityDescription(10, 100);
     assertThat(truncatedModel.entityDescription()).hasSize(10);
   }
 }
