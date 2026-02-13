@@ -148,8 +148,8 @@ public class GlobalJobStatisticsTenancyIT {
         });
 
     // Wait for export & store first batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     firstBatchExportedTime = OffsetDateTime.now();
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // ========== SECOND BATCH: Incomplete metrics (long worker name) ==========
     // Start a new process instance in TENANT_A to have a new taskA job available
@@ -182,8 +182,8 @@ public class GlobalJobStatisticsTenancyIT {
         });
 
     // Wait for export & store second batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     secondBatchExportedTime = OffsetDateTime.now();
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // ========== THIRD BATCH: Incomplete metrics (long tenant id) ==========
     // Create a tenant with a long ID that EXCEEDS the limit
@@ -212,8 +212,8 @@ public class GlobalJobStatisticsTenancyIT {
         });
 
     // Wait for export & store third batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     thirdBatchExportedTime = OffsetDateTime.now();
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // ========== FOURTH BATCH: Incomplete metrics (max unique keys exceeded) ==========
     // Create unique tenant+jobType combinations to exceed MAX_UNIQUE_KEYS (5)
@@ -267,8 +267,6 @@ public class GlobalJobStatisticsTenancyIT {
           assertThat(stats.isIncomplete()).isTrue();
         });
 
-    // Wait for export & store fourth batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     fourthBatchExportedTime = OffsetDateTime.now();
   }
 

@@ -85,9 +85,23 @@ public class GlobalJobStatisticsIT {
   @BeforeAll
   static void setup(@Authenticated(ADMIN) final CamundaClient adminClient)
       throws InterruptedException {
-    // ========== FIRST BATCH: Normal metrics ==========
     // Deploy a process with service tasks (taskA, taskB, taskC)
     deployResource(adminClient, "process/service_tasks_v1.bpmn");
+    // Deploy a process with a job type that EXCEEDS the limit
+    final var longJobTypeProcess =
+        Bpmn.createExecutableProcess("longJobTypeProcess")
+            .startEvent()
+            .serviceTask("longTask", t -> t.zeebeJobType(LONG_JOB_TYPE))
+            .serviceTask("taskA", t -> t.zeebeJobType(JOB_TYPE_A))
+            .endEvent()
+            .done();
+    adminClient
+        .newDeployResourceCommand()
+        .addProcessModel(longJobTypeProcess, "longJobTypeProcess.bpmn")
+        .send()
+        .join();
+
+    // ========== FIRST BATCH: Normal metrics ==========
 
     // Start 2 process instances to create jobs
     startProcessInstance(adminClient, PROCESS_ID);
@@ -123,8 +137,8 @@ public class GlobalJobStatisticsIT {
         });
 
     // Wait for export & store first batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     firstBatchExportedTime = OffsetDateTime.now();
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // ========== SECOND BATCH: Incomplete metrics (long worker name) ==========
     // Start a new process instance to have a new taskA job available
@@ -157,23 +171,10 @@ public class GlobalJobStatisticsIT {
         });
 
     // Wait for export & store second batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     secondBatchExportedTime = OffsetDateTime.now();
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // ========== THIRD BATCH: Incomplete metrics (long job type) ==========
-    // Deploy a process with a job type that EXCEEDS the limit
-    final var longJobTypeProcess =
-        Bpmn.createExecutableProcess("longJobTypeProcess")
-            .startEvent()
-            .serviceTask("longTask", t -> t.zeebeJobType(LONG_JOB_TYPE))
-            .endEvent()
-            .done();
-    adminClient
-        .newDeployResourceCommand()
-        .addProcessModel(longJobTypeProcess, "longJobTypeProcess.bpmn")
-        .send()
-        .join();
-
     // Start a process instance with the long job type
     adminClient
         .newCreateInstanceCommand()
@@ -181,11 +182,11 @@ public class GlobalJobStatisticsIT {
         .latestVersion()
         .send()
         .join();
-    // Create a valid job to ensure at least one metric is recorded
-    startProcessInstance(adminClient, PROCESS_ID);
 
     // Wait for the job to be created
-    waitForJobs(adminClient, f -> f.type(LONG_JOB_TYPE), 1);
+    waitForJobs(adminClient, f -> f.type(LONG_JOB_TYPE).state(JobState.CREATED), 1);
+    activateAndCompleteJobs(adminClient, LONG_JOB_TYPE, SHORT_WORKER_NAME, 1);
+    waitForJobs(adminClient, f -> f.type(JOB_TYPE_A).state(JobState.CREATED), 1);
 
     // Wait for third batch metrics to be exported
     waitForJobStatistics(
@@ -199,8 +200,8 @@ public class GlobalJobStatisticsIT {
         });
 
     // Wait for export & store third batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     thirdBatchExportedTime = OffsetDateTime.now();
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // ========== FOURTH BATCH: Incomplete metrics (max unique keys exceeded) ==========
     // Deploy all processes first (deployments don't create job metrics)
@@ -250,8 +251,6 @@ public class GlobalJobStatisticsIT {
           assertThat(stats.isIncomplete()).isTrue();
         });
 
-    // Wait for export & store fourth batch export time
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
     fourthBatchExportedTime = OffsetDateTime.now();
   }
 
