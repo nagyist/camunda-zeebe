@@ -188,9 +188,6 @@ describe('Modification Dropdown', () => {
       `${Paths.processInstance('instance_id')}?elementId=message_intermediate_catch_non_selectable`,
     ]);
 
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();

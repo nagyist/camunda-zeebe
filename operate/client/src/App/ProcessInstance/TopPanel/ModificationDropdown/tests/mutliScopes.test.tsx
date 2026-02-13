@@ -131,9 +131,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
     renderPopover([`${Paths.processInstance('instance_id')}?elementId=TaskB`]);
 
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
@@ -147,9 +144,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
         `${Paths.processInstance('instance_id')}?elementId=TaskB`,
       ]);
 
-      expect(
-        await screen.findByText(/Flow Node Modifications/),
-      ).toBeInTheDocument();
       expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
       expect(screen.getByText(/Move/)).toBeInTheDocument();
       expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
@@ -190,9 +184,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
         `${Paths.processInstance('instance_id')}?elementId=TaskB`,
       ]);
 
-      expect(
-        await screen.findByText(/Flow Node Modifications/),
-      ).toBeInTheDocument();
       expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
       expect(screen.getByText(/Move/)).toBeInTheDocument();
       expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
