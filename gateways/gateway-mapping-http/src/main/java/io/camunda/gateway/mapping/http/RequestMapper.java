@@ -930,7 +930,6 @@ public class RequestMapper {
       final TenantFilter tenantFilter,
       final boolean multiTenancyEnabled) {
 
-    // ASSIGNED filter requires multi-tenancy to be enabled
     if (tenantFilter == TenantFilter.ASSIGNED) {
       if (!multiTenancyEnabled) {
         return Either.left(
@@ -942,7 +941,6 @@ public class RequestMapper {
       return Either.right(Collections.emptyList());
     }
 
-    // PROVIDED filter - validate the provided tenant IDs
     final List<String> providedTenantIds =
         getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds);
     return validateTenantIds(providedTenantIds, multiTenancyEnabled, "Activate Jobs");
