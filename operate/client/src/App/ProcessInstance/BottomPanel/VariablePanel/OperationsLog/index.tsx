@@ -33,11 +33,9 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {EmptyMessageContainer} from '../styled';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {
-  CellActor,
-  CellProperty,
-  CellResult,
-} from 'App/OperationsLog/InstancesTable/Cell';
+import {CellResult} from 'App/OperationsLog/InstancesTable/Cell/CellResult';
+import {CellProperty} from 'App/OperationsLog/InstancesTable/Cell/CellProperty';
+import {CellActor} from 'App/OperationsLog/InstancesTable/Cell/CellActor';
 
 type Props = {
   isVisible: boolean;

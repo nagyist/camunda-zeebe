@@ -34,14 +34,6 @@ import {
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {observer} from 'mobx-react';
 import {
-  CellReference,
-  CellOperationType,
-  CellResult,
-  CellComment,
-  CellActor,
-  CellProperty,
-} from './Cell';
-import {
   useProcessDefinitionNames,
   useSelectedProcessDefinition,
 } from 'modules/hooks/processDefinitions';
@@ -52,6 +44,12 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
+import {CellOperationType} from './Cell/CellOperationType';
+import {CellResult} from './Cell/CellResult';
+import {CellReference} from './Cell/CellReference';
+import {CellProperty} from './Cell/CellProperty';
+import {CellActor} from './Cell/CellActor';
+import {CellComment} from './Cell/CellComment';
 
 const headerColumns = [
   {
