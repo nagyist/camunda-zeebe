@@ -94,7 +94,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
   });
 
-  test('select flow node in diagram', async ({
+  test('verify execution counts and incidents display for multi-instance flow node', async ({
     operateProcessInstancePage,
     operateDiagramPage,
   }) => {
