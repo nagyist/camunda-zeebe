@@ -10,7 +10,7 @@ package io.camunda.zeebe.stream.api;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import java.util.function.Consumer;
 
-public interface ProcessingContext {
+public interface ProcessingSession {
 
   default void appendMetadataToAllFollowUps(final Consumer<RecordMetadata> decorator) {}
 }

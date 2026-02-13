@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.stream.api.ProcessingContext;
+import io.camunda.zeebe.stream.api.ProcessingSession;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
@@ -18,7 +18,7 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
         "A TypedRecordProcessor must implement at least one of the processRecord methods");
   }
 
-  default void processRecord(final TypedRecord<T> record, final ProcessingContext context) {
+  default void processRecord(final TypedRecord<T> record, final ProcessingSession session) {
     processRecord(record);
   }
 

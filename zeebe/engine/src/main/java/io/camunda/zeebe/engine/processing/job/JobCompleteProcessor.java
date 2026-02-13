@@ -44,7 +44,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.stream.api.ProcessingContext;
+import io.camunda.zeebe.stream.api.ProcessingSession;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
@@ -169,7 +169,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   }
 
   @Override
-  public void processRecord(final TypedRecord<JobRecord> record, final ProcessingContext context) {
+  public void processRecord(final TypedRecord<JobRecord> record, final ProcessingSession session) {
     final long jobKey = record.getKey();
     final JobState.State state = jobState.getState(jobKey);
 
@@ -177,7 +177,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
         .check(state, record)
         .flatMap(job -> checkAuthorization(record, job))
         .ifRightOrLeft(
-            job -> completeJob(record, job, context),
+            job -> completeJob(record, job, session),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
@@ -185,9 +185,9 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   }
 
   private void completeJob(
-      final TypedRecord<JobRecord> command, final JobRecord job, final ProcessingContext context) {
+      final TypedRecord<JobRecord> command, final JobRecord job, final ProcessingSession session) {
 
-    preCompleteActions(job, context);
+    preCompleteActions(job, session);
 
     job.setVariables(command.getValue().getVariablesBuffer());
     job.setResult(command.getValue().getResult());
@@ -200,9 +200,9 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     postCompleteActions(job);
   }
 
-  private void preCompleteActions(final JobRecord job, final ProcessingContext context) {
+  private void preCompleteActions(final JobRecord job, final ProcessingSession session) {
     if (job.isAgentic()) {
-      context.appendMetadataToAllFollowUps(
+      session.appendMetadataToAllFollowUps(
           m -> m.agent(new AgentInfo().setElementId(job.getElementId())));
     }
   }
