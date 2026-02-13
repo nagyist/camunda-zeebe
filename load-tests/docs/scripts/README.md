@@ -5,17 +5,23 @@ This folder contains several scripts we wrote to test or debug things.
 ## Profile.sh
 
 **Usage:**
-Run executeProfiling.sh with a pod name and optional event type. It will download the async profiler package, run in your current namespace, copy necessary binaries to the pod, run the async profiler, and copy the resulting flamegraph back to your local disk.
+Run executeProfiling.sh with a pod name, optional event type, and optional profiler options. It will download the async profiler package, run in your current namespace, copy necessary binaries to the pod, run the async profiler, and copy the resulting flamegraph back to your local disk.
 
 **Syntax:**
 ```
-./executeProfiling.sh <POD-NAME> [EVENT-TYPE]
+./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
 ```
 
 **Event Types:**
 - `cpu` - CPU profiling (default)
 - `wall` - Wall clock time profiling (includes waiting/blocking time)
 - `alloc` - Memory allocation profiling
+
+**Additional Options:**
+You can pass additional flags to async-profiler as the third parameter. Common options include:
+- `-t` - Generate output in flamegraph format (useful for more detailed visualization)
+- `--title "My Title"` - Set a custom title for the flamegraph
+- `--minwidth <percent>` - Omit frames smaller than specified percentage
 
 Example with CPU profiling (default):
 
@@ -39,8 +45,17 @@ Done
 + kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-wall-2025-07-11_19-05-23.html release-8-8-0-alpha6-zeebe-2-flamegraph-wall-2025-07-11_19-05-23.html
 ```
 
+Example with additional profiler options:
+
+```
+ $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2 cpu "-t"
+...
+Profiling for 100 seconds with flamegraph format
+Done
+```
+
 **GitHub Actions Workflow:**
-You can also use the [Profile Load Test workflow](https://github.com/camunda/camunda/actions/workflows/profile-load-test.yml) to profile pods running in load tests. This workflow allows you to select the load test name, pod name, and event type (cpu/wall/alloc) through the GitHub UI.
+You can also use the [Profile Load Test workflow](https://github.com/camunda/camunda/actions/workflows/profile-load-test.yml) to profile pods running in load tests. This workflow allows you to select the load test name, pod name, event type (cpu/wall/alloc), and optional profiler options through the GitHub UI.
 
 ## PartitionDistribution.sh
 

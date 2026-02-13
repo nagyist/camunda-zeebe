@@ -12,6 +12,10 @@ on:
         description: 'Specifies the pod name to profile. Leave empty to profile all three pods (camunda-0, camunda-1, camunda-2) with different events, or specify a pod name for CPU profiling only.'
         default: ''
         required: false
+      profiler_options:
+        description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
+        default: ''
+        required: false
   workflow_call:
     inputs:
       name:
@@ -20,6 +24,11 @@ on:
         type: string
       pod:
         description: 'Specifies the pod name to profile. Leave empty to profile all three pods with different events, or specify a pod name for CPU profiling only.'
+        default: ''
+        required: false
+        type: string
+      profiler_options:
+        description: 'Optional additional flags for async-profiler (e.g., "-t" for flamegraph format)'
         default: ''
         required: false
         type: string
@@ -57,7 +66,7 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }}
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ matrix.pod }} ${{ matrix.event }} "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@v6
         with:
           name: flamegraph-${{ matrix.event }}-${{ matrix.pod }}
@@ -93,7 +102,7 @@ jobs:
           kubectl config set-context --current --namespace=${{ inputs.name }}
       - name: Execute profiling
         run: >
-          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu
+          ./load-tests/docs/scripts/executeProfiling.sh ${{ inputs.pod }} cpu "${{ inputs.profiler_options }}"
       - uses: actions/upload-artifact@v6
         with:
           name: flamegraph-cpu-${{ inputs.pod }}

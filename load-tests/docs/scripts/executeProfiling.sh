@@ -1,20 +1,23 @@
 #!/bin/bash -xeu
 # Usage:
-#   ./executeProfiling.sh <POD-NAME> [EVENT-TYPE]
+#   ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]
 #
 # EVENT-TYPE can be:
 #   cpu   - CPU profiling (default)
 #   wall  - Wall clock time profiling
 #   alloc - Memory allocation profiling
+#
+# ADDITIONAL-OPTIONS: Optional additional flags to pass to async-profiler (e.g., "-t" for flamegraph format)
 set -oxe pipefail
 
 if [ -z "$1" ]; then
   echo "Error: Missing required argument <POD-NAME>."
-  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE]"
+  echo "Usage: ./executeProfiling.sh <POD-NAME> [EVENT-TYPE] [ADDITIONAL-OPTIONS]"
   exit 1
 fi
 node=$1
 event=${2:-cpu}
+additional_options=${3:-}
 
 # Validate event type and map to async-profiler event names
 case "$event" in
@@ -72,7 +75,7 @@ filename=flamegraph-$event-$(date +%Y-%m-%d_%H-%M-%S).html
 PID=$(kubectl exec "$node" -- ps -ax | awk '$5 ~ /java/ {print $1}')
 
 # Run profiling
-kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d 100 -t -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" "$PID"
+kubectl exec "$node" -- ./data/asprof -e "$profiler_event" -d 100 -f "$containerPath/$filename" --libpath "$containerPath/libasyncProfiler.so" $additional_options "$PID"
 
 # Copy result
 kubectl cp "$node:$containerPath/$filename" "$node-$filename"
