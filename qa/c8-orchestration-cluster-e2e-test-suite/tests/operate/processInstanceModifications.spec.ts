@@ -476,11 +476,6 @@ test.describe('Process Instance Modifications', () => {
 
       await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
       for (let i = 0; ; i++) {
-        // const variableName =
-        //   await operateProcessInstanceViewModificationModePage
-        //     .applyModificationDialogVariableModificationRowByIndex(i)
-        //     .nameValue.innerText();
-        // expect(variableName).not.toContain('testVariableToRemove');
         const row =
           operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
             i,
