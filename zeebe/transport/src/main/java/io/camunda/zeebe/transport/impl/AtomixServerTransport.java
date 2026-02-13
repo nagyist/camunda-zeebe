@@ -92,7 +92,8 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     LOG.trace("Subscribe for topic {}", topic);
     messagingService.registerHandler(
         topic,
-        (sender, request) -> handleAtomixRequest(request, partitionId, requestType, handler));
+        (sender, request) ->
+            handleAtomixRequest(request, topic, partitionId, requestType, handler));
   }
 
   private void removePartition(final int partitionId) {
@@ -119,6 +120,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private CompletableFuture<byte[]> handleAtomixRequest(
       final byte[] requestBytes,
+      final String topicName,
       final int partitionId,
       final RequestType requestType,
       final RequestHandler requestHandler) {
@@ -143,10 +145,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
                 0,
                 requestBytes.length);
             if (LOG.isTraceEnabled()) {
-              LOG.trace(
-                  "Handled request {} for topic {}",
-                  requestId,
-                  legacyTopicName(partitionId, requestType));
+              LOG.trace("Handled request {} for topic {}", requestId, topicName);
             }
             // we only add the request to the map after successful handling
             requestMap.put(requestId, completableFuture);
