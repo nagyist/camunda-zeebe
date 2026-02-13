@@ -18,10 +18,6 @@ public class Engine {
   @NestedConfigurationProperty
   private EngineBatchOperation batchOperations = new EngineBatchOperation();
 
-  /** Configuration properties for the engine's process instance creation settings. */
-  @NestedConfigurationProperty
-  private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
-
   public Distribution getDistribution() {
     return distribution;
   }
@@ -36,13 +32,5 @@ public class Engine {
 
   public void setBatchOperations(final EngineBatchOperation batchOperations) {
     this.batchOperations = batchOperations;
-  }
-
-  public ProcessInstanceCreation getProcessInstanceCreation() {
-    return processInstanceCreation;
-  }
-
-  public void setProcessInstanceCreation(final ProcessInstanceCreation processInstanceCreation) {
-    this.processInstanceCreation = processInstanceCreation;
   }
 }

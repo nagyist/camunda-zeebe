@@ -10,7 +10,7 @@ package io.camunda.configuration;
 import java.util.Set;
 
 public class ProcessInstanceCreation {
-  private static final String PREFIX = "camunda.processing.engine.process-instance-creation";
+  private static final String PREFIX = "camunda.process-instance-creation";
   private static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
   private static final Set<String> LEGACY_BUSINESS_ID_UNIQUENESS_ENABLED_PROPERTIES =
       Set.of(
@@ -25,6 +25,9 @@ public class ProcessInstanceCreation {
    *
    * <p>This is disabled by default, but can be enabled to prevent duplicate process instances with
    * the same business id from being created.
+   *
+   * <p>Note: When enabled, BusinessId Uniqueness validation will only be applied to process
+   * instances created using a BusinessId after enabling the feature.
    */
   private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
 

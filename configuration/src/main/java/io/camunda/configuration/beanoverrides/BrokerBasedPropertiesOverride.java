@@ -1035,8 +1035,6 @@ public class BrokerBasedPropertiesOverride {
         .setBusinessIdUniquenessEnabled(
             unifiedConfiguration
                 .getCamunda()
-                .getProcessing()
-                .getEngine()
                 .getProcessInstanceCreation()
                 .isBusinessIdUniquenessEnabled());
   }

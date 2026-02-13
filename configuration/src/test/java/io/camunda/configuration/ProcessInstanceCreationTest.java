@@ -44,7 +44,7 @@ public class ProcessInstanceCreationTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.processing.engine.process-instance-creation.business-id-uniqueness-enabled=true",
+        "camunda.process-instance-creation.business-id-uniqueness-enabled=true",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -83,7 +83,7 @@ public class ProcessInstanceCreationTest {
   @TestPropertySource(
       properties = {
         // new
-        "camunda.processing.engine.process-instance-creation.business-id-uniqueness-enabled=true",
+        "camunda.process-instance-creation.business-id-uniqueness-enabled=true",
         // legacy
         "zeebe.broker.experimental.engine.processInstanceCreation.businessIdUniquenessEnabled=false",
       })
