@@ -24,9 +24,14 @@ import {
 } from '../../PartiallyExpandableDataTable/styled';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 
+type Row = {
+  id: string;
+  [key: string]: React.ReactNode;
+};
+
 type Props = {
   headers: {key: string; header: string; width?: string}[];
-  rows: React.ComponentProps<typeof DataTable>['rows'];
+  rows: Row[];
   className?: string;
   expandedContents?: {
     [key: string]: React.ReactElement<{tabIndex: number}>;
@@ -51,12 +56,12 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
   scrollableContainerRef,
 }) => {
   const tableBodyContent = (
-    rows: DataTableRenderProps<unknown, unknown[]>['rows'],
-    headers: DataTableRenderProps<unknown, unknown[]>['headers'],
-    getRowProps: DataTableRenderProps<unknown, unknown[]>['getRowProps'],
+    rows: DataTableRenderProps<Row, React.ReactNode[]>['rows'],
+    headers: DataTableRenderProps<Row, React.ReactNode[]>['headers'],
+    getRowProps: DataTableRenderProps<Row, React.ReactNode[]>['getRowProps'],
     getExpandedRowProps: DataTableRenderProps<
-      unknown,
-      unknown[]
+      Row,
+      React.ReactNode[]
     >['getExpandedRowProps'],
   ) => {
     return rows.map((row, index: number) => {
@@ -75,7 +80,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
           >
             {row.cells.map((cell) => (
               <ExpandableTableCell key={cell.id}>
-                {cell.value as React.ReactNode}
+                {cell.value}
               </ExpandableTableCell>
             ))}
           </TableExpandRow>
@@ -98,7 +103,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
   };
 
   return (
-    <DataTable
+    <DataTable<Row, React.ReactNode[]>
       size="sm"
       headers={headers}
       rows={rows}

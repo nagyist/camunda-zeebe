@@ -14,7 +14,7 @@ import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/InstancesBar';
-import {LinkWrapper, ErrorMessage} from '../styled';
+import {LinkWrapper, ErrorMessage, LoadingContainer} from '../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
@@ -181,9 +181,9 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
   return (
     <>
       {isFetchingPreviousPage && (
-        <div style={{padding: '16px', textAlign: 'center'}}>
+        <LoadingContainer>
           <InlineLoading description="Loading previous processes..." />
-        </div>
+        </LoadingContainer>
       )}
       <PartiallyExpandableDataTable
         dataTestId="instances-by-process-definition"
@@ -195,9 +195,9 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
         expandedContents={expandedContents}
       />
       {isFetchingNextPage && (
-        <div style={{padding: '16px', textAlign: 'center'}}>
+        <LoadingContainer>
           <InlineLoading description="Loading more processes..." />
-        </div>
+        </LoadingContainer>
       )}
     </>
   );
