@@ -294,7 +294,14 @@ public class BackupRetention extends Actor {
           firstAvailableBackupInNewRange = backup.id().checkpointId();
         }
       } else {
-        firstAvailableBackupInNewRange = backup.id().checkpointId();
+        // Only consider completed backups for the range change.
+        if (backup.statusCode() == BackupStatusCode.COMPLETED
+            && firstAvailableBackupInNewRange == -1L) {
+          firstAvailableBackupInNewRange = backup.id().checkpointId();
+        }
+        if (firstAvailableBackupInNewRange == -1L) {
+          continue;
+        }
         break;
       }
     }
@@ -306,7 +313,7 @@ public class BackupRetention extends Actor {
     if (shouldResetMarker(context)) {
       final var marker = context.previousStartMarker.get();
       LOG.debug(
-          "Resetting range start marker {} for partition {} to checkpoint id {}",
+          "Advancing range start marker for partition {} from {} to {}",
           context.previousStartMarker.get(),
           context.partitionId,
           context.earliestBackupInNewRange);

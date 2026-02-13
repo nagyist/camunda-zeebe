@@ -24,6 +24,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -316,6 +317,71 @@ public class RetentionTest {
         });
   }
 
+  @Test
+  void shouldProgressMarkerAfterFailed() {
+    // given
+    final var now = actorScheduler.getClock().instant();
+    final BackupStatus backup1 = backup(now.minusSeconds(300));
+    final BackupStatus backup2 = failedBackup(now.minusSeconds(60));
+    final BackupStatus backup3 = failedBackup(now.minusSeconds(50));
+    final BackupStatus backup4 = backup(now.minusSeconds(40));
+
+    when(backupStore.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2, backup3, backup4)));
+
+    when(backupStore.rangeMarkers(1))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(
+                    new Start(now.minusSeconds(300).toEpochMilli()),
+                    new End(now.minusSeconds(40).toEpochMilli()))));
+
+    // when
+    runRetentionCycle();
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupStore, times(1)).delete(any());
+    verify(backupStore, times(1))
+        .storeRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup4.id().checkpointId()));
+    verify(backupStore, atLeast(1))
+        .deleteRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup1.id().checkpointId()));
+  }
+
+  @Test
+  void shouldIgnoreLastFailedBackup() {
+    // given
+    final var now = actorScheduler.getClock().instant();
+    final BackupStatus backup1 = backup(now.minusSeconds(300));
+    final BackupStatus backup2 = backup(now.minusSeconds(100));
+    final BackupStatus backup3 = failedBackup(now.minusSeconds(40));
+
+    when(backupStore.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2, backup3)));
+
+    when(backupStore.rangeMarkers(1))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(
+                    new Start(now.minusSeconds(300).toEpochMilli()),
+                    new End(now.minusSeconds(100).toEpochMilli()))));
+
+    // when
+    runRetentionCycle();
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupStore, times(1)).delete(any());
+    verify(backupStore, times(1))
+        .storeRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup2.id().checkpointId()));
+    verify(backupStore, atLeast(1))
+        .deleteRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup1.id().checkpointId()));
+  }
+
   private Gauge getGauge(final String gaugeName) {
     return meterRegistry.get(gaugeName).gauge();
   }
@@ -420,6 +486,13 @@ public class RetentionTest {
 
   private BackupStatus backup(final Instant timestamp) {
     return backup(1, 1, timestamp);
+  }
+
+  private BackupStatus failedBackup(final Instant timestamp) {
+    final var descriptor =
+        new BackupDescriptorImpl(
+            10L, 3, VersionUtil.getVersion(), timestamp, CheckpointType.SCHEDULED_BACKUP);
+    return backup(1, 1, Optional.of(descriptor), timestamp, BackupStatusCode.FAILED);
   }
 
   private BackupStatus backup(final int partition, final int nodeId, final Instant timestamp) {
@@ -550,17 +623,8 @@ public class RetentionTest {
       final BackupStatus backup1 = backup(now.minusSeconds(300));
       final BackupStatus backup2 = backup(now.minusSeconds(290));
       final BackupStatus backup3 = backup(now.minusSeconds(280));
-
       // Failed backup with older timestamp than the latest successful backup
-      final var descriptor =
-          new BackupDescriptorImpl(
-              10L,
-              3,
-              VersionUtil.getVersion(),
-              now.minusSeconds(250),
-              CheckpointType.SCHEDULED_BACKUP);
-      final BackupStatus backup4 =
-          backup(1, 1, Optional.of(descriptor), now.minusSeconds(250), BackupStatusCode.FAILED);
+      final BackupStatus backup4 = failedBackup(now.minusSeconds(250));
 
       when(backupStore.list(any()))
           .thenReturn(
@@ -704,6 +768,43 @@ public class RetentionTest {
       verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(1))));
       verify(backupStore, never()).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(2))));
       verify(backupStore, never()).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(3))));
+    }
+
+    @Test
+    void shouldNotAdvanceMarkerEvenIfOutdated() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      final BackupStatus backup1 = backup(now.minusSeconds(300));
+      final BackupStatus backup2 = failedBackup(now.minusSeconds(220));
+      final BackupStatus backup3 = failedBackup(now.minusSeconds(210));
+      final BackupStatus backup4 = failedBackup(now.minusSeconds(200));
+
+      when(backupStore.list(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(List.of(backup1, backup2, backup3, backup4)));
+
+      when(backupStore.rangeMarkers(1))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new Start(now.minusSeconds(300).toEpochMilli()),
+                      new End(now.minusSeconds(300).toEpochMilli()))));
+
+      // when
+      runRetentionCycle();
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(backupStore, never())
+          .delete(argThat(backup -> backup.checkpointId() == backup1.id().checkpointId()));
+      verify(backupStore, times(1))
+          .delete(argThat(backup -> backup.checkpointId() == backup2.id().checkpointId()));
+      verify(backupStore, times(1))
+          .delete(argThat(backup -> backup.checkpointId() == backup3.id().checkpointId()));
+      verify(backupStore, times(1))
+          .delete(argThat(backup -> backup.checkpointId() == backup4.id().checkpointId()));
+      verify(backupStore, never()).storeRangeMarker(anyInt(), any());
+      verify(backupStore, never()).deleteRangeMarker(anyInt(), any());
     }
   }
 }
