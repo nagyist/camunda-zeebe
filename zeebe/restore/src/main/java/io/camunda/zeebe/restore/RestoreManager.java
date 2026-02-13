@@ -111,12 +111,16 @@ public class RestoreManager implements CloseableSilently {
   }
 
   public void restore(
-      final Instant from,
+      @Nullable final Instant from,
       @Nullable final Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     if (exporterPositionMapper == null) {
+      if (from == null) {
+        throw new IllegalArgumentException(
+            "Expected `from` to not be null, but got <null>. When the restore is not using a RDBMS as secondary storage, `from` parameter is required");
+      }
       restoreTimeRange(from, to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
     } else {
       restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
@@ -124,7 +128,7 @@ public class RestoreManager implements CloseableSilently {
   }
 
   private void restoreRdbms(
-      final Instant from,
+      @Nullable final Instant from,
       @Nullable final Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)

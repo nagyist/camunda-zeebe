@@ -60,7 +60,7 @@ public final class BackupRangeResolver {
    *     per task
    */
   public CompletableFuture<GlobalRestoreInfo> getRestoreInfoForAllPartitions(
-      final Instant from,
+      @Nullable final Instant from,
       @Nullable final Instant to,
       final int partitionCount,
       final Map<Integer, Long> exportedPositions,
@@ -107,7 +107,7 @@ public final class BackupRangeResolver {
 
   public PartitionRestoreInfo getInformationPerPartition(
       final int partition,
-      final Instant from,
+      @Nullable final Instant from,
       @Nullable final Instant to,
       final long exporterPosition,
       final CheckpointIdGenerator checkpointIdGenerator) {
@@ -133,7 +133,8 @@ public final class BackupRangeResolver {
     // if to was not set, then the interval can be computed with `from` and the last backup
     final var interval =
         Interval.closed(
-            from,
+            Optional.ofNullable(from)
+                .orElse(statusInterval.getRight().start().descriptor().get().checkpointTimestamp()),
             Optional.ofNullable(to)
                 .orElse(statusInterval.getRight().end().descriptor().get().checkpointTimestamp()));
 
@@ -178,30 +179,37 @@ public final class BackupRangeResolver {
    *     corresponding status interval if found; otherwise, an empty {@code Optional}
    */
   public Optional<Tuple<Complete, Interval<BackupStatus>>> findBackupRangeCoveringInterval(
-      final Instant from,
+      @Nullable final Instant from,
       @Nullable final Instant to,
       final SequencedCollection<BackupRange> ranges,
       final int partitionId) {
     // ranges are ordered chronologically, so we start from the latest one, going backwards in time
-    final var interval = to != null ? Interval.closed(from, to) : null;
+    if (to != null && from == null) {
+      throw new IllegalArgumentException(
+          "Expected (from, to) to be both null or `from` to have a value, but got (from=null, to=%s)"
+              .formatted(to));
+    }
     for (final var range : ranges.reversed()) {
       if (range instanceof final BackupRange.Complete completeRange) {
         // get the BackupStatuses from the store
         final Interval<BackupStatus> statusInterval =
             completeRange.checkpointInterval().map(c -> toBackupStatus(partitionId, c));
-        final Interval<Instant> timeInterval;
-        try {
-          timeInterval = statusInterval.map(bs -> bs.descriptor().get().checkpointTimestamp());
-        } catch (final NoSuchElementException e) {
-          // ignore this backup
-          continue;
+        if (from == null) {
+          return Optional.of(new Tuple<>(completeRange, statusInterval));
         }
-        if (interval != null) {
-          if (timeInterval.contains(interval)) {
+        try {
+          final var timeInterval =
+              statusInterval.map(bs -> bs.descriptor().get().checkpointTimestamp());
+          final var interval = to != null ? Interval.closed(from, to) : null;
+          if (interval != null) {
+            if (timeInterval.contains(interval)) {
+              return Optional.of(new Tuple<>(completeRange, statusInterval));
+            }
+          } else if (timeInterval.contains(from)) {
             return Optional.of(new Tuple<>(completeRange, statusInterval));
           }
-        } else if (timeInterval.contains(from)) {
-          return Optional.of(new Tuple<>(completeRange, statusInterval));
+        } catch (final NoSuchElementException e) {
+          // ignore this backup
         }
       }
     }
