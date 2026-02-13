@@ -57,6 +57,9 @@ const validJSONValue2 = {
   },
 };
 
+const neverFailsNode = 'neverFails';
+const endElement = 'end';
+
 test.beforeAll(async () => {
   await deploy([
     './resources/withoutIncidentsProcess_v_1.bpmn',
@@ -99,8 +102,9 @@ test.describe('Process Instance Modifications', () => {
   });
 
   // skipped due to bug 41143: https://github.com/camunda/camunda/issues/41143
-  test.skip('Should apply/remove edit variable modifications', async ({
+  test('Should apply/remove edit variable modifications', async ({
     operateProcessInstancePage,
+    operateProcessInstanceViewModificationModePage,
   }) => {
     await test.step('Navigate to process instance', async () => {
       await operateProcessInstancePage.gotoProcessInstancePage({
@@ -120,6 +124,18 @@ test.describe('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.modificationModeText,
       ).toBeVisible();
+    });
+
+    await test.step('Move token to the end element to enable variable modification', async () => {
+      await operateProcessInstanceViewModificationModePage.moveInstanceFromSelectedFlowNodeToTarget(neverFailsNode, endElement);
+      await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
+        neverFailsNode,
+        -1,
+      );
+      await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
+        endElement,
+        1,
+      );
     });
 
     await test.step('Edit variable foo to value 1', async () => {
@@ -179,6 +195,9 @@ test.describe('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.getEditVariableModificationText('test'),
       ).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getEditVariableFieldSelector('foo'),
+      ).toHaveValue('1');
     });
 
     await test.step('Navigate to different flow node and undo', async () => {
@@ -215,7 +234,8 @@ test.describe('Process Instance Modifications', () => {
 
       await expect(
         operateProcessInstancePage.lastAddedModificationText,
-      ).toBeHidden();
+      ).toBeVisible();
+      await expect(operateProcessInstancePage.getMoveInstanceModificationText("Never fails", endElement)).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('test'),
       ).toHaveValue('123');
@@ -247,8 +267,15 @@ test.describe('Process Instance Modifications', () => {
       await operateProcessInstancePage.clickCancel();
 
       await expect(
+        operateProcessInstancePage.getEditVariableFieldSelector('test'),
+      ).toHaveValue('123');
+      await expect(
+        operateProcessInstancePage.getEditVariableFieldSelector('foo'),
+      ).toHaveValue('"bar"');
+      await expect(
         operateProcessInstancePage.lastAddedModificationText,
-      ).toBeHidden();
+      ).toBeVisible();
+      await expect(operateProcessInstancePage.getMoveInstanceModificationText("Never fails", endElement)).toBeVisible();
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
       ).toHaveValue('"bar"');

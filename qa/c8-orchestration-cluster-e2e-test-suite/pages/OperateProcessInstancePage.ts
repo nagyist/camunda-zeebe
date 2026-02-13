@@ -417,6 +417,12 @@ class OperateProcessInstancePage {
     return this.modalDialog.getByRole('button', {name: 'Cancel'});
   }
 
+  getMoveInstanceModificationText(sourceFlowNode: string, targetFlowNode: string) {
+    return this.page.getByText(
+      new RegExp(`move "${sourceFlowNode}" to "${targetFlowNode}"`, 'i'),
+    ); 
+  }
+
   async clickDialogDeleteVariableModification(index?: number) {
     await this.getDialogDeleteVariableModificationButton(index).click();
   }

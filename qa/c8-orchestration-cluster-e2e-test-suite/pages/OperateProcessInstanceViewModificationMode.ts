@@ -348,6 +348,10 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.moveAllButtononPopup.click();
   }
 
+  async clickMoveInstanceButtononPopup(): Promise<void> {
+    await this.moveSelectedInstanceButton.click();
+  }
+
   async clickCancelButtononPopup(): Promise<void> {
     await this.cancelButtonPopup.click();
   }
@@ -409,6 +413,16 @@ export class OperateProcessInstanceViewModificationModePage {
   ): Promise<void> {
     await this.clickFlowNode(sourceFlowNodeName);
     await this.clickMoveAllButtononPopup();
+    await expect(this.moveTokensMessage).toBeVisible();
+    await this.clickFlowNode(targetFlowNodeName);
+  }
+
+  async moveInstanceFromSelectedFlowNodeToTarget(
+    sourceFlowNodeName: string,
+    targetFlowNodeName: string, 
+  ): Promise<void> {
+    await this.clickFlowNode(sourceFlowNodeName);
+    await this.clickMoveInstanceButtononPopup();
     await expect(this.moveTokensMessage).toBeVisible();
     await this.clickFlowNode(targetFlowNodeName);
   }
