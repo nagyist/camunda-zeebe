@@ -1,7 +1,7 @@
-# description: Create a zeebe benchmark for an individual PR. When a PR is closed, the benchmark is cleaned up and removed
+# description: Create a Camunda load test for an individual PR. When a PR is closed, the test is cleaned up and removed
 # type: CI
-# owner @camunda/core-features
-name: Zeebe Pull Request Benchmark
+# owner @camunda/reliability-testing
+name: Camunda Pull Request Benchmark
 on:
   pull_request:
     types:
@@ -84,16 +84,16 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             // List all downloaded artifacts
             const artifactPath = 'artifacts';
             const artifacts = fs.readdirSync(artifactPath);
-            
+
             let comment = '## Profiling Results\n\n';
             comment += 'The benchmark has been profiled with the following events:\n\n';
             comment += '| Event | Pod | Artifact |\n';
             comment += '|-------|-----|----------|\n';
-            
+
             artifacts.forEach(artifact => {
               const match = artifact.match(/flamegraph-(\w+)-(\w+-\d+)/);
               if (match) {
@@ -102,9 +102,9 @@ jobs:
                 comment += `| ${event} | ${pod} | [Download](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) |\n`;
               }
             });
-            
+
             comment += '\n**Note:** Download artifacts from the workflow run page linked above.\n';
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
