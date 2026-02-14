@@ -59,7 +59,11 @@ components:
           example: "=x + y"
         result:
           description: The result value. Its type can vary.
-          type: object
+          oneOf:
+            - type: boolean
+            - type: number
+            - type: string
+            - type: object
           example: 30
         warnings:
           type: array
