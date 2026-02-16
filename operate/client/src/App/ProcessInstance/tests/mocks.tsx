@@ -8,15 +8,14 @@
 
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {testData} from './index.setup';
-import {createUser, createVariable} from 'modules/testUtils';
-import {createMemoryRouter, RouterProvider} from 'react-router-dom';
+import {createUser, createVariable, searchResult} from 'modules/testUtils';
+import {
+  createMemoryRouter,
+  RouterProvider,
+  useNavigate,
+} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {
-  type Selection,
-  flowNodeSelectionStore,
-} from 'modules/stores/flowNodeSelection';
-import {useEffect} from 'react';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -28,7 +27,6 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {type SequenceFlow} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
@@ -36,6 +34,7 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {fireEvent, screen} from 'modules/testing-library';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -106,51 +105,37 @@ const mockRequests = () => {
       },
     ],
   });
-  mockSearchVariables().withSuccess({
-    items: [createVariable()],
-    page: {
-      totalItems: 1,
-    },
-  });
-  mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
-    items: [],
-    page: {totalItems: 0},
-  });
-  mockSearchIncidentsByProcessInstance('4294980768').withSuccess({
-    items: [],
-    page: {totalItems: 0},
-  });
+  mockSearchVariables().withSuccess(searchResult([createVariable()]));
+  mockSearchIncidentsByProcessInstance('4294980768').withSuccess(
+    searchResult([]),
+  );
+  mockSearchIncidentsByProcessInstance('4294980768').withSuccess(
+    searchResult([]),
+  );
   mockFetchProcess().withSuccess(mockProcess);
-  mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-  mockQueryBatchOperationItems().withSuccess({
-    items: [],
-    page: {totalItems: 0},
-  });
-  mockQueryBatchOperationItems().withSuccess({
-    items: [],
-    page: {totalItems: 0},
-  });
-  mockSearchElementInstances().withSuccess({
-    items: [],
-    page: {totalItems: 0},
-  });
+  mockSearchJobs().withSuccess(searchResult([]));
+  mockQueryBatchOperationItems().withSuccess(searchResult([]));
+  mockQueryBatchOperationItems().withSuccess(searchResult([]));
+  mockSearchElementInstances().withSuccess(searchResult([]));
 };
 
-type FlowNodeSelectorProps = {
-  selectableFlowNode: Selection;
+/** Used to programmatically update search params after initial render. */
+const updateSearchParams = (params: Record<string, string>) => {
+  const paramsString = Object.entries(params)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+  fireEvent.change(screen.getByTestId('new-search-params'), {
+    target: {value: paramsString},
+  });
 };
-
-const FlowNodeSelector: React.FC<FlowNodeSelectorProps> = ({
-  selectableFlowNode,
-}) => (
-  <button
-    onClick={() => {
-      selectFlowNode({}, selectableFlowNode);
-    }}
-  >
-    {`Select flow node`}
-  </button>
-);
+const SearchParamsUpdater: React.FC = () => {
+  const navigate = useNavigate();
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
+    navigate({search: `?${event.currentTarget.value}`}, {replace: true});
+    event.currentTarget.value = '';
+  };
+  return <input data-testid="new-search-params" onChange={handleChange} />;
+};
 
 type Props = {
   children?: React.ReactNode;
@@ -159,19 +144,20 @@ type Props = {
 function getWrapper(options?: {
   initialPath?: string;
   contextPath?: string;
-  selectableFlowNode?: Selection;
+  searchParams?: Record<string, string>;
 }) {
-  const {
+  let {
     initialPath = Paths.processInstance('4294980768'),
     contextPath,
-    selectableFlowNode,
+    searchParams,
   } = options ?? {};
 
-  const Wrapper: React.FC<Props> = ({children}) => {
-    useEffect(() => {
-      return flowNodeSelectionStore.reset;
-    }, []);
+  if (searchParams) {
+    const search = new URLSearchParams(searchParams).toString();
+    initialPath += `?${search}`;
+  }
 
+  const Wrapper: React.FC<Props> = ({children}) => {
     const router = createMemoryRouter(
       [
         {
@@ -179,9 +165,7 @@ function getWrapper(options?: {
           element: (
             <>
               {children}
-              {selectableFlowNode && (
-                <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
-              )}
+              <SearchParamsUpdater />
               <LocationLog />
             </>
           ),
@@ -218,6 +202,6 @@ function getWrapper(options?: {
   return Wrapper;
 }
 
-export {getWrapper};
+export {getWrapper, updateSearchParams};
 
 export {mockRequests};
