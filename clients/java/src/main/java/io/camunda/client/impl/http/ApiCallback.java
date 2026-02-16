@@ -125,9 +125,18 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     final ProblemDetail problem = new ProblemDetail();
     if (body.problem() != null) {
       final String instanceValue = body.problem().getInstance();
+      URI instanceUri = null;
+      if (instanceValue != null) {
+        try {
+          instanceUri = URI.create(instanceValue);
+        } catch (final IllegalArgumentException e) {
+          // Server returned an invalid URI; leave instance as null
+          // to avoid masking the original HTTP error
+        }
+      }
       problem
           .setDetail(body.problem().getDetail())
-          .setInstance(instanceValue != null ? URI.create(instanceValue) : null)
+          .setInstance(instanceUri)
           .setStatus(body.problem().getStatus())
           .setTitle(body.problem().getTitle())
           .setType(body.problem().getType());
