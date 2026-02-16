@@ -269,14 +269,18 @@ public class HistoryCleanupService {
   public Duration cleanupJobBatchMetricsHistory(final int partitionId, final OffsetDateTime now) {
 
     final var cleanupDate = now.minus(jobBatchMetricsTTL);
-    LOG.trace("Cleanup job batch metrics history with date before {}", cleanupDate);
+    LOG.trace(
+        "Cleanup job batch metrics history for partition {} with date before {}",
+        partitionId,
+        cleanupDate);
 
     try (final var sample = metrics.measureJobBatchMetricsHistoryCleanupDuration()) {
       final long start = System.currentTimeMillis();
 
       final var numDeletedRecords = new HashMap<String, Integer>();
       numDeletedRecords.put(
-          "jobBatchMetrics", jobMetricsBatchWriter.cleanupMetrics(cleanupDate, cleanupBatchSize));
+          "jobBatchMetrics",
+          jobMetricsBatchWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
 
       final long end = System.currentTimeMillis();
 

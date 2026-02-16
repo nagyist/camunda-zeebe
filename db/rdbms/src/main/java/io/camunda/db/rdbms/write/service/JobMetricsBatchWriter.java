@@ -37,8 +37,13 @@ public class JobMetricsBatchWriter implements RdbmsWriter {
             dbModel));
   }
 
-  public int cleanupMetrics(final OffsetDateTime cleanupDate, final int rowsToRemove) {
+  public int cleanupMetrics(
+      final int partitionId, final OffsetDateTime cleanupDate, final int rowsToRemove) {
     return mapper.cleanupMetrics(
-        new CleanupHistoryDto.Builder().cleanupDate(cleanupDate).limit(rowsToRemove).build());
+        new CleanupHistoryDto.Builder()
+            .partitionId(partitionId)
+            .cleanupDate(cleanupDate)
+            .limit(rowsToRemove)
+            .build());
   }
 }

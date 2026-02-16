@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.rdbms;
 
-import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
-
 import io.camunda.db.rdbms.RdbmsSchemaManager;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -406,11 +404,6 @@ public final class RdbmsExporter {
 
   @VisibleForTesting
   void cleanupJobBatchMetricsHistory() {
-    // Partition ID not needed for cleanup of usage and job batch metrics history, but we want to
-    // avoid multiple partitions doing the same cleanup at the same time
-    if (partitionId != START_PARTITION_ID) {
-      return;
-    }
     try {
       historyCleanupService.cleanupJobBatchMetricsHistory(partitionId, OffsetDateTime.now());
     } catch (final Exception e) {
