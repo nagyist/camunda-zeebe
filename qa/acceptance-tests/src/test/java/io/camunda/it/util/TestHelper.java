@@ -45,6 +45,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
+import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.statistics.response.GlobalJobStatistics;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
@@ -556,6 +557,19 @@ public final class TestHelper {
         "should have items with state",
         expectedCount,
         page -> client.newUserTaskSearchRequest().filter(filter).page(page).execute());
+  }
+
+  public static UserTask waitForUserTask(
+      final CamundaClient client, final Consumer<UserTaskFilter> filter) {
+    final UserTask[] migratedTask = new UserTask[1];
+    Awaitility.await("Should find user task with filter")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              migratedTask[0] =
+                  client.newUserTaskSearchRequest().filter(filter).send().join().singleItem();
+            });
+    return migratedTask[0];
   }
 
   public static void waitForBatchOperationWithCorrectTotalCount(
