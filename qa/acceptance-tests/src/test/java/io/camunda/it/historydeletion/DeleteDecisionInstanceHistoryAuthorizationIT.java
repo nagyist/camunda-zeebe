@@ -7,21 +7,21 @@
  */
 package io.camunda.it.historydeletion;
 
-import static io.camunda.client.api.search.enums.PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE;
-import static io.camunda.client.api.search.enums.PermissionType.DELETE_PROCESS_INSTANCE;
-import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.DELETE_DECISION_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ_DECISION_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.BATCH;
-import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
-import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
-import static io.camunda.it.util.TestHelper.getScopedVariables;
-import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForProcessInstancesToBeCompleted;
+import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
+import static io.camunda.it.util.DmnBuilderHelper.getDmnModelInstance;
+import static io.camunda.it.util.TestHelper.deployDmnModel;
+import static io.camunda.it.util.TestHelper.evaluateDecision;
+import static io.camunda.it.util.TestHelper.waitForDecisionInstanceCount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.Decision;
 import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -29,11 +29,9 @@ import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -41,9 +39,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class DeleteProcessInstanceHistoryAuthorizationIT {
-
-  public static final String PROCESS_ID = "testProcess";
+public class DeleteDecisionInstanceHistoryAuthorizationIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -67,7 +63,7 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
       new TestUser(
           UNAUTHORIZED_USER,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
+          List.of(new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser BATCH_ONLY_USER_DEF =
@@ -75,9 +71,9 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
           BATCH_AUTHORIZED_USER,
           "password",
           List.of(
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*")),
               new Permissions(
-                  BATCH, CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE, List.of("*"))));
+                  BATCH, CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser DELETE_ONLY_USER_DEF =
@@ -85,96 +81,96 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
           SINGLE_AUTHORIZED_USER,
           "password",
           List.of(
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, DELETE_PROCESS_INSTANCE, List.of("*"))));
+              new Permissions(DECISION_DEFINITION, READ_DECISION_INSTANCE, List.of("*")),
+              new Permissions(DECISION_DEFINITION, DELETE_DECISION_INSTANCE, List.of("*"))));
+
+  private static final String DMN_DECISION_ID = "testDecisionDefinition";
+  private static long decisionKey;
 
   @BeforeAll
   static void setUp(@Authenticated final CamundaClient adminClient) {
-    deployProcessAndWaitForIt(
-        adminClient,
-        Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done(),
-        PROCESS_ID + ".bpmn");
+    final var dmnModel = getDmnModelInstance(DMN_DECISION_ID);
+    final Decision decision = deployDmnModel(adminClient, dmnModel, DMN_DECISION_ID);
+    decisionKey = decision.getDecisionKey();
   }
 
   @Test
-  void shouldBeAuthorizedToDeleteProcessInstanceHistoryWithAuthorizedUser(
+  void shouldBeAuthorizedToDeleteDecisionInstanceHistoryWithAuthorizedUser(
       @Authenticated(SINGLE_AUTHORIZED_USER) final CamundaClient camundaClient,
       @Authenticated final CamundaClient adminClient) {
     // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_ID).getProcessInstanceKey();
-    waitForProcessInstancesToBeCompleted(
-        adminClient, f -> f.processInstanceKey(processInstanceKey), 1);
+    final var decisionInstanceKey =
+        evaluateDecision(adminClient, decisionKey, "{}").getDecisionEvaluationKey();
+    waitForDecisionInstanceCount(adminClient, f -> f.decisionInstanceKey(decisionInstanceKey), 1);
 
     // when
     final var result =
-        camundaClient.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
+        camundaClient.newDeleteDecisionInstanceCommand(decisionInstanceKey).send().join();
 
     // then - should not throw an exception
     assertThat(result).isNotNull();
   }
 
   @Test
-  void shouldBeUnauthorizedToDeleteProcessInstanceHistoryWithoutPermissions(
+  void shouldBeUnauthorizedToDeleteDecisionInstanceHistoryWithoutPermissions(
       @Authenticated(UNAUTHORIZED_USER) final CamundaClient camundaClient,
       @Authenticated final CamundaClient adminClient) {
     // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_ID).getProcessInstanceKey();
-    waitForProcessInstancesToBeCompleted(
-        adminClient, f -> f.processInstanceKey(processInstanceKey), 1);
+    final var decisionInstanceKey =
+        evaluateDecision(adminClient, decisionKey, "{}").getDecisionEvaluationKey();
+    waitForDecisionInstanceCount(adminClient, f -> f.decisionInstanceKey(decisionInstanceKey), 1);
 
     // when
     final ThrowingCallable executeDelete =
-        () -> camundaClient.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
+        () -> camundaClient.newDeleteDecisionInstanceCommand(decisionInstanceKey).send().join();
 
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeDelete).actual();
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
-        .contains("Insufficient permissions to perform operation 'DELETE_PROCESS_INSTANCE'");
+        .contains("Insufficient permissions to perform operation 'DELETE_DECISION_INSTANCE'");
   }
 
   @Test
-  void shouldBeUnauthorizedToDeleteSingleProcessInstanceHistoryWithOnlyBatchPermissions(
+  void shouldBeUnauthorizedToDeleteSingleDecisionInstanceHistoryWithOnlyBatchPermissions(
       @Authenticated(BATCH_AUTHORIZED_USER) final CamundaClient camundaClient,
       @Authenticated final CamundaClient adminClient) {
     // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_ID).getProcessInstanceKey();
-    waitForProcessInstancesToBeCompleted(
-        adminClient, f -> f.processInstanceKey(processInstanceKey), 1);
+    final var decisionInstanceKey =
+        evaluateDecision(adminClient, decisionKey, "{}").getDecisionEvaluationKey();
+    waitForDecisionInstanceCount(adminClient, f -> f.decisionInstanceKey(decisionInstanceKey), 1);
 
     // when
     final ThrowingCallable executeDelete =
-        () -> camundaClient.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
+        () -> camundaClient.newDeleteDecisionInstanceCommand(decisionInstanceKey).send().join();
 
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeDelete).actual();
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
-        .contains("Insufficient permissions to perform operation 'DELETE_PROCESS_INSTANCE'");
+        .contains("Insufficient permissions to perform operation 'DELETE_DECISION_INSTANCE'");
   }
 
   @Test
-  void shouldBeAuthorizedToBatchDeleteProcessInstanceHistoryWithAuthorizedUser(
+  void shouldBeAuthorizedToBatchDeleteDecisionInstanceHistoryWithAuthorizedUser(
       @Authenticated(BATCH_AUTHORIZED_USER) final CamundaClient camundaClient,
       @Authenticated final CamundaClient adminClient) {
     // given
-    final String scopeId = UUID.randomUUID().toString();
-    startScopedProcessInstance(adminClient, PROCESS_ID, scopeId);
-    startScopedProcessInstance(adminClient, PROCESS_ID, scopeId);
-    waitForProcessInstancesToBeCompleted(
-        adminClient, f -> f.variables(getScopedVariables(scopeId)), 2);
+    final String dmnId = "batchSuccessTestDecisionId";
+    final var dmnModelBatch = getDmnModelInstance(dmnId);
+    final Decision decisionBatch = deployDmnModel(adminClient, dmnModelBatch, dmnId);
+    evaluateDecision(adminClient, decisionBatch.getDecisionKey(), "{}").getDecisionEvaluationKey();
+    evaluateDecision(adminClient, decisionBatch.getDecisionKey(), "{}").getDecisionEvaluationKey();
+    waitForDecisionInstanceCount(adminClient, f -> f.decisionDefinitionId(dmnId), 2);
 
     // when
     final var result =
         camundaClient
             .newCreateBatchOperationCommand()
-            .deleteProcessInstance()
-            .filter(f -> f.variables(getScopedVariables(scopeId)))
+            .deleteDecisionInstance()
+            .filter(f -> f.decisionDefinitionId(dmnId))
             .send()
             .join();
 
@@ -183,23 +179,23 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToBatchDeleteProcessInstanceHistoryWithoutBatchPermissions(
+  void shouldBeUnauthorizedToBatchDeleteDecisionInstanceHistoryWithoutBatchPermissions(
       @Authenticated(UNAUTHORIZED_USER) final CamundaClient camundaClient,
       @Authenticated final CamundaClient adminClient) {
     // given
-    final String scopeId = UUID.randomUUID().toString();
-    startScopedProcessInstance(adminClient, PROCESS_ID, scopeId);
-    startScopedProcessInstance(adminClient, PROCESS_ID, scopeId);
-    waitForProcessInstancesToBeCompleted(
-        adminClient, f -> f.variables(getScopedVariables(scopeId)), 2);
+    final String dmnId = "batchUnauthorizedId";
+    final var dmnModelBatch = getDmnModelInstance(dmnId);
+    final Decision decisionBatch = deployDmnModel(adminClient, dmnModelBatch, dmnId);
+    evaluateDecision(adminClient, decisionBatch.getDecisionKey(), "{}").getDecisionEvaluationKey();
+    waitForDecisionInstanceCount(adminClient, f -> f.decisionDefinitionId(dmnId), 1);
 
     // when
     final ThrowingCallable executeDelete =
         () ->
             camundaClient
                 .newCreateBatchOperationCommand()
-                .deleteProcessInstance()
-                .filter(f -> f.variables(getScopedVariables(scopeId)))
+                .deleteDecisionInstance()
+                .filter(f -> f.decisionDefinitionId(dmnId))
                 .send()
                 .join();
 
@@ -209,27 +205,26 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .contains(
-            "Insufficient permissions to perform operation 'CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE'");
+            "Insufficient permissions to perform operation 'CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE'");
   }
 
   @Test
-  void shouldBeUnauthorizedToBatchDeleteProcessInstanceHistoryWithOnlySinglePermissions(
+  void shouldBeUnauthorizedToBatchDeleteDecisionInstanceHistoryWithOnlySinglePermissions(
       @Authenticated(SINGLE_AUTHORIZED_USER) final CamundaClient camundaClient,
       @Authenticated final CamundaClient adminClient) {
-    // given
-    final String scopeId = UUID.randomUUID().toString();
-    startScopedProcessInstance(adminClient, PROCESS_ID, scopeId);
-    startScopedProcessInstance(adminClient, PROCESS_ID, scopeId);
-    waitForProcessInstancesToBeCompleted(
-        adminClient, f -> f.variables(getScopedVariables(scopeId)), 2);
+    final String dmnId = "batchOnlySingleUnauthorizedId";
+    final var dmnModelBatch = getDmnModelInstance(dmnId);
+    final Decision decisionBatch = deployDmnModel(adminClient, dmnModelBatch, dmnId);
+    evaluateDecision(adminClient, decisionBatch.getDecisionKey(), "{}").getDecisionEvaluationKey();
+    waitForDecisionInstanceCount(adminClient, f -> f.decisionDefinitionId(dmnId), 1);
 
     // when
     final ThrowingCallable executeDelete =
         () ->
             camundaClient
                 .newCreateBatchOperationCommand()
-                .deleteProcessInstance()
-                .filter(f -> f.variables(getScopedVariables(scopeId)))
+                .deleteDecisionInstance()
+                .filter(f -> f.decisionDefinitionId(dmnId))
                 .send()
                 .join();
 
@@ -239,6 +234,6 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .contains(
-            "Insufficient permissions to perform operation 'CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE'");
+            "Insufficient permissions to perform operation 'CREATE_BATCH_OPERATION_DELETE_DECISION_INSTANCE'");
   }
 }

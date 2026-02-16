@@ -71,6 +71,16 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-dmn-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
       <scope>test</scope>

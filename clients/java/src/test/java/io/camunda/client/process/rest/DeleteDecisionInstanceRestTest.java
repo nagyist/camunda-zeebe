@@ -19,24 +19,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.DeleteProcessInstanceRequest;
+import io.camunda.client.protocol.rest.DeleteDecisionInstanceRequest;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import org.junit.jupiter.api.Test;
 
-public class DeleteProcessInstanceRestTest extends ClientRestTest {
+public class DeleteDecisionInstanceRestTest extends ClientRestTest {
 
-  private static final long PROCESS_INSTANCE_KEY = 123L;
+  private static final long DECISION_INSTANCE_KEY = 123L;
 
   @Test
   public void shouldSendDeleteCommand() {
     // when
-    client.newDeleteProcessInstanceCommand(PROCESS_INSTANCE_KEY).send().join();
+    client.newDeleteDecisionInstanceCommand(DECISION_INSTANCE_KEY).send().join();
 
     // then
-    final DeleteProcessInstanceRequest request =
-        gatewayService.getLastRequest(DeleteProcessInstanceRequest.class);
+    final DeleteDecisionInstanceRequest request =
+        gatewayService.getLastRequest(DeleteDecisionInstanceRequest.class);
     assertThat(request).isNotNull();
   }
 
@@ -44,11 +44,11 @@ public class DeleteProcessInstanceRestTest extends ClientRestTest {
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
-        RestGatewayPaths.getDeleteProcessInstanceUrl(PROCESS_INSTANCE_KEY),
+        RestGatewayPaths.getDeleteDecisionInstanceUrl(DECISION_INSTANCE_KEY),
         () -> new ProblemDetail().title("Invalid request").status(400));
 
     assertThatThrownBy(
-            () -> client.newDeleteProcessInstanceCommand(PROCESS_INSTANCE_KEY).send().join())
+            () -> client.newDeleteDecisionInstanceCommand(DECISION_INSTANCE_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
@@ -60,13 +60,13 @@ public class DeleteProcessInstanceRestTest extends ClientRestTest {
 
     // when
     client
-        .newDeleteProcessInstanceCommand(PROCESS_INSTANCE_KEY)
+        .newDeleteDecisionInstanceCommand(DECISION_INSTANCE_KEY)
         .operationReference(operationReference)
         .execute();
 
     // then
-    final DeleteProcessInstanceRequest request =
-        gatewayService.getLastRequest(DeleteProcessInstanceRequest.class);
+    final DeleteDecisionInstanceRequest request =
+        gatewayService.getLastRequest(DeleteDecisionInstanceRequest.class);
     assertThat(request.getOperationReference()).isEqualTo(operationReference);
   }
 }
