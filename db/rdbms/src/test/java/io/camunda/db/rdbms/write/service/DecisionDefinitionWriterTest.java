@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class DecisionDefinitionWriterTest {
@@ -42,5 +43,14 @@ class DecisionDefinitionWriterTest {
                     model.decisionDefinitionKey(),
                     "io.camunda.db.rdbms.sql.DecisionDefinitionMapper.insert",
                     model)));
+  }
+
+  @Test
+  void shouldDeleteDecisionDefinitionsByKeys() {
+    final var decisionRequirementsKeys = List.of(1L, 2L, 3L);
+
+    writer.deleteByKeys(decisionRequirementsKeys);
+
+    verify(mapper).deleteByKeys(eq(decisionRequirementsKeys));
   }
 }
