@@ -62,6 +62,8 @@
     "taskDetailsHistoryForbiddenDesc": "Parece que no tienes los permisos necesarios para ver el historial de esta tarea. <strong>Ponte en contacto con tu administrador de clúster</strong> para solicitar acceso.",
     "taskDetailsHistoryForbiddenLinkLabel": "Más información sobre roles y permisos",
     "taskDetailsHistoryOperationHeader": "Operación",
+    "taskDetailsHistoryPropertyHeader": "Propiedad",
+    "taskDetailsHistoryPropertyAssignee": "Asignada",
     "taskDetailsHistoryStatusHeader": "Estado",
     "taskDetailsHistoryActorHeader": "Actor",
     "taskDetailsHistoryTimeHeader": "Hora",
