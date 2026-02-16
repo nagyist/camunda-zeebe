@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -50,6 +51,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
   private final CompletableFuture<Boolean> readinessFuture = new CompletableFuture<>();
+  private final ExecutorService backgroundTaskExecutor;
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -76,6 +78,10 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
               thread.setDaemon(true);
               return thread;
             });
+
+    // Used for short tasks that need to be executed asynchronously without blocking the main lease
+    // renewal
+    backgroundTaskExecutor = Executors.newVirtualThreadPerTaskExecutor();
   }
 
   @Override
@@ -84,6 +90,12 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     return CompletableFuture.runAsync(() -> acquireInitialLease(availableNodeIdCount), executor)
         .thenRun(this::startRenewalTimer)
         .thenRun(() -> scheduleReadinessCheck(clusterSize));
+  }
+
+  @Override
+  public CompletableFuture<Void> scale(final int newClusterSize) {
+    return CompletableFuture.runAsync(
+        () -> nodeIdRepository.scale(newClusterSize), backgroundTaskExecutor);
   }
 
   @Override
@@ -278,6 +290,13 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
           executor.shutdownNow();
         }
+      }
+    }
+
+    if (!backgroundTaskExecutor.isShutdown()) {
+      backgroundTaskExecutor.shutdown();
+      if (!backgroundTaskExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+        backgroundTaskExecutor.shutdownNow();
       }
     }
   }

@@ -138,6 +138,116 @@ class S3NodeIdRepositoryIT {
           .isInstanceOf(NoSuchKeyException.class)
           .withMessageContaining("The specified key does not exist");
     }
+
+    @Test
+    void shouldInitializeNewNodesWhenScalingUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+
+      // when
+      repository.scale(4);
+
+      // then
+      for (int i = 0; i < 4; i++) {
+        final var lease = repository.getLease(i);
+        assertThat(lease).isInstanceOf(StoredLease.Uninitialized.class);
+        assertThat(lease.eTag()).isNotEmpty();
+      }
+    }
+
+    @Test
+    void shouldNotReinitializeExistingNodesWhenScalingUp() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+      final var lease0 = repository.getLease(0);
+      final var lease1 = repository.getLease(1);
+
+      // when
+      repository.scale(4);
+
+      // then
+      assertThat(repository.getLease(0)).isEqualTo(lease0);
+      assertThat(repository.getLease(1)).isEqualTo(lease1);
+    }
+
+    @Test
+    void shouldRemoveNodesWhenScalingDown() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      final var lease0 = repository.getLease(0);
+      final var lease1 = repository.getLease(1);
+
+      // when
+      repository.scale(2);
+
+      // then
+      assertThat(repository.getLease(0)).isEqualTo(lease0);
+      assertThat(repository.getLease(1)).isEqualTo(lease1);
+
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(3))
+          .isInstanceOf(NoSuchKeyException.class)
+          .withMessageContaining("The specified key does not exist");
+
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(2))
+          .isInstanceOf(NoSuchKeyException.class)
+          .withMessageContaining("The specified key does not exist");
+    }
+
+    @Test
+    void shouldScaleWithSameSize() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(2);
+      final var lease0 = repository.getLease(0);
+      final var lease1 = repository.getLease(1);
+
+      // when
+      repository.scale(2);
+
+      // then
+      assertThat(repository.getLease(0)).isEqualTo(lease0);
+      assertThat(repository.getLease(1)).isEqualTo(lease1);
+    }
+
+    @Test
+    void shouldNotAllowNegativeClusterSize() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+
+      // when/then
+      assertThatThrownBy(() -> repository.initialize(-1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("initialCount must be greater than 0");
+      repository.initialize(2);
+      assertThatThrownBy(() -> repository.scale(-1))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("newCount must be greater than 0");
+    }
+
+    @Test
+    void shouldRemoveActiveLeasesWhenScalingDown() {
+      // given
+      repository = fixed(Clock.systemUTC().millis());
+      repository.initialize(4);
+      final var lease2 = repository.getLease(2);
+      final var toAcquire = lease2.acquireInitialLease(taskId, clock, EXPIRY_DURATION).get();
+      final var acquired = repository.acquire(toAcquire, lease2.eTag());
+      assertThat(acquired).isNotNull();
+
+      // when
+      repository.scale(2);
+
+      // then
+      assertThatException()
+          .isThrownBy(() -> repository.getLease(2))
+          .isInstanceOf(NoSuchKeyException.class)
+          .withMessageContaining("The specified key does not exist");
+    }
   }
 
   @Nested
