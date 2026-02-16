@@ -48,6 +48,12 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
   return Wrapper;
 }
 
+const mockScrollableContainerRef = {current: null};
+const mockScrollHandlers = {
+  onScrollStartReach: () => {},
+  onScrollEndReach: () => {},
+};
+
 describe('InstancesByProcessDefinition', () => {
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
@@ -55,17 +61,37 @@ describe('InstancesByProcessDefinition', () => {
   });
 
   it('should display skeleton when loading', () => {
-    render(<InstancesByProcessDefinition status="pending" items={[]} />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <InstancesByProcessDefinition
+        status="pending"
+        items={[]}
+        scrollableContainerRef={mockScrollableContainerRef}
+        isFetchingNextPage={false}
+        isFetchingPreviousPage={false}
+        {...mockScrollHandlers}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
   });
 
   it('should handle errors', () => {
-    render(<InstancesByProcessDefinition status="error" items={[]} />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <InstancesByProcessDefinition
+        status="error"
+        items={[]}
+        scrollableContainerRef={mockScrollableContainerRef}
+        isFetchingNextPage={false}
+        isFetchingPreviousPage={false}
+        {...mockScrollHandlers}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
   });
@@ -79,6 +105,10 @@ describe('InstancesByProcessDefinition', () => {
       <InstancesByProcessDefinition
         status="success"
         items={mockWithMultipleVersions.items}
+        scrollableContainerRef={mockScrollableContainerRef}
+        isFetchingNextPage={false}
+        isFetchingPreviousPage={false}
+        {...mockScrollHandlers}
       />,
       {
         wrapper: createWrapper(),
@@ -159,6 +189,10 @@ describe('InstancesByProcessDefinition', () => {
       <InstancesByProcessDefinition
         status="success"
         items={mockWithSingleVersion.items}
+        scrollableContainerRef={mockScrollableContainerRef}
+        isFetchingNextPage={false}
+        isFetchingPreviousPage={false}
+        {...mockScrollHandlers}
       />,
       {
         wrapper: createWrapper(),
@@ -199,6 +233,10 @@ describe('InstancesByProcessDefinition', () => {
       <InstancesByProcessDefinition
         status="success"
         items={mockWithSingleVersion.items}
+        scrollableContainerRef={mockScrollableContainerRef}
+        isFetchingNextPage={false}
+        isFetchingPreviousPage={false}
+        {...mockScrollHandlers}
       />,
       {
         wrapper: createWrapper(),
