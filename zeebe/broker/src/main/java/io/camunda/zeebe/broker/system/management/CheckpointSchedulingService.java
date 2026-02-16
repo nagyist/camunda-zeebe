@@ -84,8 +84,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
     }
 
     final var retentionCfg = backupCfg.getRetention();
-    if (retentionCfg.getCleanupSchedule() != null
-        && !(retentionCfg.getCleanupSchedule() instanceof NoneSchedule)) {
+    if (shouldRegisterRetentionJob()) {
       final var backupStore = buildBackupStore(backupCfg);
       backupRetentionJob =
           new BackupRetention(
@@ -192,6 +191,14 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
         .min(Comparator.comparing(Member::id, MemberId::compareTo))
         .map(lowestMember -> !lowestMember.id().equals(localMemberId))
         .orElse(false);
+  }
+
+  private boolean shouldRegisterRetentionJob() {
+    final var retentionCfg = backupCfg.getRetention();
+    return retentionCfg.getWindow() != null
+        && !retentionCfg.getWindow().isZero()
+        && retentionCfg.getCleanupSchedule() != null
+        && !(retentionCfg.getCleanupSchedule() instanceof NoneSchedule);
   }
 
   private BackupStore buildBackupStore(final BackupCfg backupCfg) {

@@ -21,9 +21,11 @@ public class VariableAddUpdateAuditLogTransformer
 
   @Override
   public void transform(final Record<VariableRecordValue> record, final AuditLogEntry log) {
-    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
+    final VariableRecordValue value = record.getValue();
+    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
     if (rootProcessInstanceKey > 0) {
       log.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
+    log.setEntityDescription(value.getName());
   }
 }

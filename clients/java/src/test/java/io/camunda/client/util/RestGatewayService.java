@@ -414,6 +414,17 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
   }
 
+  public void onUpdateGlobalClusterVariableRequest(
+      final String variableName, final ClusterVariableResult response) {
+    registerPut(RestGatewayPaths.getClusterVariablesUpdateGlobalUrl(variableName), response);
+  }
+
+  public void onUpdateTenantClusterVariableRequest(
+      final String tenantId, final String variableName, final ClusterVariableResult response) {
+    registerPut(
+        RestGatewayPaths.getClusterVariablesUpdateTenantUrl(tenantId, variableName), response);
+  }
+
   public void onSearchClusterVariableRequest(final SearchQueryResponse response) {
     registerPost(RestGatewayPaths.getClusterVariablesSearchUrl(), response);
   }
@@ -461,6 +472,13 @@ public class RestGatewayService {
   public void onIncidentProcessInstanceStatisticsByDefinitionRequest(
       final IncidentProcessInstanceStatisticsByDefinitionQueryResult response) {
     registerPost(RestGatewayPaths.getIncidentProcessInstanceStatisticsByDefinitionUrl(), response);
+  }
+
+  public void onGlobalJobStatisticsRequest(
+      final io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult response) {
+    register(
+        WireMock.get(WireMock.urlPathEqualTo(RestGatewayPaths.getGlobalJobStatisticsUrl())),
+        response);
   }
 
   public void onStatusRequestHealthy() {

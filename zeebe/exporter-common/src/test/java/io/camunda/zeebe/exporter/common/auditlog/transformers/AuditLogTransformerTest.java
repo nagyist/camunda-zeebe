@@ -157,7 +157,7 @@ class AuditLogTransformerTest {
   class CreateTest {
     @Test
     void shouldCreateAuditLogEntryWithSuccess() {
-      final Record record =
+      final var record =
           factory.generateRecord(
               ValueType.PROCESS_INSTANCE_MODIFICATION,
               r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED));
@@ -199,11 +199,12 @@ class AuditLogTransformerTest {
 
       assertThat(log).isNotNull();
       assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
+      assertThat(log.getEntityDescription()).isEqualTo(record.getRejectionType().name());
     }
 
     @Test
     void shouldCreateAuditLogEntryWithCustomTransformerResult() {
-      final Record record =
+      final var record =
           factory.generateRecord(
               ValueType.PROCESS_INSTANCE_MODIFICATION,
               r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED));

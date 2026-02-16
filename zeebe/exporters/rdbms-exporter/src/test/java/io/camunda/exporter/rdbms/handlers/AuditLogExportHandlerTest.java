@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -144,7 +145,10 @@ class AuditLogExportHandlerTest {
             .setDeploymentKey(606L)
             .setFormKey(707L)
             .setResourceKey(808L)
-            .setRootProcessInstanceKey(909L);
+            .setRootProcessInstanceKey(909L)
+            .setRelatedEntityKey("related-entity-key")
+            .setRelatedEntityType(AuditLogEntityType.USER)
+            .setEntityDescription("entity-description");
 
     when(transformer.create(record)).thenReturn(entry);
     handler.export(record);
@@ -202,5 +206,8 @@ class AuditLogExportHandlerTest {
     assertThat(entity.resourceKey()).isEqualTo(808L);
     assertThat(entity.rootProcessInstanceKey()).isEqualTo(909L);
     assertThat(entity.partitionId()).isEqualTo(record.getPartitionId());
+    assertThat(entity.relatedEntityKey()).isEqualTo("related-entity-key");
+    assertThat(entity.relatedEntityType()).isEqualTo(AuditLogEntityType.USER);
+    assertThat(entity.entityDescription()).isEqualTo("entity-description");
   }
 }

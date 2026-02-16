@@ -33,6 +33,10 @@ public class RestGatewayPaths {
       URL_CLUSTER_VARIABLES + "/global/%s";
   private static final String URL_CLUSTER_VARIABLES_GET_TENANT =
       URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
+  private static final String URL_CLUSTER_VARIABLES_UPDATE_GLOBAL =
+      URL_CLUSTER_VARIABLES + "/global/%s";
+  private static final String URL_CLUSTER_VARIABLES_UPDATE_TENANT =
+      URL_CLUSTER_VARIABLES + "/tenants/%s/%s";
   private static final String URL_CLUSTER_VARIABLES_SEARCH = URL_CLUSTER_VARIABLES + "/search";
   private static final String URL_CLOCK_PIN = REST_API_PATH + "/clock";
   private static final String URL_CLOCK_RESET = REST_API_PATH + "/clock/reset";
@@ -112,6 +116,7 @@ public class RestGatewayPaths {
       REST_API_PATH + "/incidents/statistics/process-instances-by-definition";
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
       REST_API_PATH + "/incidents/statistics/process-instances-by-error";
+  private static final String URL_GLOBAL_JOB_STATISTICS = REST_API_PATH + "/jobs/statistics/global";
 
   /**
    * @return the topology request URL
@@ -391,6 +396,15 @@ public class RestGatewayPaths {
     return URL_CLUSTER_VARIABLES_SEARCH;
   }
 
+  public static String getClusterVariablesUpdateGlobalUrl(final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_UPDATE_GLOBAL, variableName);
+  }
+
+  public static String getClusterVariablesUpdateTenantUrl(
+      final String tenantId, final String variableName) {
+    return String.format(URL_CLUSTER_VARIABLES_UPDATE_TENANT, tenantId, variableName);
+  }
+
   public static String getAuditLogGetUrl(final String auditLogKey) {
     return String.format(URL_AUDIT_LOG_GET, auditLogKey);
   }
@@ -417,6 +431,10 @@ public class RestGatewayPaths {
 
   public static String getIncidentProcessInstanceStatisticsByDefinitionUrl() {
     return URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_PROCESS_DEFINITION;
+  }
+
+  public static String getGlobalJobStatisticsUrl() {
+    return URL_GLOBAL_JOB_STATISTICS;
   }
 
   public static String getResourceDeletionUrl(final long resourceKey) {

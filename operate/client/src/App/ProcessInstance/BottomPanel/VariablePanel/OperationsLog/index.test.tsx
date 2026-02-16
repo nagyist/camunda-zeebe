@@ -6,15 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {describe, it, expect, vi} from 'vitest';
 import {OperationsLog} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {MemoryRouter} from 'react-router-dom';
-import React from 'react';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockQueryAuditLogs} from 'modules/mocks/api/v2/auditLogs/queryAuditLogs';
 import {notificationsStore} from 'modules/stores/notifications';
+import {Paths} from 'modules/Routes';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -22,33 +24,45 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const Wrapper = ({children}: {children?: React.ReactNode}) => {
-  return (
+const getWrapper = (searchParams?: Record<string, string>) => {
+  const params = new URLSearchParams(searchParams);
+  const Wrapper = ({children}: {children?: React.ReactNode}) => (
     <QueryClientProvider client={getMockQueryClient()}>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter
+        initialEntries={[
+          `${Paths.processInstance(mockProcessInstance.processInstanceKey)}?${params.toString()}`,
+        ]}
+      >
+        <Routes>
+          <Route path={Paths.processInstance()} element={children} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>
   );
+  return Wrapper;
 };
 
 describe('OperationsLog', () => {
   it('should show skeleton state when data undefined', () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withServerError();
 
     render(<OperationsLog isVisible={false} />, {
-      wrapper: Wrapper,
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
   });
 
   it('should render empty state when no items are present', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withSuccess({
       items: [],
       page: {totalItems: 0},
     });
 
-    render(<OperationsLog isVisible={true} />, {
-      wrapper: Wrapper,
+    render(<OperationsLog isVisible />, {
+      wrapper: getWrapper(),
     });
 
     expect(
@@ -57,6 +71,7 @@ describe('OperationsLog', () => {
   });
 
   it('should render rows when data is present', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withSuccess({
       items: [
         {
@@ -75,8 +90,8 @@ describe('OperationsLog', () => {
       page: {totalItems: 1},
     });
 
-    render(<OperationsLog isVisible={true} />, {
-      wrapper: Wrapper,
+    render(<OperationsLog isVisible />, {
+      wrapper: getWrapper(),
     });
 
     expect(
@@ -102,23 +117,25 @@ describe('OperationsLog', () => {
   });
 
   it('should handle loading state', () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withDelay({
       items: [],
       page: {totalItems: 0},
     });
 
-    render(<OperationsLog isVisible={true} />, {
-      wrapper: Wrapper,
+    render(<OperationsLog isVisible />, {
+      wrapper: getWrapper(),
     });
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
   });
 
   it('should handle error state', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withNetworkError();
 
-    render(<OperationsLog isVisible={true} />, {
-      wrapper: Wrapper,
+    render(<OperationsLog isVisible />, {
+      wrapper: getWrapper(),
     });
 
     await waitFor(() =>
@@ -128,5 +145,23 @@ describe('OperationsLog', () => {
         title: 'Audit logs could not be fetched',
       }),
     );
+  });
+
+  it('should show a warning if multiple element instances are selected', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {totalItems: 2},
+    });
+
+    render(<OperationsLog isVisible />, {
+      wrapper: getWrapper({elementId: 'Activity_1'}),
+    });
+
+    expect(
+      await screen.findByText(
+        'To view the Operations Log, select a single Element Instance in the Instance History.',
+      ),
+    ).toBeInTheDocument();
   });
 });

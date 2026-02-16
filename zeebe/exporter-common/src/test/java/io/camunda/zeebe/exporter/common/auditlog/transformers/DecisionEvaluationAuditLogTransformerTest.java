@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -190,7 +191,10 @@ class DecisionEvaluationAuditLogTransformerTest {
     final Record<DecisionEvaluationRecordValue> record =
         factory.generateRecord(
             ValueType.DECISION_EVALUATION,
-            r -> r.withIntent(DecisionEvaluationIntent.FAILED).withValue(recordValue));
+            r ->
+                r.withIntent(DecisionEvaluationIntent.FAILED)
+                    .withRejectionType(RejectionType.INVALID_STATE)
+                    .withValue(recordValue));
 
     // when
     final var entity = AuditLogEntry.of(record);
@@ -199,5 +203,6 @@ class DecisionEvaluationAuditLogTransformerTest {
     // then
     assertThat(entity.getResult())
         .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
+    assertThat(entity.getEntityDescription()).isEqualTo(RejectionType.INVALID_STATE.name());
   }
 }

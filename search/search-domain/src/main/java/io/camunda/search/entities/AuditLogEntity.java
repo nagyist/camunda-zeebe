@@ -310,7 +310,8 @@ public record AuditLogEntity(
     GROUP,
     TENANT,
     AUTHORIZATION,
-    RESOURCE
+    RESOURCE,
+    CLIENT
   }
 
   public enum AuditLogOperationCategory {

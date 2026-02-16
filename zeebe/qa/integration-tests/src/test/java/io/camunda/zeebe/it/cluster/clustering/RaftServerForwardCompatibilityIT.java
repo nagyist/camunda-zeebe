@@ -21,7 +21,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @ZeebeIntegration
-@Timeout(2 * 60)
+@Timeout(3 * 60)
 public class RaftServerForwardCompatibilityIT {
 
   private static final int PARTITION_COUNT = 3;
@@ -46,25 +46,49 @@ public class RaftServerForwardCompatibilityIT {
 
     return Stream.of(
         Arguments.of(
-            "8.9 Mode",
+            "8.9 Mode with Embedded Gateway",
             createTestClusterWithBrokerConfiguration(
                 RaftServerForwardCompatibilityIT::configure89Mode)),
         Arguments.of(
-            "8.9 to 8.10 Upgrade",
+            "8.9 to 8.10 Upgrade with Embedded Gateway",
             createTestClusterWithBrokerConfiguration(
                 RaftServerForwardCompatibilityIT::configure89To810Mode)),
         Arguments.of(
-            "8.10 Mode",
+            "8.10 Mode with Embedded Gateway",
             createTestClusterWithBrokerConfiguration(
                 RaftServerForwardCompatibilityIT::configure810Mode)),
         Arguments.of(
-            "8.10 to 8.11 Upgrade",
+            "8.10 to 8.11 Upgrade with Embedded Gateway",
             createTestClusterWithBrokerConfiguration(
                 RaftServerForwardCompatibilityIT::configure810To811Mode)),
         Arguments.of(
-            "8.11 Mode",
+            "8.11 Mode with Embedded Gateway",
             createTestClusterWithBrokerConfiguration(
-                RaftServerForwardCompatibilityIT::configure811Mode)));
+                RaftServerForwardCompatibilityIT::configure811Mode)),
+        Arguments.of(
+            "8.9 Mode with Standalone Gateway",
+            createTestClusterWithStandaloneGateway(
+                RaftServerForwardCompatibilityIT::configure89Mode, true)),
+        Arguments.of(
+            "8.9 to 8.10 Upgrade with Standalone Gateway (sendOnLegacySubject = true)",
+            createTestClusterWithStandaloneGateway(
+                RaftServerForwardCompatibilityIT::configure89To810Mode, true)),
+        Arguments.of(
+            "8.9 to 8.10 Upgrade with Standalone Gateway (sendOnLegacySubject = false)",
+            createTestClusterWithStandaloneGateway(
+                RaftServerForwardCompatibilityIT::configure89To810Mode, false)),
+        Arguments.of(
+            "8.10 Mode with Standalone Gateway",
+            createTestClusterWithStandaloneGateway(
+                RaftServerForwardCompatibilityIT::configure810Mode, false)),
+        Arguments.of(
+            "8.10 to 8.11 Upgrade with Standalone Gateway",
+            createTestClusterWithStandaloneGateway(
+                RaftServerForwardCompatibilityIT::configure810To811Mode, false)),
+        Arguments.of(
+            "8.11 Mode with Standalone Gateway",
+            createTestClusterWithStandaloneGateway(
+                RaftServerForwardCompatibilityIT::configure811Mode, false)));
   }
 
   static TestCluster createTestClusterWithBrokerConfiguration(
@@ -74,6 +98,21 @@ public class RaftServerForwardCompatibilityIT {
         .withPartitionsCount(PARTITION_COUNT)
         .withReplicationFactor(REPLICATION_FACTOR)
         .withBrokerConfig(brokerConfigurationApplier)
+        .build();
+  }
+
+  static TestCluster createTestClusterWithStandaloneGateway(
+      final BiConsumer<MemberId, TestStandaloneBroker> brokerConfigurationApplier,
+      final boolean gatewaySendOnLegacySubject) {
+    return TestCluster.builder()
+        .withBrokersCount(PARTITION_COUNT)
+        .withPartitionsCount(PARTITION_COUNT)
+        .withReplicationFactor(REPLICATION_FACTOR)
+        .withBrokerConfig(brokerConfigurationApplier)
+        .withEmbeddedGateway(false)
+        .withGatewaysCount(1)
+        .withGatewayConfig(
+            m -> m.withClusterConfig(c -> c.setSendOnLegacySubject(gatewaySendOnLegacySubject)))
         .build();
   }
 

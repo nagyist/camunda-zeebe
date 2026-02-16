@@ -8,7 +8,7 @@
 
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {testData} from './index.setup';
-import {createUser, createvariable} from 'modules/testUtils';
+import {createUser, createVariable} from 'modules/testUtils';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -107,7 +107,7 @@ const mockRequests = () => {
     ],
   });
   mockSearchVariables().withSuccess({
-    items: [createvariable()],
+    items: [createVariable()],
     page: {
       totalItems: 1,
     },
