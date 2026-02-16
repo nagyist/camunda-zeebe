@@ -634,6 +634,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async fillMonacoEditor(editor: Locator, value: string) {
-    await this.page.keyboard.type(value, {delay: 0});
+    await editor.evaluate((el: HTMLElement) => el.focus());
+    await this.page.keyboard.insertText(value);
   }
 }
