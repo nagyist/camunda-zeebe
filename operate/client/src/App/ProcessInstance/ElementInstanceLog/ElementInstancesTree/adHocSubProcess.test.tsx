@@ -18,6 +18,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
@@ -57,6 +58,9 @@ describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
     expect(screen.queryByText('Task A')).not.toBeInTheDocument();
 
     mockSearchElementInstances().withSuccess(adHocNodeElementInstances.level2);
+    mockFetchElementInstance(':id').withSuccess(
+      adHocNodeElementInstances.level1.items[1]!,
+    );
 
     await user.type(
       await screen.findByLabelText('Ad Hoc Sub Process', {

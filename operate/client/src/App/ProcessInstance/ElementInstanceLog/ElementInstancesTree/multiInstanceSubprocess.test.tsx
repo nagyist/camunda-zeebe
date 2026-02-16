@@ -14,12 +14,42 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const diagramModel = await parseDiagramXML(multiInstanceProcess);
 const businessObjects = businessObjectsParser({diagramModel});
+
+const MULTI_INSTANCE_BODY_ELEMENT: ElementInstance = {
+  elementInstanceKey: '2251799813686156',
+  processInstanceKey: '2251799813686118',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionId: 'multiInstanceProcess',
+  state: 'ACTIVE',
+  type: 'MULTI_INSTANCE_BODY',
+  elementId: 'filterMapSubProcess',
+  elementName: 'Filter-Map Sub Process',
+  hasIncident: true,
+  tenantId: '<default>',
+  startDate: '2020-08-18T12:07:34.205+0000',
+};
+
+const SUB_PROCESS_ELEMENT: ElementInstance = {
+  elementInstanceKey: '2251799813686166',
+  processInstanceKey: '2251799813686118',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionId: 'multiInstanceProcess',
+  state: 'ACTIVE',
+  type: 'SUB_PROCESS',
+  elementId: 'filterMapSubProcess',
+  elementName: 'Filter-Map Sub Process',
+  hasIncident: true,
+  tenantId: '<default>',
+  startDate: '2020-08-18T12:07:34.281+0000',
+};
 
 describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
@@ -32,6 +62,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
 
     mockSearchElementInstances().withSuccess({
       items: [
+        MULTI_INSTANCE_BODY_ELEMENT,
         {
           elementInstanceKey: '2251799813686130',
           processInstanceKey: '2251799813686118',
@@ -45,19 +76,6 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
-        },
-        {
-          elementInstanceKey: '2251799813686156',
-          processInstanceKey: '2251799813686118',
-          processDefinitionKey: '2251799813686038',
-          processDefinitionId: 'multiInstanceProcess',
-          state: 'ACTIVE',
-          type: 'MULTI_INSTANCE_BODY',
-          elementId: 'filterMapSubProcess',
-          elementName: 'Filter-Map Sub Process',
-          hasIncident: true,
-          tenantId: '<default>',
-          startDate: '2020-08-18T12:07:34.205+0000',
         },
       ],
       page: {totalItems: 2},
@@ -113,23 +131,12 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
     mockSearchElementInstances().withSuccess({
-      items: [
-        {
-          elementInstanceKey: '2251799813686166',
-          processInstanceKey: '2251799813686118',
-          processDefinitionKey: '2251799813686038',
-          processDefinitionId: 'multiInstanceProcess',
-          state: 'ACTIVE',
-          type: 'SUB_PROCESS',
-          elementId: 'filterMapSubProcess',
-          elementName: 'Filter-Map Sub Process',
-          hasIncident: true,
-          tenantId: '<default>',
-          startDate: '2020-08-18T12:07:34.281+0000',
-        },
-      ],
+      items: [SUB_PROCESS_ELEMENT],
       page: {totalItems: 1},
     });
+    mockFetchElementInstance(
+      MULTI_INSTANCE_BODY_ELEMENT.elementInstanceKey,
+    ).withSuccess(MULTI_INSTANCE_BODY_ELEMENT);
 
     await user.type(
       await screen.findByLabelText('Filter-Map Sub Process (Multi Instance)', {
@@ -165,6 +172,9 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
       ],
       page: {totalItems: 1},
     });
+    mockFetchElementInstance(
+      SUB_PROCESS_ELEMENT.elementInstanceKey,
+    ).withSuccess(SUB_PROCESS_ELEMENT);
 
     await user.type(
       await screen.findByLabelText('Filter-Map Sub Process', {

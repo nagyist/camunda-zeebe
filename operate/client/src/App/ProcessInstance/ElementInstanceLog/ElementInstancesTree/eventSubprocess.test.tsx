@@ -17,6 +17,7 @@ import {eventSubProcess} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {parseDiagramXML} from 'modules/utils/bpmn';
@@ -59,6 +60,9 @@ describe('ElementInstancesTree - Event Subprocess', () => {
 
     mockSearchElementInstances().withSuccess(
       eventSubProcessElementInstances.level2,
+    );
+    mockFetchElementInstance(':id').withSuccess(
+      eventSubProcessElementInstances.level1.items[2]!,
     );
 
     await user.type(
