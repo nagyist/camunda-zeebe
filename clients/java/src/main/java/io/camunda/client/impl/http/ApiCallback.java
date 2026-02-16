@@ -22,6 +22,7 @@ import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.HttpStatusCode;
+import io.camunda.client.impl.Loggers;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -132,6 +133,10 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
         } catch (final IllegalArgumentException e) {
           // Server returned an invalid URI; leave instance as null
           // to avoid masking the original HTTP error
+          Loggers.LOGGER.warn(
+              "Failed to parse ProblemDetail instance as URI: '{}'. Ignoring invalid value.",
+              instanceValue,
+              e);
         }
       }
       problem
