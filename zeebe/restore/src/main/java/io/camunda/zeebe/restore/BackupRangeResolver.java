@@ -132,10 +132,10 @@ public final class BackupRangeResolver {
 
     // if to was not set, then the interval can be computed with `from` and the last backup
     final var interval =
-        to != null
-            ? Interval.closed(from, to)
-            : Interval.closed(
-                from, statusInterval.getRight().end().descriptor().get().checkpointTimestamp());
+        Interval.closed(
+            from,
+            Optional.ofNullable(to)
+                .orElse(statusInterval.getRight().end().descriptor().get().checkpointTimestamp()));
 
     // Retrieve all BackupStatus in the BackupRange
     // note that all backups must be retrieved as we only know the extremes, not every backup inside
