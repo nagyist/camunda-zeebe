@@ -70,12 +70,7 @@ public class RocksDb {
    * value is set to 'BROKER', the total memory allocated to RocksDB will be equal to the configured
    * memory limit. If set to 'FRACTION', Zeebe will allocate a configurable percentage of total RAM
    * to RocksDB that can be configured via the memoryFraction configuration [0,1].
-   *
-   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
-   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
-   *     alternative configuration for memory allocation.
    */
-  @Deprecated
   private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
 
   /**
@@ -185,22 +180,10 @@ public class RocksDb {
     this.memoryLimit = memoryLimit;
   }
 
-  /**
-   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
-   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
-   *     alternative configuration for memory allocation.
-   */
-  @Deprecated
   public MemoryAllocationStrategy getMemoryAllocationStrategy() {
     return memoryAllocationStrategy;
   }
 
-  /**
-   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
-   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
-   *     alternative configuration for memory allocation.
-   */
-  @Deprecated
   public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {
     this.memoryAllocationStrategy = memoryAllocationStrategy;
   }

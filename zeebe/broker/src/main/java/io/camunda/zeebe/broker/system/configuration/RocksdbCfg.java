@@ -29,15 +29,7 @@ public final class RocksdbCfg implements ConfigurationEntry {
   private int ioRateBytesPerSecond = RocksDbConfiguration.DEFAULT_IO_RATE_BYTES_PER_SECOND;
   private boolean disableWal = RocksDbConfiguration.DEFAULT_WAL_DISABLED;
   private boolean enableSstPartitioning = RocksDbConfiguration.DEFAULT_SST_PARTITIONING_ENABLED;
-
-  /**
-   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
-   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
-   *     alternative configuration for memory allocation.
-   */
-  @Deprecated
   private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
-
   private double memoryFraction = 0.1;
   private double maxMemoryFraction = -1;
 
@@ -93,22 +85,10 @@ public final class RocksdbCfg implements ConfigurationEntry {
     this.memoryFraction = memoryFraction;
   }
 
-  /**
-   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
-   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
-   *     alternative configuration for memory allocation.
-   */
-  @Deprecated
   public MemoryAllocationStrategy getMemoryAllocationStrategy() {
     return memoryAllocationStrategy;
   }
 
-  /**
-   * @deprecated This configuration property is deprecated and will be removed in 8.10. The default
-   *     behavior will be per {@link MemoryAllocationStrategy#FRACTION}. Please use the recommended
-   *     alternative configuration for memory allocation.
-   */
-  @Deprecated
   public void setMemoryAllocationStrategy(final MemoryAllocationStrategy memoryAllocationStrategy) {
     this.memoryAllocationStrategy = memoryAllocationStrategy;
   }
