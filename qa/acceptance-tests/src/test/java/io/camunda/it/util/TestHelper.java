@@ -29,6 +29,7 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -997,7 +998,7 @@ public final class TestHelper {
                 resourceName + ".dmn")
             .send()
             .join();
-    return deploymentEvent.getDecisions().stream().findFirst().get();
+    return deploymentEvent.getDecisions().getFirst();
   }
 
   public static EvaluateDecisionResponse evaluateDecision(
@@ -1008,6 +1009,26 @@ public final class TestHelper {
         .variables(variables)
         .send()
         .join();
+  }
+
+  public static void waitForDecisionInstanceCount(
+      final CamundaClient camundaClient,
+      final Consumer<DecisionInstanceFilter> filter,
+      final int expectedResultCount) {
+    Awaitility.await("Expected amount of decision instances in secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newDecisionInstanceSearchRequest()
+                          .filter(filter)
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(expectedResultCount);
+            });
   }
 
   public static Process startDefaultTestDecisionProcessInstance(
