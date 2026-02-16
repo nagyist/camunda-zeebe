@@ -16,8 +16,6 @@ import {
 } from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
-import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -112,7 +110,6 @@ const mockRequests = () => {
   mockSearchIncidentsByProcessInstance('4294980768').withSuccess(
     searchResult([]),
   );
-  mockFetchProcess().withSuccess(mockProcess);
   mockSearchJobs().withSuccess(searchResult([]));
   mockQueryBatchOperationItems().withSuccess(searchResult([]));
   mockQueryBatchOperationItems().withSuccess(searchResult([]));
