@@ -13,7 +13,9 @@ import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
@@ -41,6 +43,8 @@ public class RdbmsWriterFactory {
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final AuditLogMapper auditLogMapper;
   private final DecisionInstanceMapper decisionInstanceMapper;
+  private final DecisionDefinitionMapper decisionDefinitionMapper;
+  private final DecisionRequirementsMapper decisionRequirementsMapper;
   private final FlowNodeInstanceMapper flowNodeInstanceMapper;
   private final IncidentMapper incidentMapper;
   private final ProcessInstanceMapper processInstanceMapper;
@@ -67,6 +71,8 @@ public class RdbmsWriterFactory {
       final VendorDatabaseProperties vendorDatabaseProperties,
       final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
+      final DecisionDefinitionMapper decisionDefinitionMapper,
+      final DecisionRequirementsMapper decisionRequirementsMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
@@ -91,6 +97,8 @@ public class RdbmsWriterFactory {
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.auditLogMapper = auditLogMapper;
     this.decisionInstanceMapper = decisionInstanceMapper;
+    this.decisionDefinitionMapper = decisionDefinitionMapper;
+    this.decisionRequirementsMapper = decisionRequirementsMapper;
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
     this.incidentMapper = incidentMapper;
     this.processInstanceMapper = processInstanceMapper;
@@ -128,6 +136,8 @@ public class RdbmsWriterFactory {
         metrics,
         auditLogMapper,
         decisionInstanceMapper,
+        decisionDefinitionMapper,
+        decisionRequirementsMapper,
         flowNodeInstanceMapper,
         incidentMapper,
         processInstanceMapper,

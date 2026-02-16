@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -20,8 +21,10 @@ import org.junit.jupiter.api.Test;
 
 class DecisionRequirementsWriterTest {
 
+  private final DecisionRequirementsMapper mapper = mock(DecisionRequirementsMapper.class);
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
-  private final DecisionRequirementsWriter writer = new DecisionRequirementsWriter(executionQueue);
+  private final DecisionRequirementsWriter writer =
+      new DecisionRequirementsWriter(mapper, executionQueue);
 
   @Test
   void shouldCreateDecisionRequirements() {
