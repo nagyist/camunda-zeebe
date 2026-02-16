@@ -17,6 +17,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.sql.ProcessInstanceDependantMapper;
@@ -40,17 +41,20 @@ public class HistoryDeletionServiceTest {
   private RdbmsWriters rdbmsWritersMock;
   private HistoryDeletionDbReader historyDeletionDbReaderMock;
   private ProcessInstanceDbReader processInstanceDbReaderMock;
+  private DecisionInstanceDbReader decisionInstanceDbReaderMock;
 
   @BeforeEach
   void setUp() {
     rdbmsWritersMock = mock(RdbmsWriters.class, Answers.RETURNS_DEEP_STUBS);
     historyDeletionDbReaderMock = mock(HistoryDeletionDbReader.class);
     processInstanceDbReaderMock = mock(ProcessInstanceDbReader.class);
+    decisionInstanceDbReaderMock = mock(DecisionInstanceDbReader.class);
     historyDeletionService =
         new HistoryDeletionService(
             rdbmsWritersMock,
             historyDeletionDbReaderMock,
             processInstanceDbReaderMock,
+            decisionInstanceDbReaderMock,
             new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000));
   }
 

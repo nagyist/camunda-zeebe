@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
@@ -14,12 +15,15 @@ import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionBatch;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +37,7 @@ public class HistoryDeletionService {
   private final RdbmsWriters rdbmsWriters;
   private final HistoryDeletionDbReader historyDeletionDbReader;
   private final ProcessInstanceDbReader processInstanceDbReader;
+  private final DecisionInstanceDbReader decisionInstanceDbReader;
   private final HistoryDeletionConfig config;
   private final ExponentialBackoff exponentialBackoff;
   private Duration currentDelayBetweenRuns;
@@ -41,10 +46,12 @@ public class HistoryDeletionService {
       final RdbmsWriters rdbmsWriters,
       final HistoryDeletionDbReader historyDeletionDbReader,
       final ProcessInstanceDbReader processInstanceDbReader,
+      final DecisionInstanceDbReader decisionInstanceDbReader,
       final HistoryDeletionConfig config) {
     this.rdbmsWriters = rdbmsWriters;
     this.historyDeletionDbReader = historyDeletionDbReader;
     this.processInstanceDbReader = processInstanceDbReader;
+    this.decisionInstanceDbReader = decisionInstanceDbReader;
     this.config = config;
     exponentialBackoff =
         new ExponentialBackoff(
@@ -63,9 +70,14 @@ public class HistoryDeletionService {
     final List<Long> deletedProcessInstances = deleteProcessInstances(batch);
     final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
     final List<Long> deletedDecisionInstances = deleteDecisionInstances(batch);
+    final List<Long> deletedDecisionRequirements = deleteDecisionRequirements(batch);
 
     final List<Long> deletedResources =
-        Stream.of(deletedProcessInstances, deletedProcessDefinitions, deletedDecisionInstances)
+        Stream.of(
+                deletedProcessInstances,
+                deletedProcessDefinitions,
+                deletedDecisionInstances,
+                deletedDecisionRequirements)
             .flatMap(List::stream)
             .toList();
     final var deletedResourceCount = deleteFromHistoryDeletionTable(deletedResources);
@@ -128,6 +140,26 @@ public class HistoryDeletionService {
     return decisionInstanceKeys;
   }
 
+  private List<Long> deleteDecisionRequirements(final HistoryDeletionBatch batch) {
+    final var decisionRequirementsKeys =
+        batch.getResourceKeys(
+            HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS, this::hasDeletedAllDecisionInstances);
+
+    if (decisionRequirementsKeys.isEmpty()) {
+      return List.of();
+    }
+
+    try {
+      rdbmsWriters.getDecisionDefinitionWriter().deleteByKeys(decisionRequirementsKeys);
+    } catch (final PersistenceException ex) {
+      LOG.debug("Decision requirement still has decision definitions and will not be deleted.", ex);
+      return List.of();
+    }
+
+    rdbmsWriters.getDecisionRequirementsWriter().deleteByKeys(decisionRequirementsKeys);
+    return decisionRequirementsKeys;
+  }
+
   private boolean hasDeletedAllProcessInstances(
       final HistoryDeletionDbModel historyDeletionDbModel) {
     final boolean hasDependents =
@@ -145,6 +177,28 @@ public class HistoryDeletionService {
     if (hasDependents) {
       LOG.debug(
           "Process definition {} still has process instances and will not be deleted.",
+          historyDeletionDbModel.resourceKey());
+    }
+    return !hasDependents;
+  }
+
+  private boolean hasDeletedAllDecisionInstances(
+      final HistoryDeletionDbModel historyDeletionDbModel) {
+    final boolean hasDependents =
+        decisionInstanceDbReader
+                .search(
+                    DecisionInstanceQuery.of(
+                        b ->
+                            b.filter(
+                                new DecisionInstanceFilter.Builder()
+                                    .decisionRequirementsKeys(historyDeletionDbModel.resourceKey())
+                                    .build())))
+                .total()
+            != 0;
+
+    if (hasDependents) {
+      LOG.debug(
+          "Decision requirement {} still has decision instances and will not be deleted.",
           historyDeletionDbModel.resourceKey());
     }
     return !hasDependents;
