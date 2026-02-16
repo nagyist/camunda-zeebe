@@ -410,14 +410,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newDeleteInstanceCommand(processInstanceKey)
+   *  .newDeleteProcessInstanceCommand(processInstanceKey)
    *  .send();
    * </pre>
    *
    * @param processInstanceKey the key which identifies the corresponding process instance
    * @return a builder for the command
    */
-  DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(long processInstanceKey);
+  DeleteProcessInstanceCommandStep1 newDeleteProcessInstanceCommand(long processInstanceKey);
 
   /**
    * Command to set and/or update the variables of a given flow element (e.g. process instance,

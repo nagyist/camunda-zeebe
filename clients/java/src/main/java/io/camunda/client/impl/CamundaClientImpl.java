@@ -707,7 +707,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(final long processInstanceKey) {
+  public DeleteProcessInstanceCommandStep1 newDeleteProcessInstanceCommand(
+      final long processInstanceKey) {
     return new DeleteProcessInstanceCommandImpl(processInstanceKey, config, httpClient, jsonMapper);
   }
 

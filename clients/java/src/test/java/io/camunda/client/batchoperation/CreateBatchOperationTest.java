@@ -93,7 +93,7 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     // when
     client
         .newCreateBatchOperationCommand()
-        .processInstanceDelete()
+        .deleteProcessInstance()
         .filter(filter -> filter.processDefinitionId("test-01"))
         .send()
         .join();
@@ -210,7 +210,7 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     // when
     client
         .newCreateBatchOperationCommand()
-        .decisionInstanceDelete()
+        .deleteDecisionInstance()
         .filter(filter -> filter.decisionDefinitionId("test-d-01"))
         .send()
         .join();

@@ -35,7 +35,7 @@ public interface CreateBatchOperationCommandStep1 {
    *
    * @return the builder for this command
    */
-  CreateBatchOperationCommandStep2<ProcessInstanceFilter> processInstanceDelete();
+  CreateBatchOperationCommandStep2<ProcessInstanceFilter> deleteProcessInstance();
 
   /**
    * Defines the type of the batch operation to resolve incidents.
@@ -63,7 +63,7 @@ public interface CreateBatchOperationCommandStep1 {
    *
    * @return the builder for this command
    */
-  CreateBatchOperationCommandStep2<DecisionInstanceFilter> decisionInstanceDelete();
+  CreateBatchOperationCommandStep2<DecisionInstanceFilter> deleteDecisionInstance();
 
   interface CreateBatchOperationCommandStep2<E extends SearchRequestFilter> {
 

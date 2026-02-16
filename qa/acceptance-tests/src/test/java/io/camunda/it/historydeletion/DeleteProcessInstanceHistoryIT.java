@@ -78,7 +78,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.processDefinitionId(processId))
             .send()
             .join();
@@ -131,7 +131,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.processDefinitionId(subProcessId))
             .send()
             .join();
@@ -164,7 +164,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.processInstanceKey(piKey1))
             .send()
             .join();
@@ -202,7 +202,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.processInstanceKey(piKey))
             .send()
             .join();
@@ -245,7 +245,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -266,7 +266,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete only one by key
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey1).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey1).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -293,7 +293,7 @@ public class DeleteProcessInstanceHistoryIT {
     waitForProcessInstances(camundaClient, f -> f.processInstanceKey(piKey), 1);
 
     // when
-    final var resultFuture = camundaClient.newDeleteInstanceCommand(piKey).send();
+    final var resultFuture = camundaClient.newDeleteProcessInstanceCommand(piKey).send();
 
     // then
     assertThatExceptionOfType(ProblemException.class)
@@ -327,7 +327,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -356,7 +356,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -380,7 +380,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -394,7 +394,8 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when/then - try to delete non-existing process instance should throw not found exception
     assertThatExceptionOfType(ProblemException.class)
-        .isThrownBy(() -> camundaClient.newDeleteInstanceCommand(nonExistingKey).send().join())
+        .isThrownBy(
+            () -> camundaClient.newDeleteProcessInstanceCommand(nonExistingKey).send().join())
         .satisfies(
             exception -> {
               assertThat(exception.code()).isEqualTo(404);

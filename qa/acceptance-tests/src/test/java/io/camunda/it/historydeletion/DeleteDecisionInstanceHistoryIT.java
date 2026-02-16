@@ -76,7 +76,7 @@ public class DeleteDecisionInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .decisionInstanceDelete()
+            .deleteDecisionInstance()
             .filter(f -> f.decisionDefinitionId(decision.getDmnDecisionId()))
             .send()
             .join();
@@ -107,7 +107,7 @@ public class DeleteDecisionInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .decisionInstanceDelete()
+            .deleteDecisionInstance()
             .filter(f -> f.decisionInstanceKey(instanceToDeleteKey))
             .send()
             .join();

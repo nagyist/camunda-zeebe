@@ -229,7 +229,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     }
 
     @Override
-    public CreateBatchOperationCommandStep2<ProcessInstanceFilter> processInstanceDelete() {
+    public CreateBatchOperationCommandStep2<ProcessInstanceFilter> deleteProcessInstance() {
       return new CreateBatchOperationCommandImpl<>(
           httpClient,
           jsonMapper,
@@ -265,7 +265,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     }
 
     @Override
-    public CreateBatchOperationCommandStep2<DecisionInstanceFilter> decisionInstanceDelete() {
+    public CreateBatchOperationCommandStep2<DecisionInstanceFilter> deleteDecisionInstance() {
       return new CreateBatchOperationCommandImpl<>(
           httpClient,
           jsonMapper,
