@@ -34,6 +34,8 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
   public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
   public static final int DEFAULT_MAX_WORKER_NAME_LENGTH = 100;
+  public static final int DEFAULT_MAX_ID_FIELD_LENGTH = 32 * 1024;
+  public static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
   public static final int DEFAULT_MAX_JOB_TYPE_LENGTH = 100;
   public static final int DEFAULT_MAX_TENANT_ID_LENGTH = 30;
   public static final int DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS = 9500;
@@ -60,6 +62,8 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
   public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
 
+  private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
+  private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
   private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
   private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
   private int maxUniqueJobMetricsKeys = DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
@@ -400,6 +404,24 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setMaxWorkerNameLength(final int maxWorkerNameLength) {
     this.maxWorkerNameLength = maxWorkerNameLength;
+    return this;
+  }
+
+  public int getMaxIdFieldLength() {
+    return maxIdFieldLength;
+  }
+
+  public EngineConfiguration setMaxIdFieldLength(final int maxIdFieldLength) {
+    this.maxIdFieldLength = maxIdFieldLength;
+    return this;
+  }
+
+  public int getMaxNameFieldLength() {
+    return maxNameFieldLength;
+  }
+
+  public EngineConfiguration setMaxNameFieldLength(final int maxNameFieldLength) {
+    this.maxNameFieldLength = maxNameFieldLength;
     return this;
   }
 
