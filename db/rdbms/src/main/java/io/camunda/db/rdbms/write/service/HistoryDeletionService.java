@@ -84,10 +84,9 @@ public class HistoryDeletionService {
     boolean allProcessInstanceDependantDataDeleted = true;
     final var limit = config.dependentRowLimit();
     for (final var dependant : rdbmsWriters.getProcessInstanceDependantWriters()) {
-      // TODO check if we should still have this or not
-      // if (dependant instanceof AuditLogWriter) {
-      //  continue;
-      // }
+      if (dependant instanceof AuditLogWriter) {
+        continue;
+      }
       final var deletedRows =
           dependant.deleteProcessInstanceRelatedData(processInstanceKeys, limit);
       if (deletedRows >= limit) {

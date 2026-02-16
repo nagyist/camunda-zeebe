@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.historydeletion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel;
 import io.camunda.db.rdbms.write.service.HistoryDeletionService;
@@ -63,7 +64,8 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     historyDeletionService.deleteHistory(0);
 
     // then
-    processInstanceAndRelatedRecordsHaveBeenDeleted(rdbmsService, processInstanceKey);
+    processInstanceAndNonAuditLogRelatedRecordsHaveBeenDeleted(rdbmsService, processInstanceKey);
+    auditLogsNotDeleted(rdbmsService, processInstanceKey);
     processInstanceAndRelatedRecordsExist(rdbmsService, otherProcessInstanceKey);
   }
 
@@ -107,6 +109,10 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
     assertThat(variableCount(rdbmsService, processInstanceKey)).isEqualTo(10L);
     assertThat(incidentCount(rdbmsService, processInstanceKey)).isEqualTo(10L);
     assertThat(decisionInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(10L);
-    assertThat(auditLogCount(rdbmsService, processInstanceKey)).isEqualTo(10L);
+    auditLogsNotDeleted(rdbmsService, processInstanceKey);
+  }
+
+  private void auditLogsNotDeleted(final RdbmsService rdbmsService, final long processInstanceKey) {
+    assertThat(auditLogCount(rdbmsService, processInstanceKey)).isEqualTo(20L);
   }
 }

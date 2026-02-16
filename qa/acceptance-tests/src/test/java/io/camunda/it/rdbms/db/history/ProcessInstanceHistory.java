@@ -49,13 +49,18 @@ public abstract class ProcessInstanceHistory {
 
   protected void processInstanceAndRelatedRecordsHaveBeenDeleted(
       final RdbmsService rdbmsService, final long processInstanceKey) {
+    processInstanceAndNonAuditLogRelatedRecordsHaveBeenDeleted(rdbmsService, processInstanceKey);
+    assertThat(auditLogCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
+  }
+
+  protected void processInstanceAndNonAuditLogRelatedRecordsHaveBeenDeleted(
+      final RdbmsService rdbmsService, final long processInstanceKey) {
     assertThat(processInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
     assertThat(flowNodeInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
     assertThat(userTaskCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
     assertThat(variableCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
     assertThat(incidentCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
     assertThat(decisionInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-    assertThat(auditLogCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
   }
 
   protected long processInstanceCount(
