@@ -32,7 +32,7 @@ import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -231,9 +231,9 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   private int getAvailableLeaseCount() {
-    final var request = ListObjectsRequest.builder().bucket(config.bucketName).build();
+    final var request = ListObjectsV2Request.builder().bucket(config.bucketName).build();
     try {
-      final var response = client.listObjects(request);
+      final var response = client.listObjectsV2(request);
       if (response.hasContents() && !response.contents().isEmpty()) {
         return (int) response.contents().stream().filter(o -> isNodeIdLease(o.key())).count();
       }
