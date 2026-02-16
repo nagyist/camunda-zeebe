@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.globallistener;
 
-import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -18,25 +18,23 @@ import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
-@ExcludeAuthorizationCheck
 public final class GlobalListenerCreateProcessor
     implements DistributedTypedRecordProcessor<GlobalListenerRecord> {
-
-  private static final String LISTENER_EXISTS_ERROR_MESSAGE =
-      "Expected to create a global %s listener with id '%s', but a listener with the same id was found";
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final GlobalListenersState globalListenersState;
+  private final GlobalListenerValidator globalListenerValidator;
 
   public GlobalListenerCreateProcessor(
       final KeyGenerator keyGenerator,
@@ -49,6 +47,7 @@ public final class GlobalListenerCreateProcessor
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     globalListenersState = processingState.getGlobalListenersState();
+    globalListenerValidator = new GlobalListenerValidator();
   }
 
   @Override
@@ -82,21 +81,33 @@ public final class GlobalListenerCreateProcessor
   public void processDistributedCommand(final TypedRecord<GlobalListenerRecord> command) {
     final var record = command.getValue();
 
-    final var listener =
-        globalListenersState.getGlobalListener(record.getListenerType(), record.getId());
-    if (listener != null) {
-      final var message =
-          LISTENER_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
-      writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, message);
-    } else {
-      emitChangeEvents(record);
-    }
+    globalListenerValidator
+        .listenerDoesNotExist(record, globalListenersState)
+        .ifRightOrLeft(
+            this::emitChangeEvents,
+            rejection ->
+                writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
+
     distributionBehavior.acknowledgeCommand(command);
   }
 
   private Either<Rejection, GlobalListenerRecord> validateCommand(
       final TypedRecord<GlobalListenerRecord> command) {
-    return Either.right(command.getValue());
+    final AuthorizationRequest authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.GLOBAL_LISTENER)
+            .permissionType(PermissionType.CREATE_TASK_LISTENER)
+            .build();
+    return authCheckBehavior
+        .isAuthorizedOrInternalCommand(authRequest)
+        .map(unused -> command.getValue())
+        .flatMap(globalListenerValidator::idProvided)
+        .flatMap(
+            record -> globalListenerValidator.listenerDoesNotExist(record, globalListenersState))
+        .flatMap(globalListenerValidator::typeProvided)
+        .flatMap(globalListenerValidator::eventTypesProvided)
+        .flatMap(globalListenerValidator::validEventTypes);
   }
 
   private void emitChangeEvents(final GlobalListenerRecord record) {
