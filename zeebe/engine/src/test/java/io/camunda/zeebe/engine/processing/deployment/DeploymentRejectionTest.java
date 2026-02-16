@@ -540,6 +540,34 @@ public class DeploymentRejectionTest {
   }
 
   @Test
+  public void shouldRejectDeploymentIfNameExceedsLimit() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .name("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .startEvent("startEvent")
+            .name("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .endEvent()
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        .contains(
+            "- ERROR: Names must not be longer than the configured max-name-length of %s characters"
+                .formatted(MAX_NAME_FIELD_LENGTH));
+  }
+
+  @Test
   public void shouldNotRejectDeploymentForBindingTypeDeploymentIfTargetIdIsExpression() {
     // given
     final var process =
