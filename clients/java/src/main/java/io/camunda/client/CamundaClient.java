@@ -281,6 +281,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @deprecated since 8 for removal with 8.1, replaced by {@link
    *     CamundaClient#newDeployResourceCommand()}
    */
+  @Deprecated
   DeployProcessCommandStep1 newDeployCommand();
 
   /**
