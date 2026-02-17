@@ -22,6 +22,8 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class DecisionEvaluationAuditLogTransformerTest {
 
@@ -204,5 +206,18 @@ class DecisionEvaluationAuditLogTransformerTest {
     assertThat(entity.getResult())
         .isEqualTo(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
     assertThat(entity.getEntityDescription()).isEqualTo(RejectionType.INVALID_STATE.name());
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = DecisionEvaluationIntent.class,
+      names = {"EVALUATED", "FAILED"})
+  void shouldScheduleCleanUp(final DecisionEvaluationIntent intent) {
+    // given
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(ValueType.DECISION_EVALUATION, r -> r.withIntent(intent));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
   }
 }

@@ -392,6 +392,16 @@
     </foreach>
   </insert>
 
+  <update id="updateAuditLogEntityHistoryCleanupDate">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE ENTITY_KEY IN
+    <foreach collection="entityKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    AND ENTITY_TYPE = #{entityType}
+  </update>
+
   <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>

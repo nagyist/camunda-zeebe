@@ -56,7 +56,12 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
 
   @Override
   public void export(final Record<R> record) {
-    auditLogWriter.create(map(record));
+    final var auditLogEntity = map(record);
+    auditLogWriter.create(auditLogEntity);
+    if (transformer.triggersCleanUp(record)) {
+      auditLogWriter.scheduleEntityRelatedAuditLogsHistoryCleanupByEndTime(
+          auditLogEntity.entityKey(), auditLogEntity.entityType(), auditLogEntity.timestamp());
+    }
   }
 
   private AuditLogDbModel map(final Record<R> record) {

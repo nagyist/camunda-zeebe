@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -67,5 +68,16 @@ class AuthorizationAuditLogTransformerTest {
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
     assertThat(entity.getRelatedEntityKey()).isEqualTo("owner-id");
     assertThat(entity.getRelatedEntityType()).isEqualTo(expectedRelatedEntityType);
+  }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<AuthorizationRecordValue> record =
+        factory.generateRecord(
+            ValueType.AUTHORIZATION, r -> r.withIntent(AuthorizationIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
   }
 }

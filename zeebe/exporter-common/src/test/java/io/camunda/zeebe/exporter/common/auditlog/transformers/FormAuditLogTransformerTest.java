@@ -49,4 +49,14 @@ class FormAuditLogTransformerTest {
     assertThat(entity.getFormKey()).isEqualTo(456L);
     assertThat(entity.getEntityDescription()).isEqualTo("formResource");
   }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<Form> record =
+        factory.generateRecord(ValueType.FORM, r -> r.withIntent(FormIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
+  }
 }
