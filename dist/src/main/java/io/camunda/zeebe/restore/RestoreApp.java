@@ -191,15 +191,13 @@ public class RestoreApp implements ApplicationRunner {
       throws IOException, ExecutionException, InterruptedException {
     LOG.info(
         "Starting to restore from backups without a time range with the following configuration: {}",
-        from,
-        to,
         restoreConfiguration);
     restoreManager.restore(
-        from,
-        to,
+        null,
+        null,
         restoreConfiguration.validateConfig(),
         restoreConfiguration.ignoreFilesInTarget());
-    LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+    LOG.info("Successfully restored broker from backups in time range");
   }
 
   private void restoreFromBackupList(final RestoreManager restoreManager, final long[] backupIds)
@@ -229,18 +227,14 @@ public class RestoreApp implements ApplicationRunner {
           "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
     }
 
-    if (to != null && from == null) {
-      throw new IllegalArgumentException("--to parameter requires --from parameter");
-    }
-
-    if (hasTimeRange && to != null && from.isAfter(to)) {
+    if (hasTimeRange && from != null && to != null && from.isAfter(to)) {
       throw new IllegalArgumentException(
           "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
     }
   }
 
   private boolean hasTimeRange() {
-    return from != null;
+    return from != null || to != null;
   }
 
   private boolean hasBackupId() {
