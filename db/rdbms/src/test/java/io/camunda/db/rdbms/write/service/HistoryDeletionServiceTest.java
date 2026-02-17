@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -33,13 +33,13 @@ import io.camunda.search.query.SearchQueryResult;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import org.apache.ibatis.exceptions.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 
 public class HistoryDeletionServiceTest {
 
+  private static final int LIMIT = 10000;
   private HistoryDeletionService historyDeletionService;
   private RdbmsWriters rdbmsWritersMock;
   private HistoryDeletionDbReader historyDeletionDbReaderMock;
@@ -58,7 +58,7 @@ public class HistoryDeletionServiceTest {
             historyDeletionDbReaderMock,
             processInstanceDbReaderMock,
             decisionInstanceDbReaderMock,
-            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000));
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, LIMIT));
   }
 
   @Test
@@ -126,7 +126,7 @@ public class HistoryDeletionServiceTest {
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
     when(mapperMock.deleteProcessInstanceRelatedData(any()))
-        .thenReturn(10000); // not all dependant data deleted
+        .thenReturn(LIMIT); // not all dependant data deleted
 
     // when
     historyDeletionService.deleteHistory(partitionId);
@@ -294,7 +294,7 @@ public class HistoryDeletionServiceTest {
     // Mock process instance dependant writers to return limit, meaning not all data deleted
     final var mapperMock = mock(ProcessInstanceDependantMapper.class);
     when(mapperMock.deleteProcessInstanceRelatedData(any()))
-        .thenReturn(10000); // return the limit, meaning not all dependant data deleted
+        .thenReturn(LIMIT); // return the limit, meaning not all dependant data deleted
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
 
@@ -343,7 +343,37 @@ public class HistoryDeletionServiceTest {
   }
 
   @Test
-  void shouldDeletePIsAndDIsFromDeletionTableIfDecisionRequirementsDeletionFailed() {
+  void shouldDeleteDecisionRequirements() {
+    // given
+    final var partitionId = 1;
+    final var decisionRequirementsKey1 = 1L;
+    final var decisionRequirementsKey2 = 2L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(
+                        decisionRequirementsKey1, HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS),
+                    createModel(
+                        decisionRequirementsKey2,
+                        HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS))));
+    when(decisionInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(rdbmsWritersMock.getDecisionDefinitionWriter())
+        .deleteByDecisionRequirementsKeys(
+            eq(List.of(decisionRequirementsKey1, decisionRequirementsKey2)), anyInt());
+    verify(rdbmsWritersMock.getDecisionRequirementsWriter())
+        .deleteByKeys(List.of(decisionRequirementsKey1, decisionRequirementsKey2));
+    verify(rdbmsWritersMock.getHistoryDeletionWriter())
+        .deleteByResourceKeys(List.of(decisionRequirementsKey1, decisionRequirementsKey2));
+  }
+
+  @Test
+  void shouldDeletePIsAndDIsFromDeletionTableIfDecisionDefinitionDeletionFailed() {
     // given
     final var partitionId = 1;
     final var processInstanceKey1 = 1L;
@@ -362,10 +392,11 @@ public class HistoryDeletionServiceTest {
     when(decisionInstanceDbReaderMock.search(any()))
         .thenReturn(SearchQueryResult.empty())
         .thenReturn(SearchQueryResult.of(mock(DecisionInstanceEntity.class)));
-    final var decisionDefinitionWriter = rdbmsWritersMock.getDecisionDefinitionWriter();
-    doThrow(new PersistenceException())
-        .when(decisionDefinitionWriter)
-        .deleteByDecisionRequirementsKeys(anyList(), anyInt());
+    when(rdbmsWritersMock
+            .getDecisionDefinitionWriter()
+            .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1), LIMIT))
+        .thenReturn(
+            LIMIT); // return the limit, meaning not all dependant decision definition data deleted
 
     // when
     historyDeletionService.deleteHistory(partitionId);
@@ -375,7 +406,7 @@ public class HistoryDeletionServiceTest {
     verify(rdbmsWritersMock.getDecisionInstanceWriter())
         .deleteByKeys(List.of(decisionInstanceKey1));
     verify(rdbmsWritersMock.getDecisionDefinitionWriter())
-        .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1), anyInt());
+        .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1), LIMIT);
     verify(rdbmsWritersMock.getDecisionRequirementsWriter(), never())
         .deleteByKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
@@ -399,7 +430,7 @@ public class HistoryDeletionServiceTest {
     // Mock process instance dependant writers to return limit, meaning not all data deleted
     final var mapperMock = mock(ProcessInstanceDependantMapper.class);
     when(mapperMock.deleteProcessInstanceRelatedData(any()))
-        .thenReturn(10000); // return the limit, meaning not all dependant data deleted
+        .thenReturn(LIMIT); // return the limit, meaning not all dependant data deleted
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
     when(decisionInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
@@ -411,7 +442,7 @@ public class HistoryDeletionServiceTest {
     verify(rdbmsWritersMock.getProcessInstanceWriter(), never())
         .deleteByKeys(List.of(processInstanceKey1));
     verify(rdbmsWritersMock.getDecisionDefinitionWriter())
-        .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1), anyInt());
+        .deleteByDecisionRequirementsKeys(eq(List.of(decisionRequirementsKey1)), anyInt());
     verify(rdbmsWritersMock.getDecisionRequirementsWriter())
         .deleteByKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
@@ -444,7 +475,7 @@ public class HistoryDeletionServiceTest {
     verify(rdbmsWritersMock.getProcessDefinitionWriter(), never())
         .deleteByKeys(List.of(processDefinitionKey1));
     verify(rdbmsWritersMock.getDecisionDefinitionWriter())
-        .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1), anyInt());
+        .deleteByDecisionRequirementsKeys(eq(List.of(decisionRequirementsKey1)), anyInt());
     verify(rdbmsWritersMock.getDecisionRequirementsWriter())
         .deleteByKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
