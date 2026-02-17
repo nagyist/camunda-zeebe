@@ -913,7 +913,7 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
         final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
-        final CamundaOidcLogoutSuccessHandler logoutSuccessHandler,
+        final LogoutSuccessHandler logoutSuccessHandler,
         final OidcUserService oidcUserService)
         throws Exception {
       final var filterChainBuilder =
