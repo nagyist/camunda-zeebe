@@ -802,17 +802,17 @@ test.describe('Process Instance Modifications', () => {
       ).toHaveValue('1');
     });
 
-    // await test.step('Undo again and verify new variable field removed', async () => {
-    //   await operateProcessInstancePage.undoModification();
+    await test.step('Undo again and verify new variable field removed', async () => {
+      await operateProcessInstancePage.undoModification();
 
-    //   // here might be needed change from hidden to add token operation
-    //   await expect(
-    //     operateProcessInstancePage.lastAddedModificationText,
-    //   ).toBeHidden();
-    //   await expect(
-    //     operateProcessInstancePage.getVariableTestId('newVariables[0]'),
-    //   ).toBeHidden();
-    // });
+      // here might be needed change from hidden to add token operation
+      await expect(
+        operateProcessInstancePage.lastAddedModificationText,
+      ).toBeHidden();
+      await expect(
+        operateProcessInstancePage.getVariableTestId('newVariables[0]'),
+      ).toBeHidden();
+    });
 
     await test.step('Add variables to different scopes with same name', async () => {
       await operateProcessInstancePage.addNewVariableModificationMode(
@@ -821,8 +821,8 @@ test.describe('Process Instance Modifications', () => {
         '1',
       );
 
-      const addedTokenInHisotry = `${neverFailsHistoryItem}, this flow node instance is planned to be added`;
-      await operateProcessInstancePage.clickTreeItem(addedTokenInHisotry);
+      const addedTokenInHistory = `${neverFailsHistoryItem}, this flow node instance is planned to be added`;
+      await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
       await expect(
         page.getByText(/The Flow Node has no Variables/i),
       ).toBeVisible();

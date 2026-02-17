@@ -716,6 +716,4 @@ export class OperateProcessInstanceViewModificationModePage {
       expect(variableName).not.toContain(forbiddenText);
     });
   }
-
-  async findVariableModificationInDialog(variableName: string) {}
 }
