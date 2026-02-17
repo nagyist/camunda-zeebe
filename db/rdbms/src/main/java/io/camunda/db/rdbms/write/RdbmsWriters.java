@@ -13,7 +13,9 @@ import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
@@ -82,6 +84,8 @@ public class RdbmsWriters {
       final RdbmsWriterMetrics metrics,
       final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
+      final DecisionDefinitionMapper decisionDefinitionMapper,
+      final DecisionRequirementsMapper decisionRequirementsMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
@@ -111,12 +115,16 @@ public class RdbmsWriters {
         AuditLogWriter.class,
         new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties, config));
     writers.put(AuthorizationWriter.class, new AuthorizationWriter(executionQueue));
-    writers.put(DecisionDefinitionWriter.class, new DecisionDefinitionWriter(executionQueue));
+    writers.put(
+        DecisionDefinitionWriter.class,
+        new DecisionDefinitionWriter(decisionDefinitionMapper, executionQueue));
     writers.put(
         DecisionInstanceWriter.class,
         new DecisionInstanceWriter(
             decisionInstanceMapper, executionQueue, vendorDatabaseProperties, config));
-    writers.put(DecisionRequirementsWriter.class, new DecisionRequirementsWriter(executionQueue));
+    writers.put(
+        DecisionRequirementsWriter.class,
+        new DecisionRequirementsWriter(decisionRequirementsMapper, executionQueue));
     writers.put(
         FlowNodeInstanceWriter.class,
         new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper, config));

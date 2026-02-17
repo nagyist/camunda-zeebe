@@ -36,6 +36,7 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
             writers,
             rdbmsService.getHistoryDeletionDbReader(),
             rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
             new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000));
 
     final long processInstanceKey = ProcessInstanceFixtures.nextKey();
@@ -80,6 +81,7 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
             writers,
             rdbmsService.getHistoryDeletionDbReader(),
             rdbmsService.getProcessInstanceReader(),
+            rdbmsService.getDecisionInstanceReader(),
             new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10));
 
     final long processInstanceKey = ProcessInstanceFixtures.nextKey();
