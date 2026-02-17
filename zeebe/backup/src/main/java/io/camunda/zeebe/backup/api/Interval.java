@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a generic range with a start and end value, with configurable inclusiveness for each
@@ -24,6 +25,7 @@ import java.util.function.Function;
  * @param end the last value in the range
  * @param endInclusive whether the end bound is inclusive
  */
+@NullMarked
 public record Interval<T extends Comparable<T>>(
     T start, boolean startInclusive, T end, boolean endInclusive) {
 

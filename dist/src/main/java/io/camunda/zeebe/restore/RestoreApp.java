@@ -25,9 +25,11 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.dynamic.nodeid.fs.DataDirectoryProvider;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -150,27 +152,11 @@ public class RestoreApp implements ApplicationRunner {
       final PostRestoreActionContext postRestoreActionContext;
       if (!preRestoreActionResult.skipRestore()) {
         if (backupId != null) {
-          LOG.info(
-              "Starting to restore from backup {} with the following configuration: {}",
-              backupId,
-              restoreConfiguration);
-          restoreManager.restore(
-              backupId,
-              restoreConfiguration.validateConfig(),
-              restoreConfiguration.ignoreFilesInTarget());
-          LOG.info("Successfully restored broker from backup {}", backupId);
+          restoreFromBackupList(restoreManager, backupId);
         } else if (hasTimeRange()) {
-          LOG.info(
-              "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
-              from,
-              to,
-              restoreConfiguration);
-          restoreManager.restore(
-              from,
-              to,
-              restoreConfiguration.validateConfig(),
-              restoreConfiguration.ignoreFilesInTarget());
-          LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+          restoreFromTimeRange(restoreManager);
+        } else if (exporterPositionMapper != null) {
+          restoreRDBMSWithoutTimeRange(restoreManager);
         }
         postRestoreActionContext =
             new PostRestoreActionContext(restoreId, configuration.getCluster().getNodeId(), false);
@@ -184,6 +170,47 @@ public class RestoreApp implements ApplicationRunner {
       // complete restore.
       postRestoreAction.restored(postRestoreActionContext);
     }
+  }
+
+  private void restoreFromTimeRange(final RestoreManager restoreManager)
+      throws IOException, ExecutionException, InterruptedException {
+    LOG.info(
+        "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
+        from,
+        to,
+        restoreConfiguration);
+    restoreManager.restore(
+        from,
+        to,
+        restoreConfiguration.validateConfig(),
+        restoreConfiguration.ignoreFilesInTarget());
+    LOG.info("Successfully restored broker from backups in time range [{}, {}]", from, to);
+  }
+
+  private void restoreRDBMSWithoutTimeRange(final RestoreManager restoreManager)
+      throws IOException, ExecutionException, InterruptedException {
+    LOG.info(
+        "Starting to restore from backups without a time range with the following configuration: {}",
+        restoreConfiguration);
+    restoreManager.restore(
+        null,
+        null,
+        restoreConfiguration.validateConfig(),
+        restoreConfiguration.ignoreFilesInTarget());
+    LOG.info("Successfully restored broker from backups in time range");
+  }
+
+  private void restoreFromBackupList(final RestoreManager restoreManager, final long[] backupIds)
+      throws Exception {
+    LOG.info(
+        "Starting to restore from backup {} with the following configuration: {}",
+        backupIds,
+        restoreConfiguration);
+    restoreManager.restore(
+        backupIds,
+        restoreConfiguration.validateConfig(),
+        restoreConfiguration.ignoreFilesInTarget());
+    LOG.info("Successfully restored broker from backup {}", backupIds);
   }
 
   private void validateParameters() {
@@ -200,18 +227,14 @@ public class RestoreApp implements ApplicationRunner {
           "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
     }
 
-    if (to != null && from == null) {
-      throw new IllegalArgumentException("--to parameter requires --from parameter");
-    }
-
-    if (hasTimeRange && to != null && from.isAfter(to)) {
+    if (hasTimeRange && from != null && to != null && from.isAfter(to)) {
       throw new IllegalArgumentException(
           "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
     }
   }
 
   private boolean hasTimeRange() {
-    return from != null;
+    return from != null || to != null;
   }
 
   private boolean hasBackupId() {
