@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_MEMBER_ID;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
@@ -114,7 +115,7 @@ public class Cluster implements Cloneable {
    * The member id of this gateway node in the cluster. Only relevant for standalone gateway
    * deployments.
    */
-  private String memberId = "gateway";
+  private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
 
   /** Configuration for the Raft protocol in the cluster. */
   @NestedConfigurationProperty private Raft raft = new Raft();
