@@ -196,8 +196,10 @@ public final class BackupRangeResolver {
           // ignore this backup
           continue;
         }
-        if (interval != null && timeInterval.contains(interval)) {
-          return Optional.of(new Tuple<>(completeRange, statusInterval));
+        if (interval != null) {
+          if (timeInterval.contains(interval)) {
+            return Optional.of(new Tuple<>(completeRange, statusInterval));
+          }
         } else if (timeInterval.contains(from)) {
           return Optional.of(new Tuple<>(completeRange, statusInterval));
         }
