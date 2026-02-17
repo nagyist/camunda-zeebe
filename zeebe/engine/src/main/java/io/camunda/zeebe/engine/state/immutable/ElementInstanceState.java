@@ -140,10 +140,15 @@ public interface ElementInstanceState {
    * @param businessId the business id to look up
    * @param processDefinitionKey the process definition key
    * @param tenantId the tenant id
+   * @param ignoreWhen a predicate that takes a process instance key and returns true if the process
+   *     instance should be ignored (e.g. because it is banned), and false otherwise
    * @return true if an active process instance exists with the given business id, false otherwise
    */
   boolean hasActiveProcessInstanceWithBusinessId(
-      String businessId, long processDefinitionKey, String tenantId);
+      String businessId,
+      long processDefinitionKey,
+      String tenantId,
+      final Predicate<Long> ignoreWhen);
 
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {

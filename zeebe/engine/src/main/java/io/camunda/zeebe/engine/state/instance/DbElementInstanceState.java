@@ -564,7 +564,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public boolean hasActiveProcessInstanceWithBusinessId(
-      final String businessId, final long processDefinitionKey, final String tenantId) {
+      final String businessId,
+      final long processDefinitionKey,
+      final String tenantId,
+      final Predicate<Long> ignoreWhen) {
     this.businessId.wrapString(businessId);
     this.processDefinitionKey.wrapLong(processDefinitionKey);
     this.tenantId.wrapString(tenantId);
@@ -572,6 +575,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     processInstanceByBusinessIdIndexKeyColumnFamily.whileEqualPrefix(
         businessIdIndexKey,
         (key, value) -> {
+          if (ignoreWhen.test(key.processInstanceKey())) {
+            return true;
+          }
           exists.set(true);
           // just find the first, and then stop iterating
           return false;
