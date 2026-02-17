@@ -18,8 +18,12 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GlobalListenerExportHandler implements RdbmsExportHandler<GlobalListenerRecordValue> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(GlobalListenerExportHandler.class);
 
   private static final Set<GlobalListenerIntent> EXPORTABLE_INTENTS =
       Set.of(
@@ -43,7 +47,7 @@ public class GlobalListenerExportHandler implements RdbmsExportHandler<GlobalLis
       case GlobalListenerIntent.CREATED -> globalListenerWriter.create(map(record));
       case GlobalListenerIntent.UPDATED -> globalListenerWriter.update(map(record));
       case GlobalListenerIntent.DELETED -> globalListenerWriter.delete(map(record));
-      default -> throw new IllegalStateException("Unexpected value: " + record.getIntent());
+      default -> LOG.warn("Unexpected intent {} for global listener record", record.getIntent());
     }
   }
 
