@@ -11,9 +11,8 @@ import {
   waitForElementToBeRemoved,
   screen,
   waitFor,
-  fireEvent,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes, useNavigate} from 'react-router-dom';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {TopPanel} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createIncident, searchResult} from 'modules/testUtils';
@@ -38,6 +37,10 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
+import {
+  SearchParamsUpdater,
+  updateSearchParams,
+} from 'modules/testUtils/SearchParamsUpdater';
 
 const mockIncidents = searchResult([
   createIncident({errorType: 'CONDITION_ERROR', elementId: 'Service5678'}),
@@ -121,24 +124,6 @@ const mockElementInstance: ElementInstance = {
   processDefinitionKey: '2',
   hasIncident: false,
   tenantId: '<default>',
-};
-
-/** Used to programmatically update search params after initial render. */
-const updateSearchParams = (params: Record<string, string>) => {
-  const paramsString = Object.entries(params)
-    .map(([key, value]) => `${key}=${value}`)
-    .join('&');
-  fireEvent.change(screen.getByTestId('new-search-params'), {
-    target: {value: paramsString},
-  });
-};
-const SearchParamsUpdater: React.FC = () => {
-  const navigate = useNavigate();
-  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
-    navigate({search: `?${event.currentTarget.value}`}, {replace: true});
-    event.currentTarget.value = '';
-  };
-  return <input data-testid="new-search-params" onChange={handleChange} />;
 };
 
 const getWrapper = (searchParams?: Record<string, string>) => {
