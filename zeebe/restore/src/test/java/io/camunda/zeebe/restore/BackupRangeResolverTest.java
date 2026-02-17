@@ -658,6 +658,9 @@ final class BackupRangeResolverTest {
           final Instant startTimestamp,
           final Instant endTimestamp,
           final int count) {
+        if (count < 2) {
+          throw new IllegalArgumentException("Use withBackup & withRange when count < 2");
+        }
         withRange(startCheckpoint, endCheckpoint);
         final long checkpointIdDelta = (endCheckpoint - startCheckpoint) / (count - 1);
         final long timeDelta =
