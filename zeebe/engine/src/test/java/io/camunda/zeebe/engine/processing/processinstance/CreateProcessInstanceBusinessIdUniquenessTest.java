@@ -231,7 +231,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
     final String processId = helper.getBpmnProcessId();
     final String businessId = "biz-123";
 
-    // given a process instance with a business id that has completed
+    // given a process instance with a business id that has terminated
     ENGINE
         .deployment()
         .withXmlResource(
@@ -275,7 +275,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
     final String processId = helper.getBpmnProcessId();
     final String businessId = "biz-123";
 
-    // given a process instance with a business id that has completed
+    // given a process instance with a business id that has been banned
     ENGINE
         .deployment()
         .withXmlResource(
