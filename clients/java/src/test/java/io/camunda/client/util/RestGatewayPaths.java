@@ -459,14 +459,6 @@ public class RestGatewayPaths {
     return URL_GLOBAL_JOB_STATISTICS;
   }
 
-  public static String getResourceUrl(final String resourceKey) {
-    return String.format(URL_RESOURCE, resourceKey);
-  }
-
-  public static String getResourceContentUrl(final String resourceKey) {
-    return String.format(URL_RESOURCE_CONTENT, resourceKey);
-  }
-
   public static String getResourceDeletionUrl(final long resourceKey) {
     return String.format(URL_RESOURCE_DELETION, resourceKey);
   }
