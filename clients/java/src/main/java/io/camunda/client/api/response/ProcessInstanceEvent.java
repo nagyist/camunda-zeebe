@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.response;
 
-import io.camunda.client.api.ExperimentalApi;
 import java.util.Set;
 
 public interface ProcessInstanceEvent {
@@ -33,7 +32,6 @@ public interface ProcessInstanceEvent {
   long getProcessInstanceKey();
 
   /** Tenant identifier that owns this process instance */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/13321")
   String getTenantId();
 
   Set<String> getTags();

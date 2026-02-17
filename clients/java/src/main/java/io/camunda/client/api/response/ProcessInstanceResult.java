@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.response;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ClientException;
 import java.util.Map;
 import java.util.Set;
@@ -64,7 +63,6 @@ public interface ProcessInstanceResult {
   Object getVariable(String name);
 
   /** Tenant identifier that owns this process instance */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/13321")
   String getTenantId();
 
   /**
