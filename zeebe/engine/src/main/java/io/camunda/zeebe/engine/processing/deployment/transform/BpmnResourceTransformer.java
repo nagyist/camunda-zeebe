@@ -71,7 +71,11 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
         BpmnFactory.createValidator(
             clock,
             expressionProcessor,
-            config.getValidatorsResultsOutputMaxSize(),
+            BpmnValidatorConfig.builder()
+                .withMaxIdFieldLength(config.getMaxIdFieldLength())
+                .withMaxNameFieldLength(config.getMaxNameFieldLength())
+                .withValidatorResultsOutputMaxSize(config.getValidatorsResultsOutputMaxSize())
+                .build(),
             expressionLanguageMetrics);
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }

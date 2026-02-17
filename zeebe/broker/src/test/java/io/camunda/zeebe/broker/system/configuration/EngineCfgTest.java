@@ -55,6 +55,10 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_WORKER_NAME_LENGTH);
     assertThat(configuration.getMaxJobTypeLength())
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_JOB_TYPE_LENGTH);
+    assertThat(configuration.getMaxIdFieldLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_ID_FIELD_LENGTH);
+    assertThat(configuration.getMaxNameFieldLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
     assertThat(configuration.getMaxTenantIdLength())
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_TENANT_ID_LENGTH);
     assertThat(configuration.getMaxUniqueJobMetricsKeys())
@@ -87,6 +91,8 @@ final class EngineCfgTest {
         .isEqualTo(Duration.ofMinutes(20));
     assertThat(configuration.getJobMetricsExportInterval()).isEqualTo(Duration.ofMinutes(10));
     assertThat(configuration.isJobMetricsExportEnabled()).isFalse();
+    assertThat(configuration.getMaxIdFieldLength()).isEqualTo(255);
+    assertThat(configuration.getMaxNameFieldLength()).isEqualTo(256);
     assertThat(configuration.getMaxWorkerNameLength()).isEqualTo(50);
     assertThat(configuration.getMaxJobTypeLength()).isEqualTo(75);
     assertThat(configuration.getMaxTenantIdLength()).isEqualTo(20);
