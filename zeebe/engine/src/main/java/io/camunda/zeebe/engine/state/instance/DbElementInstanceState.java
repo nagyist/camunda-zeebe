@@ -372,7 +372,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public void deleteProcessInstanceByBusinessId(
+  public void deleteProcessInstanceKeyMappingByBusinessId(
       final String businessId,
       final long processDefinitionKey,
       final String tenantId,

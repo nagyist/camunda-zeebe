@@ -133,6 +133,6 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    * @param tenantId the tenant id
    * @param processInstanceKey the process instance key
    */
-  void deleteProcessInstanceByBusinessId(
+  void deleteProcessInstanceKeyMappingByBusinessId(
       String businessId, long processDefinitionKey, String tenantId, long processInstanceKey);
 }

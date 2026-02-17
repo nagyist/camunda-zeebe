@@ -74,7 +74,7 @@ final class ProcessInstanceElementTerminatedV2Applier
   private void deleteBusinessIdIndex(final ProcessInstanceRecord value) {
     final String businessId = value.getBusinessId();
     if (!businessId.isEmpty()) {
-      elementInstanceState.deleteProcessInstanceByBusinessId(
+      elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
           businessId,
           value.getProcessDefinitionKey(),
           value.getTenantId(),
