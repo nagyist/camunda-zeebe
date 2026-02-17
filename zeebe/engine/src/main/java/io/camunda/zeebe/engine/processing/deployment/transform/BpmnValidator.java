@@ -13,16 +13,16 @@ import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeConfi
 import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeRuntimeValidators;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
+import io.camunda.zeebe.model.bpmn.validation.CompositeValidationVisitor;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebeDesignTimeValidators;
 import java.io.StringWriter;
+import java.util.List;
 import org.camunda.bpm.model.xml.impl.validation.ModelValidationResultsImpl;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public final class BpmnValidator {
-  private final ValidationVisitor designTimeAspectValidator;
-  private final ValidationVisitor runtimeAspectValidator;
-  private final ValidationVisitor configurationAspectValidator;
+  private final CompositeValidationVisitor validationVisitor;
   private final ValidationErrorFormatter formatter = new ValidationErrorFormatter();
   private final int validatorResultsOutputMaxSize;
 
@@ -30,32 +30,33 @@ public final class BpmnValidator {
       final ExpressionLanguage expressionLanguage,
       final ExpressionProcessor expressionProcessor,
       final BpmnValidatorConfig config) {
-    designTimeAspectValidator = new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
-    runtimeAspectValidator =
+    final var designTimeAspectValidator =
+        new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
+    final var runtimeAspectValidator =
         new ValidationVisitor(
             ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
-    configurationAspectValidator =
+    final var configurationAspectValidator =
         new ValidationVisitor(ZeebeConfigurationValidators.getValidators(config));
+
+    validationVisitor =
+        new CompositeValidationVisitor(
+            designTimeAspectValidator, runtimeAspectValidator, configurationAspectValidator);
+
     validatorResultsOutputMaxSize = config.validatorResultsOutputMaxSize();
   }
 
   public String validate(final BpmnModelInstance modelInstance) {
-    designTimeAspectValidator.reset();
-    runtimeAspectValidator.reset();
-    configurationAspectValidator.reset();
+    validationVisitor.reset();
 
     final ModelWalker walker = new ModelWalker(modelInstance);
-    walker.walk(designTimeAspectValidator);
-    walker.walk(runtimeAspectValidator);
-    walker.walk(configurationAspectValidator);
+    walker.walk(validationVisitor);
 
-    final ValidationResults results1 = designTimeAspectValidator.getValidationResult();
-    final ValidationResults results2 = runtimeAspectValidator.getValidationResult();
-    final ValidationResults results3 = configurationAspectValidator.getValidationResult();
+    final List<ValidationResults> validationResults = validationVisitor.getValidationResults();
 
-    if (results1.hasErrors() || results2.hasErrors() || results3.hasErrors()) {
+    if (validationResults.stream().anyMatch(ValidationResults::hasErrors)) {
       final StringWriter writer = new StringWriter();
-      final var results = new ModelValidationResultsImpl(results1, results2, results3);
+      final var results =
+          new ModelValidationResultsImpl(validationResults.toArray(new ValidationResults[0]));
       results.write(writer, formatter, validatorResultsOutputMaxSize);
 
       return writer.toString();
