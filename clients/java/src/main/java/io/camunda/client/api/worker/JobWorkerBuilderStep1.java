@@ -16,7 +16,6 @@
 package io.camunda.client.api.worker;
 
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.CommandWithOneOrMoreTenantsStep;
 import java.time.Duration;
 import java.util.List;
@@ -225,12 +224,8 @@ public interface JobWorkerBuilderStep1 {
      * <p>If the stream is closed, e.g. the server closed the connection, was restarted, etc., it
      * will be immediately recreated as long as the worker is opened.
      *
-     * <p>NOTE: Job streaming is still under active development, and should be disabled if you
-     * notice any issues.
-     *
      * @return the builder for this worker
      */
-    @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
     JobWorkerBuilderStep3 streamEnabled(boolean isStreamEnabled);
 
     /**
@@ -247,7 +242,6 @@ public interface JobWorkerBuilderStep1 {
      * @param timeout a timeout, after which the stream is recreated
      * @return the builder for this worker
      */
-    @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
     JobWorkerBuilderStep3 streamTimeout(final Duration timeout);
 
     /**

@@ -281,6 +281,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @deprecated since 8 for removal with 8.1, replaced by {@link
    *     CamundaClient#newDeployResourceCommand()}
    */
+  @Deprecated
   DeployProcessCommandStep1 newDeployCommand();
 
   /**
@@ -390,7 +391,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param processInstanceKey the key which refers to the process instance to migrate
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/14907")
   MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(long processInstanceKey);
 
   /**
@@ -2152,7 +2152,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentCommandStep1 newCreateDocumentCommand();
 
   /**
@@ -2201,7 +2200,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand();
 
   /**
@@ -2222,7 +2220,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentId the id of the document
    * @return a builder for the request
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
 
   /**
@@ -2242,7 +2239,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentReferenceResponse the reference of the document
    * @return a builder for the request
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DocumentContentGetRequest newDocumentContentGetRequest(
       DocumentReferenceResponse documentReferenceResponse);
 
@@ -2265,7 +2261,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentId the id of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
 
   /**
@@ -2286,7 +2281,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentReferenceResponse the reference of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
       DocumentReferenceResponse documentReferenceResponse);
 
@@ -2308,7 +2302,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentId the id of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
 
   /**
@@ -2328,7 +2321,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentReferenceResponse the reference of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(
       DocumentReferenceResponse documentReferenceResponse);
 

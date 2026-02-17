@@ -31,10 +31,8 @@ public final class ClientProperties {
       "camunda.client.applyEnvironmentVariableOverrides";
 
   /**
-   * @deprecated since 8.5 for removal with 8.8, where toggling between both will not be possible
    * @see CamundaClientBuilder#preferRestOverGrpc(boolean)
    */
-  @Deprecated
   public static final String PREFER_REST_OVER_GRPC = "camunda.client.gateway.preferRestOverGrpc";
 
   /**
