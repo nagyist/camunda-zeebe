@@ -8,6 +8,7 @@
 
 import {render, screen} from 'modules/testing-library';
 import {open} from 'modules/mocks/diagrams';
+import {searchResult} from 'modules/testUtils';
 import {
   Wrapper,
   adHocNodeElementInstances,
@@ -32,10 +33,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process', () => {
     mockFetchProcessInstance().withSuccess(mockAdHocSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(open('AdHocProcess.bpmn'));
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockSearchElementInstances().withSuccess(adHocNodeElementInstances.level1);
   });
 

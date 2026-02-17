@@ -7,7 +7,7 @@
  */
 
 import {render, screen, within} from 'modules/testing-library';
-import {multiInstanceProcess} from 'modules/testUtils';
+import {multiInstanceProcess, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {Wrapper, mockMultiInstanceProcessInstance} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -55,13 +55,10 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
 
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
 
-    mockSearchElementInstances().withSuccess({
-      items: [
+    mockSearchElementInstances().withSuccess(
+      searchResult([
         MULTI_INSTANCE_BODY_ELEMENT,
         {
           elementInstanceKey: '2251799813686130',
@@ -77,9 +74,8 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           startDate: '2020-08-18T12:07:33.953+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
         },
-      ],
-      page: {totalItems: 2},
-    });
+      ]),
+    );
   });
 
   it('should load the instance history', async () => {
@@ -130,10 +126,9 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-    mockSearchElementInstances().withSuccess({
-      items: [SUB_PROCESS_ELEMENT],
-      page: {totalItems: 1},
-    });
+    mockSearchElementInstances().withSuccess(
+      searchResult([SUB_PROCESS_ELEMENT]),
+    );
     mockFetchElementInstance(
       MULTI_INSTANCE_BODY_ELEMENT.elementInstanceKey,
     ).withSuccess(MULTI_INSTANCE_BODY_ELEMENT);
@@ -153,8 +148,8 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
 
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
-    mockSearchElementInstances().withSuccess({
-      items: [
+    mockSearchElementInstances().withSuccess(
+      searchResult([
         {
           elementInstanceKey: '2251799813686204',
           processInstanceKey: '2251799813686118',
@@ -169,9 +164,8 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           startDate: '2020-08-18T12:07:34.337+0000',
           endDate: '2020-08-18T12:07:34.445+0000',
         },
-      ],
-      page: {totalItems: 1},
-    });
+      ]),
+    );
     mockFetchElementInstance(
       SUB_PROCESS_ELEMENT.elementInstanceKey,
     ).withSuccess(SUB_PROCESS_ELEMENT);
@@ -243,8 +237,8 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
 
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
 
-    mockSearchElementInstances().withSuccess({
-      items: [
+    mockSearchElementInstances().withSuccess(
+      searchResult([
         {
           elementInstanceKey: '2251799813686130',
           processInstanceKey: '2251799813686118',
@@ -273,9 +267,8 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           startDate: '2020-08-18T12:07:34.205+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
         },
-      ],
-      page: {totalItems: 2},
-    });
+      ]),
+    );
 
     vi.runOnlyPendingTimers();
 

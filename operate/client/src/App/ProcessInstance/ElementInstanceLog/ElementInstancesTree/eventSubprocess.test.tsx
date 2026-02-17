@@ -13,7 +13,7 @@ import {
   Wrapper,
   mockEventSubprocessInstance,
 } from './mocks';
-import {eventSubProcess} from 'modules/testUtils';
+import {eventSubProcess, searchResult} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
@@ -31,10 +31,7 @@ describe('ElementInstancesTree - Event Subprocess', () => {
     mockFetchProcessInstance().withSuccess(mockEventSubprocessInstance);
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockSearchElementInstances().withSuccess(
       eventSubProcessElementInstances.level1,
     );

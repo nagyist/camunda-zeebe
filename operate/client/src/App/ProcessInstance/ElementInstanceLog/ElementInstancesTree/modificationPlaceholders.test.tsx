@@ -9,7 +9,7 @@
 import {act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
-import {multiInstanceProcess} from 'modules/testUtils';
+import {multiInstanceProcess, searchResult} from 'modules/testUtils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {ElementInstancesTree} from './index';
 import {
@@ -50,10 +50,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
   });
 
   it('should create new parent scopes for a new placeholder if there are no running scopes', async () => {
@@ -253,8 +250,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
   it('should show and remove two add modification flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockSearchElementInstances().withSuccess({
-      items: [
+    mockSearchElementInstances().withSuccess(
+      searchResult([
         {
           elementInstanceKey: '2251799813686130',
           processInstanceKey: '2251799813686118',
@@ -282,9 +279,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:34.205+0000',
         },
-      ],
-      page: {totalItems: 2},
-    });
+      ]),
+    );
 
     render(
       <ElementInstancesTree
@@ -364,8 +360,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
   it('should show and remove one cancel modification flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockSearchElementInstances().withSuccess({
-      items: [
+    mockSearchElementInstances().withSuccess(
+      searchResult([
         {
           elementInstanceKey: '2251799813686130',
           processInstanceKey: '2251799813686118',
@@ -393,9 +389,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
         },
-      ],
-      page: {totalItems: 2},
-    });
+      ]),
+    );
 
     render(
       <ElementInstancesTree
