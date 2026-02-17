@@ -130,7 +130,7 @@ public final class BackupRangeResolver {
                                     .map(r -> r.timeInterval(checkpointIdGenerator))
                                     .toList())));
 
-    // if to was not set, then the interval can be computed with `from` and the last backup
+    // build the interal from the params or the backup range extreme if a param is not set
     final var interval =
         Interval.closed(
             Optional.ofNullable(from)
