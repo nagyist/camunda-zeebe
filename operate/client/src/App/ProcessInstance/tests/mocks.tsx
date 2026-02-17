@@ -9,13 +9,13 @@
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {testData} from './index.setup';
 import {createUser, createVariable, searchResult} from 'modules/testUtils';
-import {
-  createMemoryRouter,
-  RouterProvider,
-  useNavigate,
-} from 'react-router-dom';
+import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {
+  SearchParamsUpdater,
+  updateSearchParams,
+} from 'modules/testUtils/SearchParamsUpdater';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -32,7 +32,6 @@ import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
-import {fireEvent, screen} from 'modules/testing-library';
 
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
@@ -114,24 +113,6 @@ const mockRequests = () => {
   mockQueryBatchOperationItems().withSuccess(searchResult([]));
   mockQueryBatchOperationItems().withSuccess(searchResult([]));
   mockSearchElementInstances().withSuccess(searchResult([]));
-};
-
-/** Used to programmatically update search params after initial render. */
-const updateSearchParams = (params: Record<string, string>) => {
-  const paramsString = Object.entries(params)
-    .map(([key, value]) => `${key}=${value}`)
-    .join('&');
-  fireEvent.change(screen.getByTestId('new-search-params'), {
-    target: {value: paramsString},
-  });
-};
-const SearchParamsUpdater: React.FC = () => {
-  const navigate = useNavigate();
-  const handleChange: React.ChangeEventHandler<HTMLInputElement> = (event) => {
-    navigate({search: `?${event.currentTarget.value}`}, {replace: true});
-    event.currentTarget.value = '';
-  };
-  return <input data-testid="new-search-params" onChange={handleChange} />;
 };
 
 type Props = {
