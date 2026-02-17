@@ -200,11 +200,11 @@ public class GatewayBasedPropertiesOverride {
 
     populateFromClusterNetwork(override);
     populateFromMembership(override);
-    populateFromClusterId(override);
     // Rest of camunda.cluster.* sections
 
     override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
     override.getCluster().setClusterName(cluster.getName());
+    override.getCluster().setMemberId(cluster.getMemberId());
     override.getCluster().setSendOnLegacySubject(cluster.isSendOnLegacySubject());
 
     override
@@ -299,10 +299,5 @@ public class GatewayBasedPropertiesOverride {
     membershipCfg.setSuspectProbes(membership.getSuspectProbes());
     membershipCfg.setFailureTimeout(membership.getFailureTimeout());
     membershipCfg.setSyncInterval(membership.getSyncInterval());
-  }
-
-  private void populateFromClusterId(final GatewayBasedProperties override) {
-    final Cluster cluster = unifiedConfiguration.getCamunda().getCluster().withGatewayProperties();
-    override.getCluster().setMemberId(cluster.getMemberId());
   }
 }
