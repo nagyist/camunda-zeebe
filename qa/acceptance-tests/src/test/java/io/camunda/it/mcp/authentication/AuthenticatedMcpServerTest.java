@@ -17,6 +17,7 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.gateway.protocol.model.ProcessDefinitionResult;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQueryResult;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -119,7 +120,11 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
 
   private static void deployTestProcessesAndAwaitSearchable(final CamundaClient camundaClient) {
     EXPECTED_UNRESTRICTED_PROCESS_DEFINITION_IDS.forEach(
-        processDefinitionId -> deployTestProcess(camundaClient, processDefinitionId));
+        processDefinitionId ->
+            TestHelper.deployResource(
+                camundaClient,
+                Bpmn.createExecutableProcess(processDefinitionId).startEvent().endEvent().done(),
+                processDefinitionId + ".bpmn"));
 
     await("should make deployed processes searchable")
         .atMost(Duration.ofSeconds(30))
@@ -132,16 +137,5 @@ abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
               assertThat(visibleProcessDefinitionIds)
                   .containsAll(EXPECTED_UNRESTRICTED_PROCESS_DEFINITION_IDS);
             });
-  }
-
-  private static void deployTestProcess(
-      final CamundaClient camundaClient, final String processDefinitionId) {
-    camundaClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(processDefinitionId).startEvent().endEvent().done(),
-            processDefinitionId + ".bpmn")
-        .send()
-        .join();
   }
 }
