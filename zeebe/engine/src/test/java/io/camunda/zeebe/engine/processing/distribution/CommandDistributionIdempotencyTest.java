@@ -123,7 +123,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -869,8 +868,7 @@ public class CommandDistributionIdempotencyTest {
     interceptor.enable(distributionCommand);
 
     // then we expect the command will written to the target partition twice (retry)
-    RecordingExporter.setMaximumWaitTime(100);
-    Awaitility.await()
+    RecordingExporter.await()
         .untilAsserted(
             () -> {
               // wait for retry mechanism to trigger second distribution
@@ -889,7 +887,6 @@ public class CommandDistributionIdempotencyTest {
                           .limit(2))
                   .hasSize(2);
             });
-    RecordingExporter.setMaximumWaitTime(5000);
 
     // then we expect the distribution still finishes based on the second (retried) acknowledgement
     if (scenario.assertDistributionFinishes) {
