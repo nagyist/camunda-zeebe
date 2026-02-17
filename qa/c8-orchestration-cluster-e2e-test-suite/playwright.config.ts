@@ -242,6 +242,8 @@ export default defineConfig({
     baseURL: getBaseURL(),
     actionTimeout: 10000,
     screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
   },
   projects: isV2StatelessTestsOnly ? v2StatelessProjects : normalProjects,
   reporter:
