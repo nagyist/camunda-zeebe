@@ -150,7 +150,9 @@ public class HistoryDeletionService {
     }
 
     try {
-      rdbmsWriters.getDecisionDefinitionWriter().deleteByKeys(decisionRequirementsKeys);
+      rdbmsWriters
+          .getDecisionDefinitionWriter()
+          .deleteByDecisionRequirementsKeys(decisionRequirementsKeys);
     } catch (final PersistenceException ex) {
       LOG.debug("Decision requirement still has decision definitions and will not be deleted.", ex);
       return List.of();

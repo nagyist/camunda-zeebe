@@ -363,7 +363,9 @@ public class HistoryDeletionServiceTest {
         .thenReturn(SearchQueryResult.empty())
         .thenReturn(SearchQueryResult.of(mock(DecisionInstanceEntity.class)));
     final var decisionDefinitionWriter = rdbmsWritersMock.getDecisionDefinitionWriter();
-    doThrow(new PersistenceException()).when(decisionDefinitionWriter).deleteByKeys(anyList());
+    doThrow(new PersistenceException())
+        .when(decisionDefinitionWriter)
+        .deleteByDecisionRequirementsKeys(anyList());
 
     // when
     historyDeletionService.deleteHistory(partitionId);
@@ -373,7 +375,7 @@ public class HistoryDeletionServiceTest {
     verify(rdbmsWritersMock.getDecisionInstanceWriter())
         .deleteByKeys(List.of(decisionInstanceKey1));
     verify(rdbmsWritersMock.getDecisionDefinitionWriter())
-        .deleteByKeys(List.of(decisionRequirementsKey1));
+        .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getDecisionRequirementsWriter(), never())
         .deleteByKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
@@ -409,7 +411,7 @@ public class HistoryDeletionServiceTest {
     verify(rdbmsWritersMock.getProcessInstanceWriter(), never())
         .deleteByKeys(List.of(processInstanceKey1));
     verify(rdbmsWritersMock.getDecisionDefinitionWriter())
-        .deleteByKeys(List.of(decisionRequirementsKey1));
+        .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getDecisionRequirementsWriter())
         .deleteByKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
@@ -442,7 +444,7 @@ public class HistoryDeletionServiceTest {
     verify(rdbmsWritersMock.getProcessDefinitionWriter(), never())
         .deleteByKeys(List.of(processDefinitionKey1));
     verify(rdbmsWritersMock.getDecisionDefinitionWriter())
-        .deleteByKeys(List.of(decisionRequirementsKey1));
+        .deleteByDecisionRequirementsKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getDecisionRequirementsWriter())
         .deleteByKeys(List.of(decisionRequirementsKey1));
     verify(rdbmsWritersMock.getHistoryDeletionWriter())
@@ -468,7 +470,8 @@ public class HistoryDeletionServiceTest {
     historyDeletionService.deleteHistory(partitionId);
 
     // then
-    verify(rdbmsWritersMock.getDecisionDefinitionWriter(), never()).deleteByKeys(anyList());
+    verify(rdbmsWritersMock.getDecisionDefinitionWriter(), never())
+        .deleteByDecisionRequirementsKeys(anyList());
     verify(rdbmsWritersMock.getDecisionRequirementsWriter(), never()).deleteByKeys(anyList());
     verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
   }

@@ -49,8 +49,8 @@ class DecisionDefinitionWriterTest {
   void shouldDeleteDecisionDefinitionsByKeys() {
     final var decisionRequirementsKeys = List.of(1L, 2L, 3L);
 
-    writer.deleteByKeys(decisionRequirementsKeys);
+    writer.deleteByDecisionRequirementsKeys(decisionRequirementsKeys);
 
-    verify(mapper).deleteByKeys(eq(decisionRequirementsKeys));
+    verify(mapper).deleteByDecisionRequirementsKeys(eq(decisionRequirementsKeys));
   }
 }

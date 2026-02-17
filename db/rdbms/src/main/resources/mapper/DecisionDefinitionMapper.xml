@@ -153,7 +153,7 @@
     </if>
   </sql>
 
-  <delete id="deleteByKeys">
+  <delete id="deleteByDecisionRequirementsKeys">
     DELETE FROM ${prefix}DECISION_DEFINITION
     WHERE DECISION_REQUIREMENTS_KEY IN
     <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">

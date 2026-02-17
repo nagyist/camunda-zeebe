@@ -20,5 +20,5 @@ public interface DecisionDefinitionMapper {
 
   List<DecisionDefinitionEntity> search(DecisionDefinitionDbQuery filter);
 
-  void deleteByKeys(List<Long> decisionRequirementsKeys);
+  void deleteByDecisionRequirementsKeys(List<Long> decisionRequirementsKeys);
 }

@@ -36,7 +36,7 @@ public class DecisionDefinitionWriter implements RdbmsWriter {
             decisionDefinition));
   }
 
-  public void deleteByKeys(final List<Long> decisionRequirementsKeys) {
-    mapper.deleteByKeys(decisionRequirementsKeys);
+  public void deleteByDecisionRequirementsKeys(final List<Long> decisionRequirementsKeys) {
+    mapper.deleteByDecisionRequirementsKeys(decisionRequirementsKeys);
   }
 }
