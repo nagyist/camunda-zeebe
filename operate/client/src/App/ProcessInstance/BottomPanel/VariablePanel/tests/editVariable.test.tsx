@@ -632,7 +632,7 @@ describe('Edit variable', () => {
 
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i}),
+      screen.getByRole('button', {name: /open json editor/i}),
     );
 
     await waitFor(() =>
@@ -671,7 +671,7 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /edit variable/i}));
     await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i}),
+      screen.getByRole('button', {name: /open json editor/i}),
     );
 
     expect(

@@ -567,7 +567,7 @@ describe('Add variable', () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i}),
+      screen.getByRole('button', {name: /open json editor/i}),
     );
 
     expect(

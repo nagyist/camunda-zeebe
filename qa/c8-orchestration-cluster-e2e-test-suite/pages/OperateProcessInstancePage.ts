@@ -246,7 +246,7 @@ class OperateProcessInstancePage {
           this.variableValueCellLocator(name).getByPlaceholder('Value'),
         jsonEditorButton: this.variableValueCellLocator(name).getByRole(
           'button',
-          {name: `Open JSON editor modal`},
+          {name: `Open JSON editor`},
         ),
         valueErrorMessage: this.variableValueCellLocator(name).locator(
           '[id="value-error-msg"]',

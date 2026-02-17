@@ -374,7 +374,7 @@ describe('Filters', () => {
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Variable'));
     await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i}),
+      screen.getByRole('button', {name: /open json editor/i}),
     );
 
     expect(

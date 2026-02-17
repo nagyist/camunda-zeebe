@@ -16,7 +16,7 @@ import {
   StructuredListWrapper,
   TextInput,
 } from '@carbon/react';
-import {Popup, Close} from '@carbon/react/icons';
+import {Maximize, Close} from '@carbon/react/icons';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
@@ -106,7 +106,7 @@ const VariableEditor: React.FC<Props> = ({
                     align="top-end"
                     leaveDelayMs={100}
                   >
-                    <Popup />
+                    <Maximize />
                   </IconButton>
                 </div>
               </StructuredListCell>
@@ -173,7 +173,7 @@ const VariableEditor: React.FC<Props> = ({
                       align="top-end"
                       leaveDelayMs={100}
                     >
-                      <Popup />
+                      <Maximize />
                     </IconButton>
                   </div>
                 </StructuredListCell>
@@ -277,7 +277,7 @@ const VariableEditor: React.FC<Props> = ({
                             align="top-end"
                             leaveDelayMs={100}
                           >
-                            <Popup />
+                            <Maximize />
                           </IconButton>
                           <IconButton
                             label={t('taskVariablesRemoveVariable', {
