@@ -23,7 +23,6 @@ import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.ibatis.exceptions.PersistenceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,17 +148,22 @@ public class HistoryDeletionService {
       return List.of();
     }
 
-    try {
-      rdbmsWriters
-          .getDecisionDefinitionWriter()
-          .deleteByDecisionRequirementsKeys(decisionRequirementsKeys);
-    } catch (final PersistenceException ex) {
-      LOG.debug("Decision requirement still has decision definitions and will not be deleted.", ex);
-      return List.of();
+    boolean allDecisionRequirementsDependantDataDeleted = true;
+    final var limit = config.dependentRowLimit();
+    final var deletedRows =
+        rdbmsWriters
+            .getDecisionDefinitionWriter()
+            .deleteByDecisionRequirementsKeys(decisionRequirementsKeys, limit);
+    if (deletedRows >= limit) {
+      allDecisionRequirementsDependantDataDeleted = false;
     }
 
-    rdbmsWriters.getDecisionRequirementsWriter().deleteByKeys(decisionRequirementsKeys);
-    return decisionRequirementsKeys;
+    if (allDecisionRequirementsDependantDataDeleted) {
+      rdbmsWriters.getDecisionRequirementsWriter().deleteByKeys(decisionRequirementsKeys);
+      return decisionRequirementsKeys;
+    }
+
+    return List.of();
   }
 
   private boolean hasDeletedAllProcessInstances(

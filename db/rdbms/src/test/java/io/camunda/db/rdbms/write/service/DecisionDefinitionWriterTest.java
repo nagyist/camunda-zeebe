@@ -48,9 +48,10 @@ class DecisionDefinitionWriterTest {
   @Test
   void shouldDeleteDecisionDefinitionsByKeys() {
     final var decisionRequirementsKeys = List.of(1L, 2L, 3L);
+    final var limit = 1000;
 
-    writer.deleteByDecisionRequirementsKeys(decisionRequirementsKeys);
+    writer.deleteByDecisionRequirementsKeys(decisionRequirementsKeys, limit);
 
-    verify(mapper).deleteByDecisionRequirementsKeys(eq(decisionRequirementsKeys));
+    verify(mapper).deleteByDecisionRequirementsKeys(eq(decisionRequirementsKeys), eq(limit));
   }
 }

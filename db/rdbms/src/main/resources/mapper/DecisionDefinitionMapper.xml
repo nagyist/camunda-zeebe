@@ -159,5 +159,37 @@
     <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
       #{key}
     </foreach>
+    LIMIT #{limit}
+  </delete>
+
+  <delete id="deleteByDecisionRequirementsKeys" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}DECISION_DEFINITION
+    WHERE DECISION_REQUIREMENTS_KEY IN
+    <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+
+  <delete id="deleteByDecisionRequirementsKeys" databaseId="oracle">
+    DELETE FROM ${prefix}DECISION_DEFINITION
+    WHERE rowid IN (SELECT rowid
+                    FROM ${prefix}DECISION_DEFINITION
+                    WHERE DECISION_REQUIREMENTS_KEY IN
+                    <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+                      #{key}
+                    </foreach>
+                    AND ROWNUM &lt;= #{limit})
+  </delete>
+
+  <delete id="deleteByDecisionRequirementsKeys" databaseId="postgresql">
+    DELETE FROM ${prefix}DECISION_DEFINITION
+    WHERE ctid IN (SELECT ctid
+                   FROM ${prefix}DECISION_DEFINITION
+                   WHERE DECISION_REQUIREMENTS_KEY IN
+                   <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+                     #{key}
+                   </foreach>
+                   LIMIT #{limit})
   </delete>
 </mapper>
