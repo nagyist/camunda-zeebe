@@ -80,14 +80,7 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
 
   @Override
   public void updateEntity(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
-    entity.setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()));
-    entity.setAction(record.getValue().getAction());
-    entity.setKey(record.getKey());
     createTaskEntity(entity, record);
-    final TaskJoinRelationship joinRelation = new TaskJoinRelationship();
-    joinRelation.setName(TaskJoinRelationshipType.TASK.getType());
-    joinRelation.setParent(Long.parseLong(entity.getProcessInstanceId()));
-    entity.setJoin(joinRelation);
   }
 
   @Override
@@ -110,6 +103,7 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
     final var formKey = taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : null;
 
     entity
+        .setKey(record.getKey())
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
         .setState(TaskState.CREATING)
         .setFlowNodeInstanceId(String.valueOf(taskValue.getElementInstanceKey()))
@@ -153,6 +147,10 @@ public class UserTaskCreatingHandler implements ExportHandler<TaskEntity, UserTa
     if (rootProcessInstanceKey > 0) {
       entity.setRootProcessInstanceKey(rootProcessInstanceKey);
     }
+    final TaskJoinRelationship joinRelation = new TaskJoinRelationship();
+    joinRelation.setName(TaskJoinRelationshipType.TASK.getType());
+    joinRelation.setParent(Long.parseLong(entity.getProcessInstanceId()));
+    entity.setJoin(joinRelation);
   }
 
   private boolean refersToPreviousVersionRecord(final long key) {
