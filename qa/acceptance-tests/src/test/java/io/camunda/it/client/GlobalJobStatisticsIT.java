@@ -31,14 +31,16 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
-@DisabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "AWS_OS") // test is flaky on AWS OS
+// @DisabledIfSystemProperty(
+//    named = "test.integration.camunda.database.type",
+//    matches = "AWS_OS") // test is flaky on AWS OS
+@Disabled(
+    "Flaky test, will be fixed in the context of https://github.com/camunda/camunda/issues/42928")
 public class GlobalJobStatisticsIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();

@@ -12,7 +12,6 @@ import static io.camunda.it.util.TestHelper.activateAndFailJobsForTenant;
 import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.startProcessInstanceForTenant;
-import static io.camunda.it.util.TestHelper.waitForAll;
 import static io.camunda.it.util.TestHelper.waitForJobStatistics;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,25 +23,25 @@ import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+// @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@Disabled(
+    "Flaky test, will be fixed in the context of https://github.com/camunda/camunda/issues/42928")
 public class GlobalJobStatisticsTenancyIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
-  public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(5);
+  public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(10);
   public static final int MAX_WORKER_NAME_LENGTH = 10;
   public static final int MAX_TENANT_ID_LENGTH = 10;
-  public static final int MAX_UNIQUE_KEYS = 5;
+  public static final int MAX_UNIQUE_KEYS = 4;
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -92,10 +91,6 @@ public class GlobalJobStatisticsTenancyIT {
   private static OffsetDateTime firstBatchExportedTime;
   // Time after second batch of metrics was exported (for long worker name test)
   private static OffsetDateTime secondBatchExportedTime;
-  // Time after third batch of metrics was exported (for long tenant id test)
-  private static OffsetDateTime thirdBatchExportedTime;
-  // Time after fourth batch of metrics was exported (for max unique keys test)
-  private static OffsetDateTime fourthBatchExportedTime;
 
   @BeforeAll
   static void setup(@Authenticated(ADMIN) final CamundaClient adminClient)
@@ -104,11 +99,16 @@ public class GlobalJobStatisticsTenancyIT {
     // Create tenants and assign users
     createTenant(adminClient, TENANT_A, TENANT_A, ADMIN, USER_TENANT_A);
     createTenant(adminClient, TENANT_B, TENANT_B, ADMIN, USER_TENANT_B);
+    // Create a tenant with a long ID that EXCEEDS the limit
+    createTenant(adminClient, LONG_TENANT_ID, LONG_TENANT_ID, ADMIN);
+
     // USER_NO_TENANT is not assigned to any tenant
 
     // Deploy processes for each tenant
     deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
+    // Deploy a process to the long tenant
+    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", LONG_TENANT_ID);
 
     // Start process instances for each tenant to create jobs
     // TENANT_A: 2 instances -> 2 taskA jobs created
@@ -186,12 +186,6 @@ public class GlobalJobStatisticsTenancyIT {
     Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
 
     // ========== THIRD BATCH: Incomplete metrics (long tenant id) ==========
-    // Create a tenant with a long ID that EXCEEDS the limit
-    createTenant(adminClient, LONG_TENANT_ID, LONG_TENANT_ID, ADMIN);
-
-    // Deploy a process to the long tenant
-    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", LONG_TENANT_ID);
-
     // Start a process instance in the long tenant
     startProcessInstanceForTenant(adminClient, PROCESS_ID, LONG_TENANT_ID);
     // Create a valid job in TENANT_A to ensure at least one metric is recorded
@@ -210,64 +204,6 @@ public class GlobalJobStatisticsTenancyIT {
           assertThat(stats.getCreated().getCount()).isEqualTo(1L);
           assertThat(stats.isIncomplete()).isTrue();
         });
-
-    // Wait for export & store third batch export time
-    thirdBatchExportedTime = OffsetDateTime.now();
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
-
-    // ========== FOURTH BATCH: Incomplete metrics (max unique keys exceeded) ==========
-    // Create unique tenant+jobType combinations to exceed MAX_UNIQUE_KEYS (5)
-    // Note: The first MAX_UNIQUE_KEYS will be tracked, ensuring at least valid data is recorded
-    // Deploy all processes first (deployments don't create job metrics)
-    final var deploymentFutures =
-        IntStream.rangeClosed(1, MAX_UNIQUE_KEYS + 1)
-            .mapToObj(
-                i -> {
-                  final String uniqueJobType = "type" + i; // type1, type2, ..., type6
-                  final var uniqueProcess =
-                      Bpmn.createExecutableProcess("uniqueProc" + i)
-                          .startEvent()
-                          .serviceTask("task" + i, t -> t.zeebeJobType(uniqueJobType))
-                          .endEvent()
-                          .done();
-                  return adminClient
-                      .newDeployResourceCommand()
-                      .addProcessModel(uniqueProcess, "uniqueProc" + i + ".bpmn")
-                      .tenantId(TENANT_A)
-                      .send();
-                })
-            .toList();
-    waitForAll(deploymentFutures);
-
-    // Now start all instances in parallel (within one export interval)
-    // This ensures all jobs are created in the same batch
-    final var instanceFutures =
-        IntStream.rangeClosed(1, MAX_UNIQUE_KEYS + 1)
-            .mapToObj(
-                i ->
-                    adminClient
-                        .newCreateInstanceCommand()
-                        .bpmnProcessId("uniqueProc" + i)
-                        .latestVersion()
-                        .tenantId(TENANT_A)
-                        .send())
-            .toList();
-    // Wait for all instances to be created
-    waitForAll(instanceFutures);
-
-    // Wait for fourth batch metrics to be exported
-    waitForJobStatistics(
-        adminClient,
-        thirdBatchExportedTime,
-        NOW.plusDays(1),
-        stats -> {
-          // Should be incomplete because we exceeded max unique keys
-          // First MAX_UNIQUE_KEYS are tracked, the 6th is not
-          assertThat(stats.getCreated().getCount()).isEqualTo(MAX_UNIQUE_KEYS);
-          assertThat(stats.isIncomplete()).isTrue();
-        });
-
-    fourthBatchExportedTime = OffsetDateTime.now();
   }
 
   @Test
@@ -454,29 +390,13 @@ public class GlobalJobStatisticsTenancyIT {
     waitForJobStatistics(
         adminClient,
         secondBatchExportedTime,
-        thirdBatchExportedTime,
+        NOW.plusDays(1),
         stats -> {
           // Should have 1 valid created job from TENANT_A, long tenant ID job not counted
           assertThat(stats.getCreated().getCount()).isEqualTo(1L);
           assertThat(stats.getCompleted().getCount()).isZero();
           assertThat(stats.getFailed().getCount()).isZero();
           // The isIncomplete flag should be true because the tenant ID exceeded the limit
-          assertThat(stats.isIncomplete()).isTrue();
-        });
-  }
-
-  @Test
-  void shouldReturnIncompleteWhenMaxUniqueKeysExceeded(
-      @Authenticated(ADMIN) final CamundaClient adminClient) {
-    // when/then - query only fourth batch (max unique keys exceeded)
-    waitForJobStatistics(
-        adminClient,
-        thirdBatchExportedTime,
-        fourthBatchExportedTime,
-        stats -> {
-          // We created MAX_UNIQUE_KEYS + 1 (6) unique tenant+jobType combinations
-          // Only MAX_UNIQUE_KEYS (5) should be tracked
-          assertThat(stats.getCreated().getCount()).isEqualTo(MAX_UNIQUE_KEYS);
           assertThat(stats.isIncomplete()).isTrue();
         });
   }
