@@ -17,10 +17,10 @@ if [ -z "$1" ]; then
   exit 1
 fi
 node=$1
-event=${2:-cpu}
+profiler_event=${2:-cpu}
 additional_options=${3:-}
 
-if [[ event == "wall" ]]; then
+if [[ $profiler_event == "wall" ]]; then
   # Add -t flag for wall profiling to split threads (recommended for wall-clock profiling)
   additional_options="-t $additional_options"
 fi
@@ -50,7 +50,7 @@ then
 fi
 
 # Run profiling
-filename=flamegraph-$event-$(date +%Y-%m-%d_%H-%M-%S).html
+filename=flamegraph-$profiler_event-$(date +%Y-%m-%d_%H-%M-%S).html
 # Extracting the PID:
 #
 #  $ k exec camunda-0 -it -- ps -ax
