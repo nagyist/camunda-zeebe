@@ -167,18 +167,20 @@ final class BackupRangeResolverTest {
   @Test
   void shouldRestoreToEndOfRangeWhenToIsMissing() {
     // given
-    store
-        .forPartition(1)
-        .withRange(100, 400)
-        .addBackup(100, 1000, 1, minutesAfterBase(0))
-        .addBackup(200, 2000, 1001, minutesAfterBase(20))
-        .addBackup(300, 3000, 2001, minutesAfterBase(40))
-        .addBackup(400, 4000, 3001, minutesAfterBase(60));
+    for (int i = 1; i < 3; i++) {
+      store
+          .forPartition(i)
+          .withRange(100, 400)
+          .addBackup(100, 1000, 1, minutesAfterBase(0))
+          .addBackup(200, 2000, 1001, minutesAfterBase(20))
+          .addBackup(300, 3000, 2001, minutesAfterBase(40))
+          .addBackup(400, 4000, 3001, minutesAfterBase(60));
+    }
 
     // when - time interval [20, 40] covers only checkpoints 200 and 300
     final var result = resolve(1, minutesAfterBase(20), null, Map.of(1, 2500L));
 
-    // then - only backups within time interval are returned
+    // then - all backups after `from` are returned
     assertThat(result.globalCheckpointId()).isEqualTo(400L);
     assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L, 400L);
   }
