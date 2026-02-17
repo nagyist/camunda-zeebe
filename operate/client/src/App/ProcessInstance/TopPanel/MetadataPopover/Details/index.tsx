@@ -79,9 +79,10 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
   const job = jobSearchResult?.[0];
 
   return (
-    <>
+    <section aria-labelledby="metadata-popover-details-title">
       <Header
         title="Details"
+        titleId="metadata-popover-details-title"
         link={
           !isNil(window.clientConfig?.tasklistUrl) && type === 'USER_TASK'
             ? {
@@ -186,7 +187,7 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
           onClose={() => setIsModalVisible(false)}
         />
       )}
-    </>
+    </section>
   );
 };
 
