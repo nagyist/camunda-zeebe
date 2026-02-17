@@ -126,6 +126,7 @@ public class StreamProcessingComposite implements CommandWriter {
     errorRecord.setProcessInstanceKey(processInstanceKey);
 
     writeBatch(
+        partitionId,
         RecordToWrite.event().key(processInstanceKey).error(ErrorIntent.CREATED, errorRecord));
   }
 
@@ -170,6 +171,10 @@ public class StreamProcessingComposite implements CommandWriter {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
+    return writeBatch(partitionId, recordsToWrite);
+  }
+
+  public long writeBatch(final int partitionId, final RecordToWrite... recordsToWrite) {
     final var writer = streams.newLogStreamWriter(getLogName(partitionId));
     return writeActor
         .submit(() -> writer.tryWrite(WriteContext.internal(), Arrays.asList(recordsToWrite)).get())
