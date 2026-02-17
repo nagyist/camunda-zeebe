@@ -134,8 +134,12 @@ public interface ElementInstanceState {
       long processInstanceKey, String elementId);
 
   /**
-   * Returns the process instance key for the given business id, process definition key, and tenant
-   * id. Returns -1 if no active process instance exists with the given business id.
+   * Verifies if there is an active process instance with the given business id. This method is used
+   * to enforce uniqueness of business id per process definition (scoped by tenant).
+   *
+   * <p>The {@code ignoreWhen} predicate can be used to exclude certain process instances from the
+   * check, for example banned process instances. This allows the caller to handle edge cases where
+   * a process instance should not be considered as active.
    *
    * @param businessId the business id to look up
    * @param processDefinitionKey the process definition key
