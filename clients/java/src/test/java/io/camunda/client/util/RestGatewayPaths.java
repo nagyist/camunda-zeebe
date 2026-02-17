@@ -462,14 +462,4 @@ public class RestGatewayPaths {
   public static String getResourceDeletionUrl(final long resourceKey) {
     return String.format(URL_RESOURCE_DELETION, resourceKey);
   }
-
-  @Deprecated
-  public static String getClusterVariablesUrl(final String variableName) {
-    return String.format(URL_CLUSTER_VARIABLES_GET_GLOBAL, variableName);
-  }
-
-  @Deprecated
-  public static String getClusterVariablesUrl(final String variableName, final String tenantId) {
-    return String.format(URL_CLUSTER_VARIABLES_GET_TENANT, tenantId, variableName);
-  }
 }
