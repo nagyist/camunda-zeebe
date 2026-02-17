@@ -198,7 +198,8 @@ public class BackupRetention extends Actor {
 
   private ActorFuture<RetentionContext> createRetentionContext(final int partitionId) {
     return retrieveBackups(partitionId)
-        .thenApply((statuses) -> filterBackups(statuses, partitionId), this)
+        .thenApply(this::excludeBackupsWithoutTimestamps)
+        .thenApply((statuses) -> processBackups(statuses, partitionId), this)
         .andThen(
             (context) ->
                 retrieveRangeMarkers(partitionId)
@@ -254,11 +255,14 @@ public class BackupRetention extends Actor {
     return retentionContext.withRangeMarkerContext(rangeStart, deletableRangeMarkers);
   }
 
-  private RetentionContext filterBackups(
+  private RetentionContext processBackups(
       final Collection<BackupStatus> backups, final int partitionId) {
 
-    final var latestCompletedBackup = latestCompletedBackup(backups, partitionId);
+    final var latestCompletedBackup = latestCompletedBackup(backups);
     if (latestCompletedBackup.isEmpty()) {
+      LOG.debug(
+          "Unable to determine retention window for partition {}. No completed backup found.",
+          partitionId);
       // Returning a context with no deletable backups will not trigger any further actions
       return RetentionContext.init(partitionId, List.of(), -1L, null);
     }
@@ -270,13 +274,6 @@ public class BackupRetention extends Actor {
 
     for (final var backup : backups) {
       final var timestamp = backupTimestamp(backup);
-
-      if (timestamp == null) {
-        LOG.debug(
-            "Unable to determine timestamp for backup {}. Skipping backup during retention.",
-            backup.id());
-        continue;
-      }
 
       if (timestamp.isBefore(windowBound)) {
         if (backup.id().checkpointId() != latestCompletedBackup.get().id().checkpointId()) {
@@ -302,21 +299,15 @@ public class BackupRetention extends Actor {
         partitionId, deletableBackups, firstAvailableBackupInNewRange, windowBound);
   }
 
-  private Optional<BackupStatus> latestCompletedBackup(
-      final Collection<BackupStatus> backups, final int partitionId) {
-    final var latestCompletedBackupOpt =
-        backups.stream()
-            .filter(f -> f.statusCode() == BackupStatusCode.COMPLETED)
-            .max(MAX_BACKUP_COMPARATOR);
+  private Optional<BackupStatus> latestCompletedBackup(final Collection<BackupStatus> backups) {
+    return backups.stream()
+        .filter(f -> f.statusCode() == BackupStatusCode.COMPLETED)
+        .max(MAX_BACKUP_COMPARATOR);
+  }
 
-    if (latestCompletedBackupOpt.isEmpty()
-        || backupTimestamp(latestCompletedBackupOpt.get()) == null) {
-      LOG.debug(
-          "Unable to determine retention window for partition {}. No completed backup found.",
-          partitionId);
-    }
-
-    return latestCompletedBackupOpt.filter(b -> backupTimestamp(b) != null);
+  private Collection<BackupStatus> excludeBackupsWithoutTimestamps(
+      final Collection<BackupStatus> backups) {
+    return backups.stream().filter(backup -> backupTimestamp(backup) != null).toList();
   }
 
   private Instant calculateWindowBound(final BackupStatus latestCompletedBackup) {
@@ -444,7 +435,11 @@ public class BackupRetention extends Actor {
         .map(BackupDescriptor::checkpointTimestamp)
         .or(backup::created)
         .or(backup::lastModified)
-        .orElse(null);
+        .orElseGet(
+            () -> {
+              LOG.debug("Unable to determine timestamp for backup {}.", backup.id());
+              return null;
+            });
   }
 
   record RetentionContext(
