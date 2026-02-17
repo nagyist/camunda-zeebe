@@ -648,4 +648,74 @@ export class OperateProcessInstanceViewModificationModePage {
     await editor.evaluate((el: HTMLElement) => el.focus());
     await this.page.keyboard.insertText(value);
   }
+
+  private async iterateVariableModificationDialogRows(
+    onRow: (
+      row: ReturnType<
+        OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
+      >,
+      index: number,
+    ) => Promise<boolean | void>,
+  ) {
+    for (let index = 0; ; index++) {
+      const row =
+        this.applyModificationDialogVariableModificationRowByIndex(index);
+      if (await row.nameValue.isHidden()) {
+        break;
+      }
+
+      const shouldContinue = await onRow(row, index);
+      if (shouldContinue === false) {
+        break;
+      }
+    }
+  }
+
+  async deleteVariableModificationFromDialog({
+    nameText,
+    scopeText,
+  }: {
+    nameText: string;
+    scopeText?: string;
+  }) {
+    let targetRow:
+      | ReturnType<
+          OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
+        >
+      | null = null;
+
+    await this.iterateVariableModificationDialogRows(async row => {
+      const variableNameValue = await row.nameValue.innerText();
+      if (variableNameValue !== nameText) {
+        return true;
+      }
+
+      if (scopeText) {
+        const scopeValue = await row.scope.innerText();
+        if (scopeValue !== scopeText) {
+          return true;
+        }
+      }
+
+      targetRow = row;
+      return false;
+    });
+
+    expect(targetRow, `Variable modification ${nameText} not found`).toBeTruthy();
+
+    await expect(targetRow!.nameValue).toHaveText(nameText);
+    if (scopeText) {
+      await expect(targetRow!.scope).toHaveText(scopeText);
+    }
+    await targetRow!.deleteVariableModificationButton.click();
+  }
+
+  async expectVariableNotPresentInDialog(forbiddenText: string) {
+    await this.iterateVariableModificationDialogRows(async row => {
+      const variableName = await row.nameValue.innerText();
+      expect(variableName).not.toContain(forbiddenText);
+    });
+  }
+
+  async findVariableModificationInDialog(variableName: string) {}
 }

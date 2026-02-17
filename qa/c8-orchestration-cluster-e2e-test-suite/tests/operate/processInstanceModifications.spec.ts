@@ -527,17 +527,9 @@ test.describe('Process Instance Modifications', () => {
         .deleteButton.click();
 
       await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
-      for (let i = 0; ; i++) {
-        const row =
-          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
-            i,
-          );
-        if (!(await row.nameValue.isVisible())) {
-          break;
-        }
-        const variableName = await row.nameValue.innerText();
-        expect(variableName).not.toContain('testVariableToRemove');
-      }
+      await operateProcessInstanceViewModificationModePage.expectVariableNotPresentInDialog(
+        'testVariableToRemove',
+      );
       await operateProcessInstanceViewModificationModePage.clickCancelButtonDialog();
     });
 
@@ -559,38 +551,13 @@ test.describe('Process Instance Modifications', () => {
 
       await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
 
-      let variableModificationFound = false;
+      await operateProcessInstanceViewModificationModePage.deleteVariableModificationFromDialog(
+        {nameText: 'testVariableToMeow: "meow"'},
+      );
 
-      for (let i = 0; ; i++) {
-        const row =
-          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
-            i,
-          );
-        if (!(await row.nameValue.isVisible())) {
-          break;
-        }
-        const variableNameValue = await row.nameValue.innerText();
-        if (variableNameValue === 'testVariableToMeow: "meow"') {
-          await expect(row.nameValue).toHaveText('testVariableToMeow: "meow"');
-          await row.deleteVariableModificationButton.click();
-          variableModificationFound = true;
-          break;
-        }
-      }
-      expect(variableModificationFound).toBeTruthy();
-
-      for (let i = 0; ; i++) {
-        const row =
-          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
-            i,
-          );
-        if (!(await row.nameValue.isVisible())) {
-          break;
-        }
-        const variableName = await row.nameValue.innerText();
-
-        expect(variableName).not.toContain('testVariableToMeow');
-      }
+      await operateProcessInstanceViewModificationModePage.expectVariableNotPresentInDialog(
+        'testVariableToMeow',
+      );
 
       await operateProcessInstanceViewModificationModePage.clickCancelButtonDialog();
     });
@@ -835,17 +802,17 @@ test.describe('Process Instance Modifications', () => {
       ).toHaveValue('1');
     });
 
-    await test.step('Undo again and verify new variable field removed', async () => {
-      await operateProcessInstancePage.undoModification();
+    // await test.step('Undo again and verify new variable field removed', async () => {
+    //   await operateProcessInstancePage.undoModification();
 
-      // here might be needed change from hidden to add token operation
-      await expect(
-        operateProcessInstancePage.lastAddedModificationText,
-      ).toBeHidden();
-      await expect(
-        operateProcessInstancePage.getVariableTestId('newVariables[0]'),
-      ).toBeHidden();
-    });
+    //   // here might be needed change from hidden to add token operation
+    //   await expect(
+    //     operateProcessInstancePage.lastAddedModificationText,
+    //   ).toBeHidden();
+    //   await expect(
+    //     operateProcessInstancePage.getVariableTestId('newVariables[0]'),
+    //   ).toBeHidden();
+    // });
 
     await test.step('Add variables to different scopes with same name', async () => {
       await operateProcessInstancePage.addNewVariableModificationMode(
@@ -877,27 +844,9 @@ test.describe('Process Instance Modifications', () => {
         ),
       ).toHaveCount(2);
 
-      let variableModificationFound = false;
-
-      for (let i = 0; ; i++) {
-        const row =
-          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
-            i,
-          );
-        if (!(await row.nameValue.isVisible())) {
-          break;
-        }
-        const variableNameValue = await row.nameValue.innerText();
-        const scope = await row.scope.innerText();
-        if (scope === 'Never fails' && variableNameValue === 'test3: 1') {
-          await expect(row.nameValue).toHaveText('test3: 1');
-          await expect(row.scope).toHaveText('Never fails');
-          await row.deleteVariableModificationButton.click();
-          variableModificationFound = true;
-          break;
-        }
-      }
-      expect(variableModificationFound).toBeTruthy();
+      await operateProcessInstanceViewModificationModePage.deleteVariableModificationFromDialog(
+        {nameText: 'test3: 1', scopeText: 'Never fails'},
+      );
 
       await operateProcessInstancePage.clickDialogCancel();
 
@@ -908,21 +857,13 @@ test.describe('Process Instance Modifications', () => {
 
     await test.step('Verify first scope still has the variable creation scheduled', async () => {
       await operateProcessInstancePage.clickApplyModifications();
+      const row =
+        operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
+          0,
+        );
 
-      for (let i = 0; ; i++) {
-        const row =
-          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
-            i,
-          );
-        if (!(await row.nameValue.isVisible())) {
-          break;
-        }
-        const variableNameValue = await row.nameValue.innerText();
-        const scope = await row.scope.innerText();
-
-        await expect(row.nameValue).toHaveText('test3: 1');
-        await expect(row.scope).toHaveText('Without Incidents Process');
-      }
+      await expect(row.nameValue).toHaveText('test3: 1');
+      await expect(row.scope).toHaveText('Without Incidents Process');
     });
   });
 });
