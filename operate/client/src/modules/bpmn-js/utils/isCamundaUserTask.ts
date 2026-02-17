@@ -14,8 +14,8 @@ import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
  * @param businessObject - The BPMN business object to check
  * @returns true if the element is a Camunda user task
  */
-const isCamundaUserTask = (businessObject?: BusinessObject): boolean => {
-  if (businessObject?.$type !== 'bpmn:UserTask') {
+const isCamundaUserTask = (businessObject?: BusinessObject | null): boolean => {
+  if (!businessObject || businessObject.$type !== 'bpmn:UserTask') {
     return false;
   }
 

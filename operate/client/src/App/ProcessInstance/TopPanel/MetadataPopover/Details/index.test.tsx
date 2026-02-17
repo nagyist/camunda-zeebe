@@ -13,6 +13,8 @@ import {
   mockJob,
   mockCalledProcessInstance,
   mockBusinessObject,
+  mockJobWorkerUserTaskBusinessObject,
+  mockCamundaUserTaskBusinessObject,
   TestWrapper,
 } from './mocks';
 import {Details} from './index';
@@ -83,6 +85,44 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.getByText('Details')).toBeInTheDocument();
     expect(screen.getByText('Element Instance Key')).toBeInTheDocument();
     expect(screen.getByText('123456789')).toBeInTheDocument();
+  });
+
+  it('should display deprecation warning for job worker user tasks', () => {
+    const userTaskInstance: ElementInstance = {
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    };
+
+    render(
+      <Details
+        elementInstance={userTaskInstance}
+        businessObject={mockJobWorkerUserTaskBusinessObject}
+      />,
+      {wrapper: TestWrapper},
+    );
+
+    expect(
+      screen.getByText(/job worker implementation are deprecated/),
+    ).toBeInTheDocument();
+  });
+
+  it('should not display deprecation warning for Camunda user tasks', () => {
+    const userTaskInstance: ElementInstance = {
+      ...mockElementInstance,
+      type: 'USER_TASK',
+    };
+
+    render(
+      <Details
+        elementInstance={userTaskInstance}
+        businessObject={mockCamundaUserTaskBusinessObject}
+      />,
+      {wrapper: TestWrapper},
+    );
+
+    expect(
+      screen.queryByText(/job worker implementation are deprecated/),
+    ).not.toBeInTheDocument();
   });
 
   it('should display job retries when available', async () => {

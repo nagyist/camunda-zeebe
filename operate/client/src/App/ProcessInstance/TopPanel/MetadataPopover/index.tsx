@@ -37,6 +37,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {data} = useProcessInstanceXml({
     processDefinitionKey,
   });
+  const labelId = 'metadata-popover-instances-title';
 
   const businessObject = selectedElementId
     ? data?.businessObjects[selectedElementId]
@@ -75,15 +76,16 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
         {elementInstancesCount !== null &&
           elementInstancesCount > 1 &&
           !selectedElementInstanceKey && (
-            <>
+            <section aria-labelledby={labelId}>
               <Header
                 title={`This element instance triggered ${elementInstancesCount} times`}
+                titleId={labelId}
               />
               <Content>
                 To view details for any of these, select one Instance in the
                 Instance History.
               </Content>
-            </>
+            </section>
           )}
 
         {resolvedElementInstance && (
