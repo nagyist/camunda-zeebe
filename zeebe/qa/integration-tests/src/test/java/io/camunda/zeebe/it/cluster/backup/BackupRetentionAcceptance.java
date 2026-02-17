@@ -21,7 +21,6 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -41,8 +40,8 @@ public interface BackupRetentionAcceptance extends ClockSupport {
   int BROKER_COUNT = 3;
   int REPLICATION_FACTOR = 3;
   Duration BACKUP_INTERVAL = Duration.ofSeconds(5);
-  Duration CLEANUP_INTERVAL = Duration.ofSeconds(5);
-  Duration RETENTION_WINDOW = Duration.ofSeconds(15);
+  Duration CLEANUP_INTERVAL = Duration.ofSeconds(3);
+  Duration RETENTION_WINDOW = Duration.ofSeconds(5);
 
   TestCluster getTestCluster();
 
@@ -62,14 +61,12 @@ public interface BackupRetentionAcceptance extends ClockSupport {
 
     pinClock(getTestCluster());
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
-    final List<Long> backupIds = new ArrayList<>();
 
-    // Wait for 3 completed backups
+    // Wait for 4 completed backups
     final var firstBackup = awaitNewBackup(0);
     final var secondBackup = awaitNewBackup(firstBackup);
     final var thirdBackup = awaitNewBackup(secondBackup);
-    backupIds.add(firstBackup);
-    backupIds.add(secondBackup);
+    final var fourthBackup = awaitNewBackup(thirdBackup);
 
     restartClusterWithRetention();
 
@@ -84,12 +81,17 @@ public interface BackupRetentionAcceptance extends ClockSupport {
 
               // Initial backups should have been deleted
               assertThat(currentBackupIds)
-                  .as("Initial backup %s should have been deleted by retention", backupIds)
-                  .doesNotContainAnyElementsOf(backupIds);
+                  .as(
+                      "Initial backup %s should have been deleted by retention",
+                      List.of(firstBackup, secondBackup))
+                  .doesNotContain(firstBackup, secondBackup)
+                  .contains(thirdBackup);
             });
 
-    backupIds.forEach(this::assertManifestNotFoundFromStore);
-    assertRangeMarkerHasBeenUpdated(thirdBackup);
+    assertManifestPresentInStore(thirdBackup);
+    assertManifestNotFoundFromStore(firstBackup);
+    assertManifestNotFoundFromStore(secondBackup);
+    assertRangeMarkerHasBeenUpdated(thirdBackup, fourthBackup);
   }
 
   default long awaitNewBackup(final long previousBackup) {
@@ -126,12 +128,35 @@ public interface BackupRetentionAcceptance extends ClockSupport {
                           final var identifier =
                               new BackupIdentifierImpl(brokerId, partitionId, backupId);
                           assertThat(getBackupStore().getStatus(identifier).join())
+                              .withFailMessage(
+                                  String.format(
+                                      "Expected backup manifest for broker %d partition %d backupId %d not to be present in store",
+                                      brokerId, partitionId, backupId))
                               .extracting(BackupStatus::statusCode)
                               .isEqualTo(BackupStatusCode.DOES_NOT_EXIST);
                         }));
   }
 
-  default void assertRangeMarkerHasBeenUpdated(final long newStartBackupId) {
+  default void assertManifestPresentInStore(final Long backupId) {
+    IntStream.rangeClosed(1, PARTITION_COUNT)
+        .forEach(
+            partitionId -> {
+              try (final var node = getTestCluster().leaderForPartition(partitionId)) {
+                final var brokerId = Integer.parseInt(node.nodeId().id());
+                final var identifier = new BackupIdentifierImpl(brokerId, partitionId, backupId);
+                assertThat(getBackupStore().getStatus(identifier).join())
+                    .withFailMessage(
+                        String.format(
+                            "Expected backup manifest for broker %d partition %d backupId %d to be present in store",
+                            brokerId, partitionId, backupId))
+                    .extracting(BackupStatus::statusCode)
+                    .isEqualTo(BackupStatusCode.COMPLETED);
+              }
+            });
+  }
+
+  default void assertRangeMarkerHasBeenUpdated(
+      final long newStartBackupId, final long expectedEndBackupId) {
     IntStream.rangeClosed(1, PARTITION_COUNT)
         .forEach(
             partitionId -> {
@@ -151,7 +176,7 @@ public interface BackupRetentionAcceptance extends ClockSupport {
                   .isPresent();
               AssertionsForClassTypes.assertThat(endMarker.get().checkpointId())
                   .as("End range marker for partition %d should be updated", partitionId)
-                  .isEqualTo(newStartBackupId);
+                  .isEqualTo(expectedEndBackupId);
             });
   }
 
