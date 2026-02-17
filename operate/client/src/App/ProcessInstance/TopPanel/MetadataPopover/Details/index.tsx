@@ -21,6 +21,7 @@ import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
+import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
 
 type Props = {
   elementInstance: ElementInstance;
@@ -106,6 +107,15 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
         }}
       />
       <Stack gap={5}>
+        {!isCamundaUserTask(businessObject) && (
+          <Stack gap={3} as="dl">
+            <SummaryDataKey />
+            <SummaryDataValue>
+              User tasks with job worker implementation are deprecated. Consider
+              migrating to Camunda user tasks.
+            </SummaryDataValue>
+          </Stack>
+        )}
         <Stack gap={3} as="dl">
           <SummaryDataKey>Element Instance Key</SummaryDataKey>
           <SummaryDataValue>{elementInstanceKey}</SummaryDataValue>
