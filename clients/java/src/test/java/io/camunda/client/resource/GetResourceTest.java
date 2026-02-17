@@ -18,10 +18,12 @@ package io.camunda.client.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.response.Resource;
 import io.camunda.client.protocol.rest.ResourceResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
+import io.camunda.client.util.RestGatewayService;
+import io.camunda.client.util.assertions.LoggedRequestAssert;
 import org.junit.jupiter.api.Test;
 
 public class GetResourceTest extends ClientRestTest {
@@ -48,6 +50,5 @@ public class GetResourceTest extends ClientRestTest {
     assertThat(response.getResourceId()).isEqualTo("test.bpmn");
     assertThat(response.getResourceName()).isEqualTo("Test process");
     assertThat(response.getVersion()).isEqualTo(1);
-  }
   }
 }
