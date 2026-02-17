@@ -2,7 +2,7 @@
 # We use this workflow to start ad-hoc load tests or weekly medic load tests.
 # The health of the cluster and results of the load tests are monitored by Core team's regularly.
 # https://grafana.dev.zeebe.io/login
-# called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
+# called by: camunda-weekly-load-tests.yml, camunda-pr-load-test.yaml
 # type: CI
 # owner: camunda/orchestration-cluster-team
 name: Camunda load test
