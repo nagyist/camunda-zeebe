@@ -134,6 +134,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
 
     await test.step('Click incidents banner to open incidents table', async () => {
+      await operateProcessInstancePage.navigateToRootScope();
       await operateProcessInstancePage.incidentsBanner.click();
       await expect(
         operateProcessInstancePage.incidentsViewHeader,
