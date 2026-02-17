@@ -13,7 +13,7 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {Header} from '../Header';
-import {SummaryDataKey, SummaryDataValue} from '../styled';
+import {SummaryDataKey, SummaryDataValue, SummaryText} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DetailsModal} from './DetailsModal';
@@ -108,13 +108,10 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
       />
       <Stack gap={5}>
         {!isCamundaUserTask(businessObject) && (
-          <Stack gap={3} as="dl">
-            <SummaryDataKey />
-            <SummaryDataValue>
-              User tasks with job worker implementation are deprecated. Consider
-              migrating to Camunda user tasks.
-            </SummaryDataValue>
-          </Stack>
+          <SummaryText>
+            User tasks with job worker implementation are deprecated. Consider
+            migrating to Camunda user tasks.
+          </SummaryText>
         )}
         <Stack gap={3} as="dl">
           <SummaryDataKey>Element Instance Key</SummaryDataKey>
