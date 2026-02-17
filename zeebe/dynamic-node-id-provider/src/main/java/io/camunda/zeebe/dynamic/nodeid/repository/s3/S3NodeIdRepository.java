@@ -31,6 +31,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -68,6 +69,10 @@ public class S3NodeIdRepository implements NodeIdRepository {
   public int initialize(final int initialCount) {
     final var initialized = isInitialized();
     if (!initialized) {
+      if (initialCount <= 0) {
+        throw new IllegalArgumentException("initialCount must be greater than 0");
+      }
+
       IntStream.range(0, initialCount).forEach(this::initializeForNode);
 
       // We need a marker object to mark the completion of initialization.
@@ -76,6 +81,39 @@ public class S3NodeIdRepository implements NodeIdRepository {
       markInitialized();
     }
     return getAvailableLeaseCount();
+  }
+
+  @Override
+  public void scale(final int newCount) {
+    if (newCount <= 0) {
+      throw new IllegalArgumentException("newCount must be greater than 0");
+    }
+    // Keep it simple for now by just creating new leases for new nodes and deleting leases for
+    // removed nodes. We can improve it later by making the leases non-acquirable. This would let
+    // graceful shutdown of tasks that are still holding those leases.
+    final var oldCount = getAvailableLeaseCount();
+    if (newCount > oldCount) {
+      // scale up => add new leases
+      IntStream.range(oldCount, newCount).forEach(this::initializeForNode);
+    } else {
+      // scale down =>  delete extra leases
+      // Delete in reverse order so that retry after failure will correctly delete remaining node
+      // ids
+      for (int nodeId = oldCount - 1; nodeId >= newCount; nodeId--) {
+        final var request =
+            DeleteObjectRequest.builder().bucket(config.bucketName).key(objectKey(nodeId)).build();
+        try {
+          client.deleteObject(request);
+        } catch (final S3Exception e) {
+          if (e.statusCode() == 404) {
+            LOG.debug("Lease for nodeId {} does not exist, likely already deleted.", nodeId);
+          } else {
+            LOG.warn("Failed to delete lease object for node {} ", nodeId, e);
+            throw e;
+          }
+        }
+      }
+    }
   }
 
   @Override

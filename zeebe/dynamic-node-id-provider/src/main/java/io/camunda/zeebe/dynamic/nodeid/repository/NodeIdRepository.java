@@ -30,6 +30,13 @@ public interface NodeIdRepository extends AutoCloseable {
   int initialize(int initialCount);
 
   /**
+   * Add or remove leases to match the new cluster size.
+   *
+   * @param newClusterSize the new cluster size
+   */
+  void scale(int newClusterSize);
+
+  /**
    * Get a lease without acquiring it. This can be used to verify the liveness of other nodes or
    * their view of the cluster
    *
