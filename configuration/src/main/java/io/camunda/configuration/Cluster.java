@@ -38,7 +38,9 @@ public class Cluster implements Cloneable {
           "clusterName",
           "zeebe.gateway.cluster.clusterName",
           "initialContactPoints",
-          "zeebe.gateway.cluster.initialContactPoints");
+          "zeebe.gateway.cluster.initialContactPoints",
+          "memberId",
+          "zeebe.gateway.cluster.memberId");
 
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -107,6 +109,12 @@ public class Cluster implements Cloneable {
    * unique across clusters. If not configured, the cluster ID will be set with a new random UUID.
    */
   private String clusterId;
+
+  /**
+   * The member id of this gateway node in the cluster. Only relevant for standalone gateway
+   * deployments.
+   */
+  private String memberId = "gateway";
 
   /** Configuration for the Raft protocol in the cluster. */
   @NestedConfigurationProperty private Raft raft = new Raft();
@@ -261,6 +269,19 @@ public class Cluster implements Cloneable {
 
   public void setClusterId(final String clusterId) {
     this.clusterId = clusterId;
+  }
+
+  public String getMemberId() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".member-id",
+        memberId,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(legacyPropertiesMap.get("memberId")));
+  }
+
+  public void setMemberId(final String memberId) {
+    this.memberId = memberId;
   }
 
   public Raft getRaft() {
