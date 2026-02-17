@@ -65,18 +65,21 @@ public class ProcessInstanceCreationHelper {
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
+  private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
       final ElementInstanceState elementInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.authCheckBehavior = authCheckBehavior;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
   public Either<Rejection, DeployedProcess> findRelevantProcess(
@@ -425,8 +428,8 @@ public class ProcessInstanceCreationHelper {
 
   private Either<Rejection, ?> validateBusinessIdUniqueness(
       final String businessId, final long processDefinitionKey, final String tenantId) {
-    // If no business id is provided, skip validation
-    if (businessId == null || businessId.isEmpty()) {
+    // If the uniqueness check is disabled or if no business id is provided, skip validation
+    if (!businessIdUniquenessEnabled || businessId == null || businessId.isEmpty()) {
       return VALID;
     }
 

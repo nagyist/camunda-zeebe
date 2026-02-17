@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -570,83 +569,51 @@ public final class CreateProcessInstanceTest {
   }
 
   @Test
-  public void shouldRejectCreateProcessInstanceWithBusinessIdInUse() {
+  public void shouldAllowDuplicateBusinessIdWhenUniquenessCheckDisabled() {
+    // Note: businessIdUniquenessEnabled is disabled by default
     final String processId = helper.getBpmnProcessId();
-    final String businessId = "biz-123";
+    final String businessId = "biz-duplicate";
 
     // given
-    final var processDefinitionKey =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(processId)
-                    .startEvent()
-                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
-                    .endEvent()
-                    .done())
-            .deploy()
-            .getValue()
-            .getProcessesMetadata()
-            .getFirst()
-            .getProcessDefinitionKey();
-    ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
-
-    // when
     ENGINE
-        .processInstance()
-        .ofBpmnProcessId(processId)
-        .withBusinessId(businessId)
-        .withTags("secondInstance")
-        .expectRejection()
-        .create();
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
 
-    // then
-    Assertions.assertThat(
-            RecordingExporter.processInstanceCreationRecords()
-                .onlyCommandRejections()
-                .valueFilter(r -> r.getTags().contains("secondInstance"))
-                .withBpmnProcessId(processId)
-                .getFirst())
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
-        .hasRejectionReason(
-            """
-            Expected to create instance of process with business id '%s', \
-            but an instance with this business id already exists for process definition key '%s'"""
-                .formatted(businessId, processDefinitionKey));
-  }
-
-  @Test
-  public void shouldCreateProcessInstanceWithBusinessIdInUseForOtherTenant() {
-    final String processId = helper.getBpmnProcessId();
-    final String businessId = "biz-123";
-
-    // given
-    final var process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
-            .endEvent()
-            .done();
-    ENGINE.deployment().withTenantId("tenant_one").withXmlResource(process).deploy();
-    ENGINE.deployment().withTenantId("tenant_two").withXmlResource(process).deploy();
-    ENGINE
-        .processInstance()
-        .ofBpmnProcessId(processId)
-        .withBusinessId(businessId)
-        .withTenantId("tenant_one")
-        .create();
-
-    // when
-    final var secondProcessInstanceKey =
+    // create first process instance with business id
+    final var firstInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
             .withBusinessId(businessId)
-            .withTenantId("tenant_two")
+            .withTags("firstInstance")
+            .create();
+
+    // when - create second process instance with the same business id
+    final var secondInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
             .withTags("secondInstance")
             .create();
 
-    // then
+    // then - both instances should be created successfully since uniqueness check is disabled
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("firstInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(firstInstanceKey);
+
     Assertions.assertThat(
             RecordingExporter.processInstanceCreationRecords()
                 .withIntent(ProcessInstanceCreationIntent.CREATED)
@@ -655,7 +622,6 @@ public final class CreateProcessInstanceTest {
                 .getFirst()
                 .getValue())
         .hasBusinessId(businessId)
-        .hasTenantId("tenant_two")
-        .hasProcessInstanceKey(secondProcessInstanceKey);
+        .hasProcessInstanceKey(secondInstanceKey);
   }
 }

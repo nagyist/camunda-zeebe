@@ -275,7 +275,8 @@ public final class BpmnProcessors {
             processingState.getProcessState(),
             elementInstanceState,
             authCheckBehavior,
-            bpmnBehaviors);
+            bpmnBehaviors,
+            config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
             keyGenerator, writers, metrics, processInstanceCreationHelper);

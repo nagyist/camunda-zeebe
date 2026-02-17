@@ -1,0 +1,181 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.processing.processinstance;
+
+import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+
+import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+
+/**
+ * Tests for process instance creation with business ID uniqueness enforcement enabled. When {@code
+ * businessIdUniquenessEnabled} is set to {@code true}, creating a process instance with a business
+ * ID that is already in use by an active process instance will be rejected.
+ */
+public final class CreateProcessInstanceBusinessIdUniquenessTest {
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(config -> config.setBusinessIdUniquenessEnabled(true));
+
+  @Rule
+  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
+
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
+  @Test
+  public void shouldRejectCreateProcessInstanceWithBusinessIdInUse() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given
+    final var processDefinitionKey =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent()
+                    .done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+    ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
+
+    // when
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withBusinessId(businessId)
+        .withTags("secondInstance")
+        .expectRejection()
+        .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .onlyCommandRejections()
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .withBpmnProcessId(processId)
+                .getFirst())
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            """
+            Expected to create instance of process with business id '%s', \
+            but an instance with this business id already exists for process definition key '%s'"""
+                .formatted(businessId, processDefinitionKey));
+  }
+
+  @Test
+  public void shouldCreateProcessInstanceWithBusinessIdInUseForOtherTenant() {
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent()
+            .done();
+    ENGINE.deployment().withTenantId("tenant_one").withXmlResource(process).deploy();
+    ENGINE.deployment().withTenantId("tenant_two").withXmlResource(process).deploy();
+    ENGINE
+        .processInstance()
+        .ofBpmnProcessId(processId)
+        .withBusinessId(businessId)
+        .withTenantId("tenant_one")
+        .create();
+
+    // when
+    final var secondProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTenantId("tenant_two")
+            .withTags("secondInstance")
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasTenantId("tenant_two")
+        .hasProcessInstanceKey(secondProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldAllowSameBusinessIdForDifferentProcessDefinitions() {
+    final String processId1 = helper.getBpmnProcessId() + "_1";
+    final String processId2 = helper.getBpmnProcessId() + "_2";
+    final String businessId = "shared-biz-id";
+
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId1)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId2)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // create first process instance with business id
+    ENGINE.processInstance().ofBpmnProcessId(processId1).withBusinessId(businessId).create();
+
+    // when - create second process instance with same business id but different process definition
+    final var secondInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId2)
+            .withBusinessId(businessId)
+            .withTags("secondInstance")
+            .create();
+
+    // then - second instance should be created successfully
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId2)
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(secondInstanceKey);
+  }
+}
