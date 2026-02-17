@@ -21,8 +21,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.MethodInfo;
-import io.camunda.client.jobhandling.AdHocSubProcessResultFunction;
-import io.camunda.client.jobhandling.UserTaskResultFunction;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
 import org.junit.jupiter.api.Test;
 

@@ -15,9 +15,6 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import io.camunda.client.jobhandling.AdHocSubProcessResultFunction;
-import io.camunda.client.jobhandling.UserTaskResultFunction;
-
 public class ResultFunctionResultProcessor implements ResultProcessor {
   @Override
   public Object process(final ResultProcessorContext context) {

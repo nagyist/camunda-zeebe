@@ -19,8 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.jobhandling.AdHocSubProcessResultFunction;
-import io.camunda.client.jobhandling.UserTaskResultFunction;
 import org.junit.jupiter.api.Test;
 
 public class ResultFunctionResultProcessorTest {

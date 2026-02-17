@@ -17,7 +17,6 @@ package io.camunda.client.jobhandling.result;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.jobhandling.AdHocSubProcessResultFunction;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
