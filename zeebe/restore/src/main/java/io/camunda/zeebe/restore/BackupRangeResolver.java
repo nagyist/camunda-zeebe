@@ -184,29 +184,32 @@ public final class BackupRangeResolver {
       final SequencedCollection<BackupRange> ranges,
       final int partitionId) {
     // ranges are ordered chronologically, so we start from the latest one, going backwards in time
-    if (to != null && from == null) {
-      throw new IllegalArgumentException(
-          "Expected (from, to) to be both null or `from` to have a value, but got (from=null, to=%s)"
-              .formatted(to));
-    }
     for (final var range : ranges.reversed()) {
       if (range instanceof final BackupRange.Complete completeRange) {
         // get the BackupStatuses from the store
         final Interval<BackupStatus> statusInterval =
             completeRange.checkpointInterval().map(c -> toBackupStatus(partitionId, c));
-        if (from == null) {
-          return Optional.of(new Tuple<>(completeRange, statusInterval));
-        }
         try {
           final var timeInterval =
               statusInterval.map(bs -> bs.descriptor().get().checkpointTimestamp());
-          final var interval = to != null ? Interval.closed(from, to) : null;
-          if (interval != null) {
+          final var resultTuple = Optional.of(new Tuple<>(completeRange, statusInterval));
+          if (from != null && to != null) {
+            final var interval = Interval.closed(from, to);
             if (timeInterval.contains(interval)) {
-              return Optional.of(new Tuple<>(completeRange, statusInterval));
+              return resultTuple;
             }
-          } else if (timeInterval.contains(from)) {
-            return Optional.of(new Tuple<>(completeRange, statusInterval));
+          } else if (from != null) {
+            if (timeInterval.contains(from)) {
+              return resultTuple;
+            }
+          } else if (to != null) {
+            if (timeInterval.contains(to)) {
+              return resultTuple;
+            }
+          } else {
+            // no boundary specified, just return the first (i.e. last chronologically) complete
+            // range.
+            return resultTuple;
           }
         } catch (final NoSuchElementException e) {
           // ignore this backup

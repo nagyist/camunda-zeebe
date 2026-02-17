@@ -39,12 +39,16 @@ import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @NullMarked
@@ -145,56 +149,30 @@ final class BackupRangeResolverTest {
     assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L);
   }
 
-  @Test
-  void shouldRestoreToEndOfRangeWhenToIsMissing() {
-    // given
-    for (int i = 1; i < 3; i++) {
-      store
-          .forPartition(i)
-          .withRange(100, 400)
-          .addBackup(100, 1000, 1, minutesAfterBase(0))
-          .addBackup(200, 2000, 1001, minutesAfterBase(20))
-          .addBackup(300, 3000, 2001, minutesAfterBase(40))
-          .addBackup(400, 4000, 3001, minutesAfterBase(60));
-    }
-
-    // when - timeInterval [from, infinity) contains 200, 300, 400
-    final var result = resolve(1, minutesAfterBase(20), null, Map.of(1, 2500L, 2, 2300L));
-
-    // then - only backups within time interval are returned
-    assertThat(result.globalCheckpointId()).isEqualTo(400L);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L, 400L);
+  static Stream<Arguments> optionalTimeBoundsProvider() {
+    return Stream.of(
+        Arguments.of(minutesAfterBase(20), null, 400), // only from provided
+        Arguments.of(null, null, 400), // neither bound provided
+        Arguments.of(null, minutesAfterBase(30), 300) // only to provided
+        );
   }
 
-  @Test
-  void shouldRestoreToCompleteBackupRangeWhenNoExtremesAreProvided() {
-    // given
-    store
-        .forPartition(1)
-        .withBackupsInRange(100, 400, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
-    store
-        .forPartition(2)
-        .withBackupsInRange(100, 400, 700, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
-
-    // when - no interval
-    final var result = resolve(1, null, null, Map.of(1, 2500L, 2, 2300L));
-    // then - all backups after `from` are returned
-    assertThat(result.globalCheckpointId()).isEqualTo(400L);
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L, 400L);
-  }
-
-  @Test
-  void shouldNotRestoreWhenOnlyToIsProvided() {
+  @ParameterizedTest
+  @MethodSource("optionalTimeBoundsProvider")
+  void shouldRestoreCompleteRangeWhenBoundsAreOptional(
+      @Nullable final Instant from, @Nullable final Instant to, final long globalCheckpoint) {
     // given
     store
         .forPartition(1)
         .withBackupsInRange(100, 400, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
 
-    // when/then
-    assertThatThrownBy(() -> resolve(1, null, minutesAfterBase(30), Map.of(1, 2500L)))
-        .hasRootCauseInstanceOf(IllegalArgumentException.class)
-        .hasRootCauseMessage(
-            "Expected (from, to) to be both null or `from` to have a value, but got (from=null, to=2026-01-20T10:30:00Z)");
+    // when
+    final var result = resolve(1, from, to, Map.of(1, 2500L));
+    // then - all backups from safe start are returned regardless of optional bounds
+    assertThat(result.globalCheckpointId()).isEqualTo(globalCheckpoint);
+    final var expectedCheckpoints =
+        LongStream.of(200L, 300L, 400L).filter(idx -> idx <= globalCheckpoint).toArray();
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(expectedCheckpoints);
   }
 
   @Test
