@@ -110,8 +110,8 @@ public final class JobPollerImpl implements JobPoller {
             .jobType(jobType)
             .maxJobsToActivate(maxJobsToActivate)
             .timeout(timeout)
-            .workerName(workerName)
-            .tenantIds(tenantIds);
+            .tenantIds(tenantIds)
+            .workerName(workerName);
     if (fetchVariables != null) {
       activateCommand.fetchVariables(fetchVariables);
     }
