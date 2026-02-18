@@ -27,6 +27,10 @@ import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
+import io.camunda.exporter.tasks.auditlog.AuditLogArchiverJob;
+import io.camunda.exporter.tasks.auditlog.AuditLogArchiverRepository;
+import io.camunda.exporter.tasks.auditlog.ElasticsearchAuditLogArchiverRepository;
+import io.camunda.exporter.tasks.auditlog.OpensearchAuditLogArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
@@ -44,6 +48,8 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.BatchOperationDependant;
 import io.camunda.webapps.schema.descriptors.DecisionInstanceDependant;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -81,6 +87,7 @@ public final class BackgroundTaskManagerFactory {
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
   private HistoryDeletionRepository historyDeletionRepository;
+  private AuditLogArchiverRepository auditLogArchiverRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
 
   public BackgroundTaskManagerFactory(
@@ -118,6 +125,7 @@ public final class BackgroundTaskManagerFactory {
       incidentRepository = createIncidentUpdateRepository(asyncClient);
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
       historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
+      auditLogArchiverRepository = createAuditLogArchiverRepository(asyncClient);
     } else {
       final var connector = new ElasticsearchConnector(config.getConnect());
       final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
@@ -126,6 +134,7 @@ public final class BackgroundTaskManagerFactory {
       incidentRepository = createIncidentUpdateRepository(asyncClient);
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
       historyDeletionRepository = createHistoryDeletionRepository(asyncClient);
+      auditLogArchiverRepository = createAuditLogArchiverRepository(asyncClient);
     }
 
     final List<RunnableTask> tasks = buildTasks();
@@ -262,6 +271,7 @@ public final class BackgroundTaskManagerFactory {
     }
 
     tasks.add(buildHistoryDeletionJob());
+    tasks.add(buildAuditLogArchiverJob());
 
     executor.setCorePoolSize(tasks.size());
     return tasks;
@@ -277,6 +287,22 @@ public final class BackgroundTaskManagerFactory {
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchHistoryDeletionRepository(
         resourceProvider, asyncClient, executor, logger, partitionId, config.getHistoryDeletion());
+  }
+
+  private OpensearchAuditLogArchiverRepository createAuditLogArchiverRepository(
+      final OpenSearchAsyncClient asyncClient) {
+    final var auditLogCleanupIndex =
+        resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class);
+    return new OpensearchAuditLogArchiverRepository(
+        asyncClient, executor, logger, auditLogCleanupIndex, config.getHistory());
+  }
+
+  private ElasticsearchAuditLogArchiverRepository createAuditLogArchiverRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    final var auditLogCleanupIndex =
+        resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class);
+    return new ElasticsearchAuditLogArchiverRepository(
+        asyncClient, executor, logger, auditLogCleanupIndex, config.getHistory());
   }
 
   private ReschedulingTask buildRolloverPeriodJob() {
@@ -446,6 +472,17 @@ public final class BackgroundTaskManagerFactory {
         historyDeletion.getMaxDelayBetweenRuns().toMillis(),
         executor,
         logger);
+  }
+
+  private ReschedulingTask buildAuditLogArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new AuditLogArchiverJob(
+            auditLogArchiverRepository,
+            resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class),
+            resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class),
+            metrics,
+            logger,
+            executor));
   }
 
   private ScheduledThreadPoolExecutor buildExecutor() {

@@ -22,6 +22,7 @@ import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
+import io.camunda.exporter.tasks.auditlog.AuditLogArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.historydeletion.HistoryDeletionJob;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
@@ -175,7 +176,8 @@ class BackgroundTaskManagerFactoryTest {
         .anyMatch(task -> isTaskOfType(task, BatchOperationArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class))
-        .anyMatch(task -> isTaskOfType(task, HistoryDeletionJob.class));
+        .anyMatch(task -> isTaskOfType(task, HistoryDeletionJob.class))
+        .anyMatch(task -> isTaskOfType(task, AuditLogArchiverJob.class));
   }
 
   @Test
