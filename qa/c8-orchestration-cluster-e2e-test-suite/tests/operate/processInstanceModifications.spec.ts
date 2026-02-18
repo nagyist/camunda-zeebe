@@ -472,7 +472,7 @@ test.describe('Process Instance Modifications', () => {
         1,
         JSON.stringify(validJSONValue1),
       );
-      
+
       await waitForAssertion({
         assertion: async () => {
           await expect(
@@ -565,7 +565,6 @@ test.describe('Process Instance Modifications', () => {
     await test.step('Apply modifications and verify variable values in the instance', async () => {
       await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
       await operateProcessInstanceViewModificationModePage.clickApplyButtonModificationsDialog();
-
     });
 
     await test.step('Check that the added variables are visible on element level and have correct values', async () => {
@@ -602,9 +601,8 @@ test.describe('Process Instance Modifications', () => {
         operateProcessInstanceViewModificationModePage.modificationModeText,
       ).toBeHidden();
       await expect(
-        operateProcessInstancePage.existingVariableByName(
-          'testNewMeowVariable',
-        ).name,
+        operateProcessInstancePage.existingVariableByName('testNewMeowVariable')
+          .name,
       ).toBeVisible();
       expect(
         await operateProcessInstancePage

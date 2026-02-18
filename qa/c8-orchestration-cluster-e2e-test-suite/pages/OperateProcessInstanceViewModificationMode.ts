@@ -678,13 +678,11 @@ export class OperateProcessInstanceViewModificationModePage {
     nameText: string;
     scopeText?: string;
   }) {
-    let targetRow:
-      | ReturnType<
-          OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
-        >
-      | null = null;
+    let targetRow: ReturnType<
+      OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
+    > | null = null;
 
-    await this.iterateVariableModificationDialogRows(async row => {
+    await this.iterateVariableModificationDialogRows(async (row) => {
       const variableNameValue = await row.nameValue.innerText();
       if (variableNameValue !== nameText) {
         return true;
@@ -701,7 +699,10 @@ export class OperateProcessInstanceViewModificationModePage {
       return false;
     });
 
-    expect(targetRow, `Variable modification ${nameText} not found`).toBeTruthy();
+    expect(
+      targetRow,
+      `Variable modification ${nameText} not found`,
+    ).toBeTruthy();
 
     await expect(targetRow!.nameValue).toHaveText(nameText);
     if (scopeText) {
@@ -711,7 +712,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async expectVariableNotPresentInDialog(forbiddenText: string) {
-    await this.iterateVariableModificationDialogRows(async row => {
+    await this.iterateVariableModificationDialogRows(async (row) => {
       const variableName = await row.nameValue.innerText();
       expect(variableName).not.toContain(forbiddenText);
     });

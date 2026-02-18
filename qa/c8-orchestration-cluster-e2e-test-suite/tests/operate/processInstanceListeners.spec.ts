@@ -211,11 +211,7 @@ test.describe('Process Instance Listeners', () => {
         'Service Task B',
       );
 
-      userTaskKey = await findUserTask(
-        request,
-        processInstanceKey,
-        'CREATED',
-      );
+      userTaskKey = await findUserTask(request, processInstanceKey, 'CREATED');
 
       expect(userTaskKey).toMatch(userTaskKeyRegex);
       await expect(operateProcessInstancePage.stateOverlayActive).toBeVisible();
