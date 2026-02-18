@@ -19,7 +19,7 @@ import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from './createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {Popup} from '@carbon/react/icons';
+import {Maximize} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
@@ -170,7 +170,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               labelText="Value"
               placeholder="Value"
               data-testid="edit-variable-value"
-              buttonLabel="Open JSON editor modal"
+              buttonLabel="Open JSON editor"
               tooltipPosition="left"
               onIconClick={() => {
                 if (formState.submitting) {
@@ -183,7 +183,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                   variant: 'edit-variable',
                 });
               }}
-              Icon={Popup}
+              Icon={Maximize}
               autoFocus={!isModificationModeEnabled || meta.active}
               isLoading={isLoading}
               onFocus={(event) => {

@@ -128,7 +128,7 @@ export class OperateFiltersPanelPage {
     this.fromDateInput = this.page.getByText('From date');
     this.applyButton = this.page.getByText('Apply');
     this.jsonEditorModalButton = this.page.getByRole('button', {
-      name: /open (json )?editor modal/i,
+      name: /open (json )?editor/i,
     });
     this.variableEditorDialog = this.page.getByRole('dialog');
     this.dialogEditVariableValueText = this.variableEditorDialog.getByText(
