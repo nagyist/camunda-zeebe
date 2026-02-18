@@ -186,7 +186,7 @@ export class OperateProcessInstanceViewModificationModePage {
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', { name: 'Editor content' }),
+          .getByRole('textbox', {name: 'Editor content'}),
       },
       valueErrorMessage: this.page
         .getByTestId(`variable-newVariables[${index}]`)
@@ -239,7 +239,7 @@ export class OperateProcessInstanceViewModificationModePage {
           .getByRole('presentation')
           .getByRole('dialog')
           .getByRole('code')
-          .getByRole('textbox', { name: 'Editor content' }),
+          .getByRole('textbox', {name: 'Editor content'}),
       },
       valueErrorMessage: this.page
         .getByTestId(`variable-${name}`)
@@ -348,6 +348,10 @@ export class OperateProcessInstanceViewModificationModePage {
     await this.moveAllButtononPopup.click();
   }
 
+  async clickMoveInstanceButtononPopup(): Promise<void> {
+    await this.moveSelectedInstanceButton.click();
+  }
+
   async clickCancelButtononPopup(): Promise<void> {
     await this.cancelButtonPopup.click();
   }
@@ -409,6 +413,16 @@ export class OperateProcessInstanceViewModificationModePage {
   ): Promise<void> {
     await this.clickFlowNode(sourceFlowNodeName);
     await this.clickMoveAllButtononPopup();
+    await expect(this.moveTokensMessage).toBeVisible();
+    await this.clickFlowNode(targetFlowNodeName);
+  }
+
+  async moveInstanceFromSelectedFlowNodeToTarget(
+    sourceFlowNodeName: string,
+    targetFlowNodeName: string,
+  ): Promise<void> {
+    await this.clickFlowNode(sourceFlowNodeName);
+    await this.clickMoveInstanceButtononPopup();
     await expect(this.moveTokensMessage).toBeVisible();
     await this.clickFlowNode(targetFlowNodeName);
   }
@@ -602,8 +616,7 @@ export class OperateProcessInstanceViewModificationModePage {
   }
 
   async editNewVariableJSONInModal(variableIndex: number, json: string) {
-    await this.newVariableByIndex(variableIndex)
-      .value.clear();
+    await this.newVariableByIndex(variableIndex).value.clear();
     await this.newVariableByIndex(variableIndex).jsonEditorButton.click();
     const jsonEditorModal =
       this.newVariableByIndex(variableIndex).jsonEditorModal;
@@ -627,14 +640,80 @@ export class OperateProcessInstanceViewModificationModePage {
     await expect(jsonEditorModal.inputField).toBeEnabled();
     await this.fillMonacoEditor(jsonEditorModal.inputField, json);
     await jsonEditorModal.applyButton.click();
-    await this.editableExistingVariableByName(
-      variableName,
-    ).value.click();
+    await this.editableExistingVariableByName(variableName).value.click();
     await this.page.keyboard.press('Tab');
   }
 
   async fillMonacoEditor(editor: Locator, value: string) {
     await editor.evaluate((el: HTMLElement) => el.focus());
     await this.page.keyboard.insertText(value);
+  }
+
+  private async iterateVariableModificationDialogRows(
+    onRow: (
+      row: ReturnType<
+        OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
+      >,
+      index: number,
+    ) => Promise<boolean | void>,
+  ) {
+    for (let index = 0; ; index++) {
+      const row =
+        this.applyModificationDialogVariableModificationRowByIndex(index);
+      if (await row.nameValue.isHidden()) {
+        break;
+      }
+
+      const shouldContinue = await onRow(row, index);
+      if (shouldContinue === false) {
+        break;
+      }
+    }
+  }
+
+  async deleteVariableModificationFromDialog({
+    nameText,
+    scopeText,
+  }: {
+    nameText: string;
+    scopeText?: string;
+  }) {
+    let targetRow:
+      | ReturnType<
+          OperateProcessInstanceViewModificationModePage['applyModificationDialogVariableModificationRowByIndex']
+        >
+      | null = null;
+
+    await this.iterateVariableModificationDialogRows(async row => {
+      const variableNameValue = await row.nameValue.innerText();
+      if (variableNameValue !== nameText) {
+        return true;
+      }
+
+      if (scopeText) {
+        const scopeValue = await row.scope.innerText();
+        if (scopeValue !== scopeText) {
+          return true;
+        }
+      }
+
+      targetRow = row;
+      return false;
+    });
+
+    expect(targetRow, `Variable modification ${nameText} not found`).toBeTruthy();
+
+    await expect(targetRow!.nameValue).toHaveText(nameText);
+    if (scopeText) {
+      await expect(targetRow!.scope).toHaveText(scopeText);
+    }
+    await targetRow!.deleteVariableModificationButton.click();
+  }
+
+  async expectVariableNotPresentInDialog(forbiddenText: string) {
+    await this.iterateVariableModificationDialogRows(async row => {
+      const variableName = await row.nameValue.innerText();
+      expect(variableName).not.toContain(forbiddenText);
+    });
   }
 }
