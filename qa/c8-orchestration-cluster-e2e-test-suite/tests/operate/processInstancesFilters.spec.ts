@@ -528,7 +528,6 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.displayOptionalFilter('End Date Range');
 
       const todayDate = new Date();
-      console.log('Today date:', todayDate.getDate());
 
       await operateFiltersPanelPage.pickDateTimeRange({
         fromDay: todayDate.getDate().toString(),
@@ -679,7 +678,7 @@ test.describe('Process Instances Filters', () => {
 
       await waitForAssertion({
         assertion: async () => {
-          await expect(page.getByText('1 results')).toBeVisible();
+          await expect(page.getByText('1 result')).toBeVisible();
         },
         onFailure: async () => {
           await page.reload();
