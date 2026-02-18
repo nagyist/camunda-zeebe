@@ -106,6 +106,8 @@ public final class StreamJobsTest extends ClientTest {
         .isEqualTo(activatedJob1.getProcessDefinitionVersion());
     assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob1.getProcessDefinitionKey());
     assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob1.getProcessInstanceKey());
+    // rootProcessInstanceKey is only returned for REST API
+    assertThat(job.getRootProcessInstanceKey()).isNull();
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob1.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob1.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
@@ -123,6 +125,8 @@ public final class StreamJobsTest extends ClientTest {
         .isEqualTo(activatedJob2.getProcessDefinitionVersion());
     assertThat(job.getProcessDefinitionKey()).isEqualTo(activatedJob2.getProcessDefinitionKey());
     assertThat(job.getProcessInstanceKey()).isEqualTo(activatedJob2.getProcessInstanceKey());
+    // rootProcessInstanceKey is only returned for REST API
+    assertThat(job.getRootProcessInstanceKey()).isNull();
     assertThat(job.getCustomHeaders()).isEqualTo(fromJsonAsMap(activatedJob2.getCustomHeaders()));
     assertThat(job.getWorker()).isEqualTo(activatedJob2.getWorker());
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());

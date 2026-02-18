@@ -198,26 +198,35 @@ public final class ResponseMapper {
   }
 
   private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
-    return new ActivatedJobResult()
-        .jobKey(KeyUtil.keyToString(jobKey))
-        .type(job.getType())
-        .processDefinitionId(job.getBpmnProcessId())
-        .elementId(job.getElementId())
-        .processInstanceKey(KeyUtil.keyToString(job.getProcessInstanceKey()))
-        .processDefinitionVersion(job.getProcessDefinitionVersion())
-        .processDefinitionKey(KeyUtil.keyToString(job.getProcessDefinitionKey()))
-        .elementInstanceKey(KeyUtil.keyToString(job.getElementInstanceKey()))
-        .worker(bufferAsString(job.getWorkerBuffer()))
-        .retries(job.getRetries())
-        .deadline(job.getDeadline())
-        .variables(job.getVariables())
-        .customHeaders(job.getCustomHeadersObjectMap())
-        .userTask(toUserTaskProperties(job))
-        .tenantId(job.getTenantId())
-        .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
-        .listenerEventType(
-            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
-        .tags(job.getTags());
+    final var result =
+        new ActivatedJobResult()
+            .jobKey(KeyUtil.keyToString(jobKey))
+            .type(job.getType())
+            .processDefinitionId(job.getBpmnProcessId())
+            .elementId(job.getElementId())
+            .processInstanceKey(KeyUtil.keyToString(job.getProcessInstanceKey()))
+            .processDefinitionVersion(job.getProcessDefinitionVersion())
+            .processDefinitionKey(KeyUtil.keyToString(job.getProcessDefinitionKey()))
+            .elementInstanceKey(KeyUtil.keyToString(job.getElementInstanceKey()))
+            .worker(bufferAsString(job.getWorkerBuffer()))
+            .retries(job.getRetries())
+            .deadline(job.getDeadline())
+            .variables(job.getVariables())
+            .customHeaders(job.getCustomHeadersObjectMap())
+            .userTask(toUserTaskProperties(job))
+            .tenantId(job.getTenantId())
+            .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
+            .listenerEventType(
+                EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
+            .tags(job.getTags());
+
+    // rootProcessInstanceKey is only set for process instances created after version 8.9
+    final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      result.rootProcessInstanceKey(KeyUtil.keyToString(rootProcessInstanceKey));
+    }
+
+    return result;
   }
 
   private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
