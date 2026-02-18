@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -145,6 +146,7 @@ public class BackupPriorityConfiguration {
             new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
             // AUDIT LOG
             new AuditLogTemplate(indexPrefix, isElasticsearch),
+            new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
             // CAMUNDA
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
             new JobMetricsBatchTemplate(indexPrefix, isElasticsearch));

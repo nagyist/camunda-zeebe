@@ -1,0 +1,23 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "keyword"
+      },
+      "keyField": {
+        "type": "keyword"
+      },
+      "entityType": {
+        "type": "keyword"
+      },
+      "archivingDate": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      }
+    }
+  }
+}
