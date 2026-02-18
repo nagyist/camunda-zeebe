@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
@@ -67,15 +68,18 @@ public class ProcessInstanceCreationHelper {
   private final ElementActivationBehavior elementActivationBehavior;
   private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
+  private final BannedInstanceState bannedInstanceState;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
       final ElementInstanceState elementInstanceState,
+      final BannedInstanceState bannedInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final BpmnBehaviors bpmnBehaviors,
       final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
+    this.bannedInstanceState = bannedInstanceState;
     this.authCheckBehavior = authCheckBehavior;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
@@ -435,7 +439,7 @@ public class ProcessInstanceCreationHelper {
 
     // Check if a process instance with this business id already exists
     if (elementInstanceState.hasActiveProcessInstanceWithBusinessId(
-        businessId, processDefinitionKey, tenantId)) {
+        businessId, processDefinitionKey, tenantId, bannedInstanceState::isProcessInstanceBanned)) {
       return Either.left(
           new Rejection(
               RejectionType.ALREADY_EXISTS,

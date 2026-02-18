@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
 /** Applies state changes for `ProcessInstance:Element_Completed` */
-final class ProcessInstanceElementCompletedV1Applier
+final class ProcessInstanceElementCompletedV2Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
@@ -31,7 +31,7 @@ final class ProcessInstanceElementCompletedV1Applier
   private final MutableMultiInstanceState multiInstanceState;
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
-  public ProcessInstanceElementCompletedV1Applier(
+  public ProcessInstanceElementCompletedV2Applier(
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableVariableState variableState,
@@ -63,6 +63,10 @@ final class ProcessInstanceElementCompletedV1Applier
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
+
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      deleteBusinessIdIndex(value);
+    }
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
@@ -129,5 +133,16 @@ final class ProcessInstanceElementCompletedV1Applier
       return element.isTerminateEndEvent();
     }
     return false;
+  }
+
+  private void deleteBusinessIdIndex(final ProcessInstanceRecord value) {
+    final String businessId = value.getBusinessId();
+    if (!businessId.isEmpty()) {
+      elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
+          businessId,
+          value.getProcessDefinitionKey(),
+          value.getTenantId(),
+          value.getProcessInstanceKey());
+    }
   }
 }

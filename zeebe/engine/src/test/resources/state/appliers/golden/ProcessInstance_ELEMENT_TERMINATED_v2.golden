@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
 /** Applies state changes for `ProcessInstance:Element_Terminated` */
-final class ProcessInstanceElementTerminatedV1Applier
+final class ProcessInstanceElementTerminatedV2Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
@@ -25,7 +25,7 @@ final class ProcessInstanceElementTerminatedV1Applier
   private final MutableMultiInstanceState multiInstanceState;
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
-  public ProcessInstanceElementTerminatedV1Applier(
+  public ProcessInstanceElementTerminatedV2Applier(
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableMultiInstanceState multiInstanceState,
@@ -48,6 +48,10 @@ final class ProcessInstanceElementTerminatedV1Applier
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
 
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      deleteBusinessIdIndex(value);
+    }
+
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
     if (flowScopeInstance == null) {
@@ -64,6 +68,17 @@ final class ProcessInstanceElementTerminatedV1Applier
       // update the numberOfTerminatedInstances of the multi-instance body
       flowScopeInstance.incrementNumberOfTerminatedElementInstances();
       elementInstanceState.updateInstance(flowScopeInstance);
+    }
+  }
+
+  private void deleteBusinessIdIndex(final ProcessInstanceRecord value) {
+    final String businessId = value.getBusinessId();
+    if (!businessId.isEmpty()) {
+      elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
+          businessId,
+          value.getProcessDefinitionKey(),
+          value.getTenantId(),
+          value.getProcessInstanceKey());
     }
   }
 }
