@@ -566,9 +566,7 @@ describe('Add variable', () => {
       await screen.findByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /add variable/i}));
-    await user.click(
-      screen.getByRole('button', {name: /open json editor/i}),
-    );
+    await user.click(screen.getByRole('button', {name: /open json editor/i}));
 
     expect(
       within(screen.getByRole('dialog')).getByRole('button', {name: /cancel/i}),
