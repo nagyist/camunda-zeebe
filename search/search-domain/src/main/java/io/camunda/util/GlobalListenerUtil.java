@@ -9,7 +9,10 @@ package io.camunda.util;
 
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 
-public class GlobalListenerUtil {
+public final class GlobalListenerUtil {
+
+  private GlobalListenerUtil() {}
+
   public static String generateId(final String id, final GlobalListenerType listenerType) {
     return String.format("%s-%s", listenerType.name(), id);
   }
