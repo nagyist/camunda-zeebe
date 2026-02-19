@@ -93,7 +93,7 @@
       FROM ${prefix}GLOBAL_LISTENER gl
       WHERE ID = #{id}
     ) gl
-    LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.ID = gl.ID)
+    LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.GLOBAL_LISTENER_ID = gl.ID)
   </select>
 
   <select id="search"
@@ -121,7 +121,7 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
         <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
       ) gl
-      LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.ID = gl.ID)
+      LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.GLOBAL_LISTENER_ID = gl.ID)
     ) sorted
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
@@ -178,7 +178,7 @@
       <!-- event types -->
       <if
         test="filter.eventTypeOperations != null and !filter.eventTypeOperations.isEmpty()">
-        AND EXISTS (Select * from ${prefix}GLOBAL_LISTENER_EVENT_TYPE et where et.ID = gl.ID
+        AND EXISTS (Select * from ${prefix}GLOBAL_LISTENER_EVENT_TYPE et where et.GLOBAL_LISTENER_ID = gl.ID
         <foreach collection="filter.eventTypeOperations" item="operation">
           AND et.EVENT_TYPE
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
