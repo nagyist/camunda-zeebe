@@ -30,7 +30,7 @@
   </insert>
 
   <insert id="insertEventTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
-    INSERT INTO ${prefix}GLOBAL_LISTENER_EVENT_TYPE (ID, EVENT_TYPE)
+    INSERT INTO ${prefix}GLOBAL_LISTENER_EVENT_TYPE (GLOBAL_LISTENER_ID, EVENT_TYPE)
     VALUES
     <foreach collection="eventTypes" item="eventType" separator=", ">
       (#{id}, #{eventType})
@@ -58,7 +58,7 @@
   <delete id="deleteEventTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
     DELETE
     FROM ${prefix}GLOBAL_LISTENER_EVENT_TYPE
-    WHERE ID = #{id}
+    WHERE GLOBAL_LISTENER_ID = #{id}
   </delete>
 
 </mapper>

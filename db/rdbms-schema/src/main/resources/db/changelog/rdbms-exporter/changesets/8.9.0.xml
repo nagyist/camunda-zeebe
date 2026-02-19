@@ -1136,14 +1136,14 @@
 
     <!-- Global listener event type table: manages collection of event types for global listeners -->
     <createTable tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE">
-      <column name="ID" type="VARCHAR(${userCharColumnSize})">
+      <column name="GLOBAL_LISTENER_ID" type="VARCHAR(${userCharColumnSize})">
         <constraints foreignKeyName="${prefix}FK_EVENT_TYPE_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
       </column>
       <column name="EVENT_TYPE" type="VARCHAR(50)"/>
     </createTable>
 
     <createIndex tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE" indexName="${prefix}IDX_GLOBAL_LISTENER_EVENT_TYPE_ID">
-      <column name="ID"/>
+      <column name="GLOBAL_LISTENER_ID"/>
     </createIndex>
 
   </changeSet>
