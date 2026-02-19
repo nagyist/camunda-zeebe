@@ -11,6 +11,7 @@ import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -28,11 +29,14 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,6 +44,8 @@ import org.junit.Test;
 public class MultiTenancyActivatableJobsPushTest {
 
   private static final String PROCESS_ID = "process";
+  private static final Duration MAX_WAIT_TIME_FOR_ACTIVATED_JOBS =
+      Duration.ofMillis(RecordingExporter.DEFAULT_MAX_WAIT_TIME);
 
   private static final RecordingJobStreamer JOB_STREAMER = new RecordingJobStreamer();
 
@@ -55,6 +61,11 @@ public class MultiTenancyActivatableJobsPushTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Before
+  public void setUp() {
+    JOB_STREAMER.clearStreams();
+  }
 
   @Test
   public void shouldPushWhenJobCreatedForAuthorizedTenant() {
@@ -258,8 +269,12 @@ public class MultiTenancyActivatableJobsPushTest {
     assertThat(batchRecords).hasSize(2);
 
     // The ASSIGNED stream should receive both jobs (tenantIdA and tenantIdC)
+    await("waiting for both jobs to be pushed to the assigned stream")
+        .atMost(MAX_WAIT_TIME_FOR_ACTIVATED_JOBS)
+        .pollInterval(Duration.ofMillis(10))
+        .untilAsserted(() -> assertThat(assignedStream.getActivatedJobs()).hasSize(2));
+
     final var activatedJobs = assignedStream.getActivatedJobs();
-    assertThat(activatedJobs).hasSize(2);
     assertThat(activatedJobs)
         .extracting(job -> job.jobRecord().getTenantId())
         .containsExactlyInAnyOrder(tenantIdA, tenantIdC);
@@ -317,7 +332,10 @@ public class MultiTenancyActivatableJobsPushTest {
     // when
     final long jobKey = createJob(jobType, PROCESS_ID, variables, tenantIdA);
 
-    // then — the PROVIDED stream should receive the job
+    // then — wait for the job batch to be activated (ensures push side effect has completed)
+    jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
+
+    // the PROVIDED stream should receive the job
     assertActivatedJob(providedStream, jobKey, worker, variables, 1, tenantIdA);
     // The anonymous ASSIGNED stream should NOT receive the job
     assertNoActivatedJobs(anonymousStream);
@@ -340,9 +358,13 @@ public class MultiTenancyActivatableJobsPushTest {
       final Map variables,
       final int activationCount,
       final String tenantId) {
-    final var activatedJobs = jobStream.getActivatedJobs();
-    assertThat(activatedJobs).hasSize(activationCount);
-    activatedJobs.stream()
+    await("waiting for the expected number of jobs to be activated")
+        .atMost(MAX_WAIT_TIME_FOR_ACTIVATED_JOBS)
+        .pollInterval(Duration.ofMillis(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(activationCount));
+
+    jobStream
+        .getActivatedJobs()
         .forEach(
             activatedJob -> {
               assertThat(activatedJob.jobKey()).isEqualTo(jobKey);
