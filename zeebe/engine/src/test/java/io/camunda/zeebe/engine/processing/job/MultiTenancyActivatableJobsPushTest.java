@@ -12,6 +12,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobBatchRecord
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
@@ -268,6 +269,58 @@ public class MultiTenancyActivatableJobsPushTest {
 
     // The PROVIDED stream for tenantIdB should NOT receive any jobs
     assertNoActivatedJobs(providedStream);
+  }
+
+  @Test
+  public void shouldNotPushToAssignedStreamWhenClaimsAreAnonymous() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final DirectBuffer jobTypeBuffer = BufferUtil.wrapString(jobType);
+    final DirectBuffer worker = BufferUtil.wrapString("test");
+    final Map<String, Object> variables = Map.of("a", "valA");
+    final long timeout = 30000L;
+    final String username = Strings.newRandomValidIdentityId();
+    final String tenantIdA = Strings.newRandomValidTenantId();
+
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.user().newUser(username).create();
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdA)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+
+    // Stream using PROVIDED filter with real claims — will consume the job
+    final Map<String, Object> authorizationClaims = Map.of(AUTHORIZED_USERNAME, username);
+    final JobActivationPropertiesImpl providedProperties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(List.of(new StringValue("a")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdA));
+
+    // Stream using ASSIGNED filter with anonymous claims — should NOT receive jobs
+    final JobActivationPropertiesImpl anonymousAssignedProperties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(List.of(new StringValue("a")))
+            .setClaims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true))
+            .setTenantFilter(TenantFilter.ASSIGNED);
+
+    final var providedStream = JOB_STREAMER.addJobStream(jobTypeBuffer, providedProperties);
+    final var anonymousStream =
+        JOB_STREAMER.addJobStream(jobTypeBuffer, anonymousAssignedProperties);
+
+    // when
+    final long jobKey = createJob(jobType, PROCESS_ID, variables, tenantIdA);
+
+    // then — the PROVIDED stream should receive the job
+    assertActivatedJob(providedStream, jobKey, worker, variables, 1, tenantIdA);
+    // The anonymous ASSIGNED stream should NOT receive the job
+    assertNoActivatedJobs(anonymousStream);
   }
 
   private Long createJob(

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.identity.AnonymouslyAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
@@ -163,18 +164,17 @@ public class BpmnJobActivationBehavior {
       final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
 
     final var ownerTenantId = jobRecord.getTenantId();
-    final var tenantIds =
+    final var isTenantAuthorized =
         switch (jobActivationProperties.tenantFilter()) {
-          case ASSIGNED ->
-              authorizationCheckBehavior
-                  .getAuthorizedTenantIds(jobActivationProperties.claims())
-                  .getAuthorizedTenantIds();
-          case PROVIDED -> jobActivationProperties.tenantIds().stream().toList();
-          default ->
-              throw new IllegalStateException(
-                  "Unexpected tenant filter: " + jobActivationProperties.tenantFilter());
+          case ASSIGNED -> {
+            final var authorizedTenants =
+                authorizationCheckBehavior.getAuthorizedTenantIds(jobActivationProperties.claims());
+            yield !(authorizedTenants instanceof AnonymouslyAuthorizedTenants)
+                && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
+          }
+          case PROVIDED -> jobActivationProperties.tenantIds().contains(ownerTenantId);
         };
-    if (!tenantIds.contains(ownerTenantId)) {
+    if (!isTenantAuthorized) {
       // don't push jobs to workers that don't request them from the job's tenant
       return false;
     }
