@@ -9,7 +9,6 @@ package io.camunda.webapps.schema.entities.auditlog;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.SinceVersion;
-import java.time.OffsetDateTime;
 
 public class AuditLogCleanupEntity extends AbstractExporterEntity<AuditLogCleanupEntity> {
 
@@ -25,9 +24,10 @@ public class AuditLogCleanupEntity extends AbstractExporterEntity<AuditLogCleanu
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogEntityType entityType;
 
-  // the timestamp after which to archive the related audit logs
+  // the partition id of the index which created the cleanup entry. Used to distribute the cleanup
+  // load amongst the partitions.
   @SinceVersion(value = "8.9.0", requireDefault = false)
-  private OffsetDateTime archivingDate;
+  private int partitionId;
 
   public String getKey() {
     return key;
@@ -56,12 +56,12 @@ public class AuditLogCleanupEntity extends AbstractExporterEntity<AuditLogCleanu
     return this;
   }
 
-  public OffsetDateTime getArchivingDate() {
-    return archivingDate;
+  public int getPartitionId() {
+    return partitionId;
   }
 
-  public AuditLogCleanupEntity setArchivingDate(final OffsetDateTime archivingDate) {
-    this.archivingDate = archivingDate;
+  public AuditLogCleanupEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
     return this;
   }
 }

@@ -20,7 +20,7 @@ public class AuditLogCleanupIndex extends AbstractIndexDescriptor implements Pri
   public static final String KEY = "key";
   public static final String KEY_FIELD = "keyField";
   public static final String TYPE_FIELD = "entityType";
-  public static final String ARCHIVING_DATE = "archivingDate";
+  public static final String PARTITION_ID = "partitionId";
 
   public AuditLogCleanupIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

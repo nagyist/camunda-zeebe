@@ -14,9 +14,8 @@
       "entityType": {
         "type": "keyword"
       },
-      "archivingDate": {
-        "format": "date_time || epoch_millis",
-        "type": "date"
+      "partitionId": {
+        "type": "integer"
       }
     }
   }
