@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.util.RecordingJobStreamer;
 import io.camunda.zeebe.engine.util.RecordingJobStreamer.RecordingJobStream;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -62,8 +64,8 @@ public class MultiTenancyActivatableJobsPushTest {
     final Map<String, Object> variables = Map.of("a", "valA", "b", "valB", "c", "valC");
     final long timeout = 30000L;
     final String username = Strings.newRandomValidIdentityId();
-    final String tenantIdA = "tenant-a";
-    final String tenantIdB = "tenant-b";
+    final String tenantIdA = Strings.newRandomValidTenantId();
+    final String tenantIdB = Strings.newRandomValidTenantId();
 
     ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
     ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
@@ -120,6 +122,152 @@ public class MultiTenancyActivatableJobsPushTest {
     // assert job stream
     assertActivatedJob(jobStreamA, jobKey, worker, variables, activationCount, tenantIdA);
     assertNoActivatedJobs(jobStreamB);
+  }
+
+  @Test
+  public void shouldPushToAssignedTenantStreamWhenUsingAssignedFilter() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final DirectBuffer jobTypeBuffer = BufferUtil.wrapString(jobType);
+    final DirectBuffer worker = BufferUtil.wrapString("test");
+    final Map<String, Object> variables = Map.of("a", "valA", "b", "valB", "c", "valC");
+    final long timeout = 30000L;
+    final String username = Strings.newRandomValidIdentityId();
+    final String tenantIdA = Strings.newRandomValidTenantId();
+    final String tenantIdB = Strings.newRandomValidTenantId();
+
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
+    ENGINE.user().newUser(username).create();
+    // User is assigned to tenantIdA only — not tenantIdB
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdA)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    final Map<String, Object> authorizationClaims = Map.of(AUTHORIZED_USERNAME, username);
+
+    // Stream using ASSIGNED filter — should receive jobs for tenantIdA (assigned tenant)
+    final JobActivationPropertiesImpl assignedProperties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantFilter(TenantFilter.ASSIGNED);
+
+    // Stream using PROVIDED filter for tenantIdB — will consume tenantIdB jobs
+    final JobActivationPropertiesImpl providedProperties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdB));
+
+    final var assignedStream = JOB_STREAMER.addJobStream(jobTypeBuffer, assignedProperties);
+    final var providedStream = JOB_STREAMER.addJobStream(jobTypeBuffer, providedProperties);
+
+    // when — create a job for tenantIdA (user's assigned tenant)
+    final long jobKey = createJob(jobType, PROCESS_ID, variables, tenantIdA);
+
+    // then
+    final Record<JobBatchRecordValue> batchRecord =
+        jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).getFirst();
+
+    final JobBatchRecordValue batch = batchRecord.getValue();
+    assertThat(batch.getJobs()).hasSize(1);
+    assertThat(batch.getJobKeys()).contains(jobKey);
+
+    // The ASSIGNED stream should receive the job because the user is assigned to tenantIdA
+    assertActivatedJob(assignedStream, jobKey, worker, variables, 1, tenantIdA);
+    // The PROVIDED stream for tenantIdB should NOT receive it
+    assertNoActivatedJobs(providedStream);
+  }
+
+  @Test
+  public void shouldPushToAssignedTenantStreamWhenUsingAssignedFilterIgnoringSetTenantIds() {
+    // given
+    final String jobType = Strings.newRandomValidBpmnId();
+    final DirectBuffer jobTypeBuffer = BufferUtil.wrapString(jobType);
+    final DirectBuffer worker = BufferUtil.wrapString("test");
+    final Map<String, Object> variables = Map.of("a", "valA", "b", "valB", "c", "valC");
+    final long timeout = 30000L;
+    final String username = Strings.newRandomValidIdentityId();
+    final String tenantIdA = Strings.newRandomValidTenantId();
+    final String tenantIdB = Strings.newRandomValidTenantId();
+    final String tenantIdC = Strings.newRandomValidTenantId();
+
+    ENGINE.tenant().newTenant().withTenantId(tenantIdA).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdB).create();
+    ENGINE.tenant().newTenant().withTenantId(tenantIdC).create();
+    ENGINE.user().newUser(username).create();
+    // User is assigned to tenantIdA and tenantC only — not tenantIdB
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdA)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    ENGINE
+        .tenant()
+        .addEntity(tenantIdC)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+    final Map<String, Object> authorizationClaims = Map.of(AUTHORIZED_USERNAME, username);
+
+    // Stream using ASSIGNED filter passing in tenantA— should receive jobs for tenantIdA and
+    // tenantIdC (assigned tenant)
+    final JobActivationPropertiesImpl assignedProperties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdA))
+            .setTenantFilter(TenantFilter.ASSIGNED);
+
+    // Stream using PROVIDED filter for tenantIdB — will consume tenantIdB jobs
+    final JobActivationPropertiesImpl providedProperties =
+        new JobActivationPropertiesImpl()
+            .setWorker(worker, 0, worker.capacity())
+            .setTimeout(timeout)
+            .setFetchVariables(
+                List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
+            .setClaims(authorizationClaims)
+            .setTenantIds(List.of(tenantIdB));
+
+    final var assignedStream = JOB_STREAMER.addJobStream(jobTypeBuffer, assignedProperties);
+    final var providedStream = JOB_STREAMER.addJobStream(jobTypeBuffer, providedProperties);
+
+    // when — create a job for tenantIdA (user's assigned tenant)
+    final long jobKeyTenantA = createJob(jobType, PROCESS_ID, variables, tenantIdA);
+
+    // when — create a job for tenantIdC (user's assigned tenant)
+    final long jobKeyTenantC = createJob(jobType, PROCESS_ID, variables, tenantIdC);
+
+    // then — each push creates a separate ACTIVATED batch record
+    final var batchRecords =
+        jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).limit(2).toList();
+    assertThat(batchRecords).hasSize(2);
+
+    // The ASSIGNED stream should receive both jobs (tenantIdA and tenantIdC)
+    final var activatedJobs = assignedStream.getActivatedJobs();
+    assertThat(activatedJobs).hasSize(2);
+    assertThat(activatedJobs)
+        .extracting(job -> job.jobRecord().getTenantId())
+        .containsExactlyInAnyOrder(tenantIdA, tenantIdC);
+    assertThat(activatedJobs)
+        .extracting(ActivatedJob::jobKey)
+        .containsExactlyInAnyOrder(jobKeyTenantA, jobKeyTenantC);
+
+    // The PROVIDED stream for tenantIdB should NOT receive any jobs
+    assertNoActivatedJobs(providedStream);
   }
 
   private Long createJob(
