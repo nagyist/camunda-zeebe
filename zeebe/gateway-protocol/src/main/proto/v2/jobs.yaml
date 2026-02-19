@@ -347,6 +347,7 @@ components:
         - elementInstanceKey
         - kind
         - listenerEventType
+        - rootProcessInstanceKey
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -647,6 +648,7 @@ components:
         - tenantId
         - type
         - worker
+        - rootProcessInstanceKey
       properties:
         customHeaders:
           description: A set of custom headers defined during modelling.

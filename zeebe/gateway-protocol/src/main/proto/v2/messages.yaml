@@ -240,6 +240,8 @@ components:
 
     MessageSubscriptionResult:
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         messageSubscriptionKey:
           allOf:
@@ -453,6 +455,7 @@ components:
         - processInstanceKey
         - subscriptionKey
         - tenantId
+        - rootProcessInstanceKey
 
     CorrelatedMessageSubscriptionSearchQuery:
       type: object

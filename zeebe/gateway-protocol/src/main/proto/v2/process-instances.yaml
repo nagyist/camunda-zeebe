@@ -1189,6 +1189,7 @@ components:
         - tenantId
         - processInstanceKey
         - processDefinitionKey
+        - rootProcessInstanceKey
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -1289,6 +1290,8 @@ components:
     ProcessInstanceSequenceFlowResult:
       description: Process instance sequence flow result.
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         sequenceFlowId:
           type: string

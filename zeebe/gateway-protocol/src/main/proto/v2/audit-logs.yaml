@@ -72,6 +72,8 @@ components:
     AuditLogResult:
       description: Audit log item.
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         auditLogKey:
           allOf:

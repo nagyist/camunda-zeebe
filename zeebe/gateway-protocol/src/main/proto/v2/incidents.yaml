@@ -396,6 +396,8 @@ components:
 
     IncidentResult:
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         processDefinitionId:
           allOf:

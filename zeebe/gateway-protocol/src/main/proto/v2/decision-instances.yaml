@@ -283,6 +283,8 @@ components:
 
     DecisionInstanceResult:
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         decisionEvaluationInstanceKey:
           $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
