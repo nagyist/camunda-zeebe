@@ -9,7 +9,6 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
-import io.camunda.exporter.tasks.auditlog.AuditLogArchiverRepository;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import java.util.List;

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.tasks.auditlog;
+package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import java.util.concurrent.CompletableFuture;
