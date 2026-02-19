@@ -29,6 +29,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,8 @@ class BackgroundTaskManagerFactoryTest {
             LoggerFactory.getLogger(BackgroundTaskManagerFactoryTest.class),
             mock(ExporterMetadata.class),
             new ObjectMapper(),
-            mock(ExporterEntityCacheImpl.class));
+            mock(ExporterEntityCacheImpl.class),
+            InstantSource.system());
   }
 
   @Test

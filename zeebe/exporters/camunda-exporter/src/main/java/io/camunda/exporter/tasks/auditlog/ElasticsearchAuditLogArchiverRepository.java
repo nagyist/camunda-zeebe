@@ -22,6 +22,10 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
+import java.time.InstantSource;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -34,6 +38,7 @@ public class ElasticsearchAuditLogArchiverRepository extends ElasticsearchReposi
   private final int partitionId;
   private final IndexDescriptor auditLogCleanupIndex;
   private final IndexTemplateDescriptor auditLogTemplateDescriptor;
+  private final InstantSource clock;
   private final HistoryConfiguration historyConfig;
 
   public ElasticsearchAuditLogArchiverRepository(
@@ -43,12 +48,14 @@ public class ElasticsearchAuditLogArchiverRepository extends ElasticsearchReposi
       final Logger logger,
       final IndexDescriptor auditLogCleanupIndex,
       final IndexTemplateDescriptor auditLogTemplateDescriptor,
-      final HistoryConfiguration historyConfig) {
+      final HistoryConfiguration historyConfig,
+      final InstantSource clock) {
     super(client, executor, logger);
     this.partitionId = partitionId;
     this.auditLogCleanupIndex = auditLogCleanupIndex;
     this.historyConfig = historyConfig;
     this.auditLogTemplateDescriptor = auditLogTemplateDescriptor;
+    this.clock = clock;
   }
 
   @Override
@@ -71,8 +78,9 @@ public class ElasticsearchAuditLogArchiverRepository extends ElasticsearchReposi
                   .search(createAuditLogEntitiesSearchRequest(cleanupEntities), Object.class)
                   .thenComposeAsync(
                       auditLogResponse -> {
-                        // TODO finishDate??? Determine date of today
-                        final var finishDate = "2026-02-19";
+                        final var finishDate =
+                            LocalDate.ofInstant(clock.instant(), ZoneOffset.UTC)
+                                .format(DateTimeFormatter.ISO_LOCAL_DATE);
                         final var auditLogHits = auditLogResponse.hits().hits();
                         if (auditLogHits.isEmpty()) {
                           return CompletableFuture.completedFuture(

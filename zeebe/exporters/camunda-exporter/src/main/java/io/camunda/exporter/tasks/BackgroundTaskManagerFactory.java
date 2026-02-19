@@ -64,6 +64,7 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -89,6 +90,7 @@ public final class BackgroundTaskManagerFactory {
   private HistoryDeletionRepository historyDeletionRepository;
   private AuditLogArchiverRepository auditLogArchiverRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
+  private final InstantSource clock;
 
   public BackgroundTaskManagerFactory(
       final int partitionId,
@@ -99,7 +101,8 @@ public final class BackgroundTaskManagerFactory {
       final Logger logger,
       final ExporterMetadata metadata,
       final ObjectMapper objectMapper,
-      final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache) {
+      final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache,
+      final InstantSource clock) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
@@ -109,6 +112,7 @@ public final class BackgroundTaskManagerFactory {
     this.metadata = metadata;
     this.objectMapper = objectMapper;
     this.processCache = processCache;
+    this.clock = clock;
   }
 
   public BackgroundTaskManager build() {
@@ -294,7 +298,7 @@ public final class BackgroundTaskManagerFactory {
     final var auditLogCleanupIndex =
         resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class);
     return new OpensearchAuditLogArchiverRepository(
-        asyncClient, executor, logger, auditLogCleanupIndex, config.getHistory());
+        asyncClient, executor, logger, auditLogCleanupIndex, config.getHistory(), clock);
   }
 
   private ElasticsearchAuditLogArchiverRepository createAuditLogArchiverRepository(
@@ -310,7 +314,8 @@ public final class BackgroundTaskManagerFactory {
         logger,
         auditLogCleanupIndex,
         auditLogTemplateDescriptor,
-        config.getHistory());
+        config.getHistory(),
+        clock);
   }
 
   private ReschedulingTask buildRolloverPeriodJob() {
