@@ -18,6 +18,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
+import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
@@ -27,7 +28,6 @@ import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
-import io.camunda.exporter.tasks.auditlog.AuditLogArchiverJob;
 import io.camunda.exporter.tasks.auditlog.AuditLogArchiverRepository;
 import io.camunda.exporter.tasks.auditlog.ElasticsearchAuditLogArchiverRepository;
 import io.camunda.exporter.tasks.auditlog.OpensearchAuditLogArchiverRepository;
@@ -301,8 +301,16 @@ public final class BackgroundTaskManagerFactory {
       final ElasticsearchAsyncClient asyncClient) {
     final var auditLogCleanupIndex =
         resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class);
+    final var auditLogTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class);
     return new ElasticsearchAuditLogArchiverRepository(
-        asyncClient, executor, logger, auditLogCleanupIndex, config.getHistory());
+        partitionId,
+        asyncClient,
+        executor,
+        logger,
+        auditLogCleanupIndex,
+        auditLogTemplateDescriptor,
+        config.getHistory());
   }
 
   private ReschedulingTask buildRolloverPeriodJob() {
@@ -478,6 +486,7 @@ public final class BackgroundTaskManagerFactory {
     return buildReschedulingArchiverTask(
         new AuditLogArchiverJob(
             auditLogArchiverRepository,
+            archiverRepository,
             resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class),
             resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class),
             metrics,
