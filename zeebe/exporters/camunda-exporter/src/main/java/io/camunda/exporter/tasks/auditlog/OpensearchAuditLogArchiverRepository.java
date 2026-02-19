@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.auditlog;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.concurrent.CompletableFuture;

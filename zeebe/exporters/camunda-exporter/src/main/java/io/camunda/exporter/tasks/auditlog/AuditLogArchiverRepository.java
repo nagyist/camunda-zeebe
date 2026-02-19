@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.auditlog;
 
+import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import java.util.concurrent.CompletableFuture;
 
 public interface AuditLogArchiverRepository extends AutoCloseable {
