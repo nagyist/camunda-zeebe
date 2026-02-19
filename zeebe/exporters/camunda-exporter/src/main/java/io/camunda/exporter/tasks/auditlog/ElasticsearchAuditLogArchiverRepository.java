@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
@@ -64,24 +65,51 @@ public class ElasticsearchAuditLogArchiverRepository extends ElasticsearchReposi
                     new AuditLogCleanupBatch(null, List.of(), List.of()));
               }
               final var cleanupEntities = cleanupHits.stream().map(Hit::source).toList();
-              final var cleanupEntityKeys =
-                  cleanupEntities.stream().map(AuditLogCleanupEntity::getKey).toList();
+              final var cleanupEntityIds = cleanupHits.stream().map(Hit::id).toList();
 
               return client
                   .search(createAuditLogEntitiesSearchRequest(cleanupEntities), Object.class)
                   .thenComposeAsync(
                       auditLogResponse -> {
+                        // TODO finishDate??? Determine date of today
+                        final var finishDate = "2026-02-19";
                         final var auditLogHits = auditLogResponse.hits().hits();
                         if (auditLogHits.isEmpty()) {
                           return CompletableFuture.completedFuture(
-                              new AuditLogCleanupBatch(null, cleanupEntityKeys, List.of()));
+                              new AuditLogCleanupBatch(finishDate, cleanupEntityIds, List.of()));
                         }
 
                         final var auditLogIds = auditLogHits.stream().map(Hit::id).toList();
-                        // TODO finishDate??? Add to entity again?
                         return CompletableFuture.completedFuture(
-                            new AuditLogCleanupBatch("2026-02-19", cleanupEntityKeys, auditLogIds));
+                            new AuditLogCleanupBatch(finishDate, cleanupEntityIds, auditLogIds));
                       });
+            },
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
+      final AuditLogCleanupBatch batch) {
+    final var bulkRequestBuilder = new BulkRequest.Builder();
+    final var sourceIndexName = auditLogCleanupIndex.getFullQualifiedName();
+    final var ids = batch.auditLogCleanupIds();
+
+    ids.forEach(
+        id -> bulkRequestBuilder.operations(op -> op.delete(d -> d.index(sourceIndexName).id(id))));
+
+    return client
+        .bulk(bulkRequestBuilder.build())
+        .thenComposeAsync(
+            response -> {
+              if (response.errors()) {
+                final var errorMessage =
+                    "Bulk deleting documents from index '%s' by ids '%s' failed with errors: %s"
+                        .formatted(sourceIndexName, ids, response.items());
+                logger.error(errorMessage);
+                return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+              }
+              final var deleted = response.items().size();
+              return CompletableFuture.completedFuture(deleted);
             },
             executor);
   }

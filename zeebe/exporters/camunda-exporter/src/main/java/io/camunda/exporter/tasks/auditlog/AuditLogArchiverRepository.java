@@ -18,4 +18,11 @@ public interface AuditLogArchiverRepository extends AutoCloseable {
    * @return a {@link CompletableFuture} containing the next batch of audit logs to be archived
    */
   CompletableFuture<AuditLogCleanupBatch> getNextBatch();
+
+  /**
+   * Deletes the documents for the given batch from the audit log cleanup index.
+   *
+   * @return a {@link CompletableFuture} containing the number of documents deleted
+   */
+  CompletableFuture<Integer> deleteAuditLogCleanupMetadata(final AuditLogCleanupBatch batch);
 }

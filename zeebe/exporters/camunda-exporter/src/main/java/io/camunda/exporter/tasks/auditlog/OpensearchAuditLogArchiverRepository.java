@@ -37,4 +37,10 @@ public class OpensearchAuditLogArchiverRepository extends OpensearchRepository
   public CompletableFuture<AuditLogCleanupBatch> getNextBatch() {
     return null;
   }
+
+  @Override
+  public CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
+      final AuditLogCleanupBatch batch) {
+    return null;
+  }
 }

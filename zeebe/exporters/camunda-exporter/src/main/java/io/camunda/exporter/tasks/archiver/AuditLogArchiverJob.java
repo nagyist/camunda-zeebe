@@ -73,6 +73,6 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
 
   private CompletableFuture<Integer> deleteAuditLogCleanupMetadata(
       final AuditLogCleanupBatch batch) {
-    return null;
+    return repository.deleteAuditLogCleanupMetadata(batch);
   }
 }
