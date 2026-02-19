@@ -902,6 +902,7 @@ components:
         - tenantId
         - variables
         - processInstanceKey
+        - tags
       type: object
       properties:
         processDefinitionId:
@@ -1190,6 +1191,7 @@ components:
         - processInstanceKey
         - processDefinitionKey
         - rootProcessInstanceKey
+        - tags
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'

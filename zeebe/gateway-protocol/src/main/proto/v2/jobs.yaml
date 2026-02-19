@@ -348,6 +348,7 @@ components:
         - kind
         - listenerEventType
         - rootProcessInstanceKey
+        - tags
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -426,6 +427,10 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
 
     UserTaskProperties:
+      required: 
+        - candidateGroups
+        - candidateUsers 
+        - changedAttributes
       type: object
       description: Contains properties of a user task.
       properties:

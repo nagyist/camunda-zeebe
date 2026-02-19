@@ -406,6 +406,9 @@ components:
             $ref: '#/components/schemas/EvaluatedDecisionResult'
 
     EvaluatedDecisionResult:
+      required: 
+        - evaluatedInputs
+        - matchedRules
       x-semantic-provider:
         - decisionEvaluationInstanceKey
       type: object

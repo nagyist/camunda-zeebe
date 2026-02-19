@@ -396,6 +396,8 @@ components:
           format: int32
 
     MatchedDecisionRuleItem:
+      required: 
+        - evaluatedOutputs
       type: object
       description: A decision rule that matched within this decision evaluation.
       properties:

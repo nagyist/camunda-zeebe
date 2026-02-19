@@ -305,6 +305,8 @@ components:
             $ref: '#/components/schemas/BatchOperationResponse'
 
     BatchOperationResponse:
+      required:
+        - errors
       type: object
       properties:
         batchOperationKey:

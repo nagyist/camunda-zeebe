@@ -497,6 +497,10 @@ components:
       type: object
       required:
         - rootProcessInstanceKey
+        - candidateGroups
+        - candidateUsers
+        - customHeaders 
+        - tags
       properties:
         name:
           type: string

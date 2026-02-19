@@ -301,6 +301,8 @@ components:
             - $ref: '#/components/schemas/ResourceTypeEnum'
 
     AuthorizationResult:
+      required:
+        - permissionTypes
       type: object
       properties:
         ownerId:
