@@ -297,8 +297,17 @@ public final class BackgroundTaskManagerFactory {
       final OpenSearchAsyncClient asyncClient) {
     final var auditLogCleanupIndex =
         resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class);
+    final var auditLogTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class);
     return new OpensearchAuditLogArchiverRepository(
-        asyncClient, executor, logger, auditLogCleanupIndex, config.getHistory(), clock);
+        partitionId,
+        asyncClient,
+        executor,
+        logger,
+        auditLogCleanupIndex,
+        auditLogTemplateDescriptor,
+        config.getHistory(),
+        clock);
   }
 
   private ElasticsearchAuditLogArchiverRepository createAuditLogArchiverRepository(
