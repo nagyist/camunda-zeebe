@@ -11,7 +11,6 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.AuditLogCleanupBatch;
 import io.camunda.exporter.tasks.auditlog.AuditLogArchiverRepository;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,6 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
   public AuditLogArchiverJob(
       final AuditLogArchiverRepository repository,
       final ArchiverRepository archiverRepository,
-      final AuditLogCleanupIndex auditLogCleanupIndex,
       final AuditLogTemplate auditLogTemplate,
       final CamundaExporterMetrics exporterMetrics,
       final Logger logger,

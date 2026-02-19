@@ -492,7 +492,6 @@ public final class BackgroundTaskManagerFactory {
         new AuditLogArchiverJob(
             auditLogArchiverRepository,
             archiverRepository,
-            resourceProvider.getIndexDescriptor(AuditLogCleanupIndex.class),
             resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class),
             metrics,
             logger,
