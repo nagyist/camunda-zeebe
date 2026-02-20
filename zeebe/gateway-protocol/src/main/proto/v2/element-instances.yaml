@@ -375,6 +375,8 @@ components:
 
     ElementInstanceSearchQueryResult:
       type: object
+      required: 
+        - items
       allOf:
         - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
       properties:
