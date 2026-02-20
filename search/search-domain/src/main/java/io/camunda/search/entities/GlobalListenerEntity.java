@@ -8,6 +8,7 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -20,4 +21,11 @@ public record GlobalListenerEntity(
     Boolean afterNonGlobal,
     Integer priority,
     GlobalListenerSource source,
-    GlobalListenerType listenerType) {}
+    GlobalListenerType listenerType) {
+  public GlobalListenerEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
+    eventTypes = eventTypes != null ? eventTypes : new ArrayList<>();
+  }
+}
