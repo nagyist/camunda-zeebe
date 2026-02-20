@@ -108,12 +108,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
   @Override
   protected void onActorStarted() {
-    if (checkpointScheduler != null && shouldStartSchedulers()) {
-      actorScheduler.submitActor(checkpointScheduler, SchedulingHints.IO_BOUND);
-      if (backupRetentionJob != null) {
-        actorScheduler.submitActor(backupRetentionJob, SchedulingHints.IO_BOUND);
-      }
-    }
+    checkedStartScheduler();
   }
 
   @Override
@@ -163,9 +158,9 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
   private void checkedStartScheduler() {
     if (shouldStartSchedulers() && isSchedulerInactive()) {
-      actorScheduler.submitActor(checkpointScheduler, SchedulingHints.IO_BOUND);
+      actorScheduler.submitActor(checkpointScheduler, SchedulingHints.ioBound());
       if (backupRetentionJob != null) {
-        actorScheduler.submitActor(backupRetentionJob, SchedulingHints.IO_BOUND);
+        actorScheduler.submitActor(backupRetentionJob, SchedulingHints.ioBound());
       }
     }
   }
