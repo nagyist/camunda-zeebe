@@ -257,8 +257,7 @@ public class GlobalListenerFilterIT {
     final String testIdentifier = nextStringId();
 
     // given multiple listeners but only two with retries > 3
-    createAndSaveRandomGlobalListener(
-        testApplication, b -> b.retries(1).type(testIdentifier));
+    createAndSaveRandomGlobalListener(testApplication, b -> b.retries(1).type(testIdentifier));
     final var expectedListener1 =
         createAndSaveRandomGlobalListener(testApplication, b -> b.retries(5).type(testIdentifier));
     createAndSaveRandomGlobalListener(testApplication, b -> b.retries(3).type(testIdentifier));
@@ -492,8 +491,7 @@ public class GlobalListenerFilterIT {
     final String testIdentifier = nextStringId();
 
     // given multiple listeners but only two with priority > 3
-    createAndSaveRandomGlobalListener(
-        testApplication, b -> b.priority(1).type(testIdentifier));
+    createAndSaveRandomGlobalListener(testApplication, b -> b.priority(1).type(testIdentifier));
     final var expectedListener1 =
         createAndSaveRandomGlobalListener(testApplication, b -> b.priority(5).type(testIdentifier));
     createAndSaveRandomGlobalListener(testApplication, b -> b.priority(3).type(testIdentifier));
