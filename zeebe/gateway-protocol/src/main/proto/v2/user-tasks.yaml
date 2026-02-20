@@ -605,10 +605,10 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         formKey:
+          description: The key of the form.
           nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
-          description: The key of the form.
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
