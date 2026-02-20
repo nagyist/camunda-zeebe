@@ -542,26 +542,26 @@ components:
           description: The creation date of a user task.
           format: date-time
         completionDate:
+          description: The completion date of a user task.
           nullable: true
           type: string
-          description: The completion date of a user task.
           format: date-time
         followUpDate:
+          description: The follow date of a user task.
           nullable: true
           type: string
-          description: The follow date of a user task.
           format: date-time
         dueDate:
+          description: The due date of a user task.
           nullable: true
           type: string
-          description: The due date of a user task.
           format: date-time
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         externalFormReference:
+          description: The external form reference.
           nullable: true
           type: string
-          description: The external form reference.
         processDefinitionVersion:
           type: integer
           description: The version of the process definition.
