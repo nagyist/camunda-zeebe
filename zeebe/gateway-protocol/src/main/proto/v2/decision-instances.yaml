@@ -401,12 +401,12 @@ components:
         outputValue:
           description: The value of the evaluated decison output item.
           type: string
-        ruleId:
-          nullable: true
           description: The ID of the matched rule.
+          nullable: true
           type: string
         ruleIndex:
           description: The index of the matched rule.
+          nullable: true
           nullable: true
           type: integer
           format: int32
