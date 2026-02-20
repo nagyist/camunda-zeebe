@@ -224,6 +224,7 @@ public record DecisionInstanceEntity(
   public enum DecisionDefinitionType {
     DECISION_TABLE,
     LITERAL_EXPRESSION,
+    UNSPECIFIED,
     UNKNOWN;
 
     public static DecisionDefinitionType fromValue(final String value) {
@@ -238,7 +239,9 @@ public record DecisionInstanceEntity(
 
   public enum DecisionInstanceState {
     EVALUATED,
-    FAILED;
+    FAILED,
+    UNKNOWN,
+    UNSPECIFIED;
 
     public static DecisionInstanceState fromValue(final String value) {
       for (final DecisionInstanceState b : DecisionInstanceState.values()) {
