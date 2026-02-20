@@ -441,8 +441,18 @@ public final class RequestMapper extends RequestUtil {
   public static JobActivationProperties toJobActivationProperties(
       final StreamActivatedJobsRequest request, final Map<String, Object> claims) {
 
-    List<String> tenantIds = request.getTenantIdsList();
-    tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);
+    final List<String> tenantIds;
+    final var tenantFilter =
+        switch (convertTenantFilter(request.getTenantFilter())) {
+          case ASSIGNED -> {
+            tenantIds = List.of();
+            yield TenantFilter.ASSIGNED;
+          }
+          case PROVIDED -> {
+            tenantIds = ensureTenantIdsSet("StreamActivatedJobs", request.getTenantIdsList());
+            yield TenantFilter.PROVIDED;
+          }
+        };
 
     final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
     final DirectBuffer worker = wrapString(request.getWorker());
@@ -451,6 +461,7 @@ public final class RequestMapper extends RequestUtil {
         .setTimeout(request.getTimeout())
         .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
         .setTenantIds(tenantIds)
+        .setTenantFilter(tenantFilter)
         .setClaims(claims);
 
     return jobActivationProperties;
@@ -501,5 +512,16 @@ public final class RequestMapper extends RequestUtil {
     tenantIds.stream().forEach(tenantId -> ensureTenantIdSet(commandName, tenantId));
 
     return tenantIds;
+  }
+
+  private static TenantFilter convertTenantFilter(
+      final GatewayOuterClass.TenantFilter grpcTenantFilter) {
+    return switch (grpcTenantFilter) {
+      case ASSIGNED -> TenantFilter.ASSIGNED;
+      case PROVIDED -> TenantFilter.PROVIDED;
+      case UNRECOGNIZED ->
+          throw new IllegalArgumentException(
+              "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
+    };
   }
 }

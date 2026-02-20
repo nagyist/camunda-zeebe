@@ -22,6 +22,8 @@ message StreamActivatedJobsRequest {
   repeated string fetchVariable = 5;
   // a list of identifiers of tenants for which to stream jobs
   repeated string tenantIds = 6;
+  // the tenant filtering strategy - determines whether to use provided tenant IDs or assigned tenant IDs
+  TenantFilter tenantFilter = 7;
 }
 
 message ActivateJobsRequest {
@@ -970,7 +972,7 @@ service Gateway {
      INVALID_ARGUMENT:
       - type is blank (empty string, null)
       - timeout less than 1
-      - If multi-tenancy is enabled, and tenantIds is empty (empty list)
+      - If multi-tenancy is enabled, tenantFilter is PROVIDED (default value) and tenantIds is empty (empty list)
       - If multi-tenancy is enabled, and an invalid tenant ID is provided. A tenant ID is considered invalid if:
         - The tenant ID is blank (empty string, null)
         - The tenant ID is longer than 31 characters
