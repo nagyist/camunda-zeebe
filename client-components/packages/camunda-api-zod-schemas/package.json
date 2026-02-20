@@ -312,6 +312,12 @@
 				"default": "./dist/8.9/process-definition.js"
 			}
 		},
+		"./8.9/message-subscriptions": {
+			"import": {
+				"types": "./dist/8.9/message-subscriptions.d.ts",
+				"default": "./dist/8.9/message-subscriptions.js"
+			}
+		},
 		"./8.9/user-task": {
 			"import": {
 				"types": "./dist/8.9/user-task.d.ts",
