@@ -1231,10 +1231,12 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The process definition key.
         parentProcessInstanceKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The parent process instance key.
         parentElementInstanceKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The parent element instance key.
