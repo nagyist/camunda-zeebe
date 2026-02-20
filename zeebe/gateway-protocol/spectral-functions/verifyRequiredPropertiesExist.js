@@ -38,7 +38,7 @@ module.exports = (input, _opts, context) => {
   required.forEach((name, index) => {
     if (!propertyNames.has(name)) {
       errors.push({
-        message: `\`${name}\` is listed in \`required\` but does not exist in \`properties\`.`,
+        message: `\`${name}\` is listed in \`required\` but does not exist in \`properties\` or \`allOf\` compositions.`,
         path: [...context.path, 'required', index],
       });
     }
