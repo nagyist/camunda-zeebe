@@ -17,6 +17,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Property description requirements
   - Key property type validation (`...Key` properties must be strings)
   - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
+  - Required property existence validation (entries in required array must exist in properties)
 
 ## Running Validation Locally
 
