@@ -401,18 +401,18 @@ components:
         outputValue:
           description: The value of the evaluated decison output item.
           type: string
+        ruleId:
           description: The ID of the matched rule.
           nullable: true
           type: string
         ruleIndex:
           description: The index of the matched rule.
           nullable: true
-          nullable: true
           type: integer
           format: int32
 
     MatchedDecisionRuleItem:
-      required: 
+      required:
         - evaluatedOutputs
       type: object
       description: A decision rule that matched within this decision evaluation.
