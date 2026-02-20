@@ -1207,9 +1207,9 @@ components:
           format: int32
           description: The process definition version.
         processDefinitionVersionTag:
+          description: The process definition version tag.
           nullable: true
           type: string
-          description: The process definition version tag.
         startDate:
           type: string
           format: date-time
