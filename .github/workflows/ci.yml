@@ -1302,14 +1302,22 @@ jobs:
       - name: Install Spectral CLI
         run: npm install -g "@stoplight/spectral-cli@${SPECTRAL_VERSION}"
         shell: bash
-      - name: Run OpenAPI Linter (Spectral)
+      - name: Run OpenAPI Linter (Structural pass)
         # Spectral provides comprehensive OpenAPI validation including:
         # - Schema structure validation (catches issues like required: false at property level)
-        # - Custom business rules (flow node terminology, key properties, descriptions)
         # - x-eventually-consistent annotation correctness (command operations must not be marked eventually consistent)
         # - Works correctly with multi-part specs using external $ref
         run: >
           spectral lint zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml
+          --ruleset zeebe/gateway-protocol/.spectral.yaml
+          --fail-severity error
+        shell: bash
+      - name: Run OpenAPI Linter (File-level pass)
+        # - Custom business rules (flow node terminology, key properties, descriptions)
+        # This requires a different invocation to the structural pass: glob, to run per-file.
+        # See: https://github.com/camunda/camunda/issues/46274
+        run: >
+          spectral lint "zeebe/gateway-protocol/src/main/proto/v2/*.yaml"
           --ruleset zeebe/gateway-protocol/.spectral.yaml
           --fail-severity error
         shell: bash
