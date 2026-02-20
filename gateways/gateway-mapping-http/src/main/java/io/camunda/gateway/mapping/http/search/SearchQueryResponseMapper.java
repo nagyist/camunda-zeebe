@@ -1239,6 +1239,8 @@ public final class SearchQueryResponseMapper {
     return switch (state) {
       case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
       case FAILED -> DecisionInstanceStateEnum.FAILED;
+      case UNSPECIFIED -> DecisionInstanceStateEnum.UNSPECIFIED;
+      default -> DecisionInstanceStateEnum.UNKNOWN;
     };
   }
 
@@ -1250,6 +1252,7 @@ public final class SearchQueryResponseMapper {
     return switch (decisionDefinitionType) {
       case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
       default -> DecisionDefinitionTypeEnum.UNKNOWN;
     };
   }
