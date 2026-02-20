@@ -10,11 +10,14 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.ParallelGateway;
 import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -57,6 +60,12 @@ public final class NameLengthTest {
     ProcessValidationUtil.validateProcess(process);
   }
 
+  /**
+   * Provides test cases for validating the length of the name field on different BPMN elements.
+   * This list is not exhaustive, but covers a representative set of elements that have a name
+   * field. The <code>NamedBpmnElementValidatorsArchTest</code> ensures, that each NamedBpmnElement
+   * has a validator registered.
+   */
   private static Stream<Arguments> nameLengthTestCases() {
     return Stream.of(
         Arguments.of(
@@ -93,7 +102,7 @@ public final class NameLengthTest {
                 name ->
                     Bpmn.createExecutableProcess("process")
                         .startEvent()
-                        .userTask("task", t -> t.name(name))
+                        .userTask("task")
                         .parallelGateway()
                         .name(name)
                         .endEvent()
@@ -106,6 +115,44 @@ public final class NameLengthTest {
                         .startEvent()
                         .name(name)
                         .serviceTask("task", t -> t.zeebeJobType("test"))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            ZeebeProperty.class,
+            (ProcessBuilder)
+                name ->
+                    Bpmn.createExecutableProcess("process")
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType("test"))
+                        .zeebeProperty(name, "foo")
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            Message.class,
+            (ProcessBuilder)
+                name ->
+                    Bpmn.createExecutableProcess("process")
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType("test"))
+                        .intermediateCatchEvent("catch")
+                        .message(m -> m.name(name).zeebeCorrelationKeyExpression("id"))
+                        .endEvent()
+                        .done()),
+        Arguments.of(
+            SubProcess.class,
+            (ProcessBuilder)
+                name ->
+                    Bpmn.createExecutableProcess("process")
+                        .startEvent()
+                        .serviceTask("task", t -> t.zeebeJobType("test"))
+                        .subProcess(
+                            "subProcess",
+                            s ->
+                                s.name(name)
+                                    .embeddedSubProcess()
+                                    .startEvent()
+                                    .serviceTask("subtask", t -> t.zeebeJobType("test"))
+                                    .endEvent())
                         .endEvent()
                         .done()));
   }
