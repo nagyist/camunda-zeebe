@@ -169,7 +169,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(9)
+        .hasSize(10)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricTUArchiverJob.class))
@@ -194,7 +194,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
-        .hasSize(10)
+        .hasSize(11)
         .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -210,7 +210,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(11)
+        .hasSize(12)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
