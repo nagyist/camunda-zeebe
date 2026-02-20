@@ -13,6 +13,6 @@ spring:
           mcp-endpoint: /mcp/cluster
         capabilities:
           completion: false
-          prompt: false
-          resource: false
+          prompt: true
+          resource: true
           tool: true
