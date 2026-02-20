@@ -266,7 +266,8 @@ public class CamundaExporter implements Exporter {
                 context.getLogger(),
                 metadata,
                 clientAdapter.objectMapper(),
-                provider.getProcessCache())
+                provider.getProcessCache(),
+                context.clock())
             .build();
   }
 
