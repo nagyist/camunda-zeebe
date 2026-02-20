@@ -328,6 +328,8 @@ components:
                 $ref: '#/components/schemas/DocumentReference'
 
     DocumentMetadata:
+      required: 
+        - customProperties
       description: Information about the document.
       type: object
       properties:

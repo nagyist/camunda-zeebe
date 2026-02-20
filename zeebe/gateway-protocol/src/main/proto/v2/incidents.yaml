@@ -396,12 +396,15 @@ components:
 
     IncidentResult:
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The process definition ID associated to this incident.
         errorType:
+          description: The type of the incident error.
           allOf:
             - $ref: "#/components/schemas/IncidentErrorTypeEnum"
         errorMessage:
@@ -412,9 +415,11 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
           description: The element ID associated to this incident.
         creationTime:
+          description: The creation time of the incident.
           type: string
           format: date-time
         state:
+          description: The incident state.
           allOf:
             - $ref: "#/components/schemas/IncidentStateEnum"
         tenantId:

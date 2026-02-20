@@ -902,6 +902,7 @@ components:
         - tenantId
         - variables
         - processInstanceKey
+        - tags
       type: object
       properties:
         processDefinitionId:
@@ -1189,6 +1190,10 @@ components:
         - tenantId
         - processInstanceKey
         - processDefinitionKey
+        - parentProcessInstanceKey
+        - parentElementInstanceKey
+        - rootProcessInstanceKey
+        - tags
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -1198,15 +1203,18 @@ components:
         processDefinitionVersion:
           type: integer
           format: int32
+          description: The process definition version.
         processDefinitionVersionTag:
           type: string
           description: The process definition version tag.
         startDate:
           type: string
           format: date-time
+          description: The start time of the process instance.
         endDate:
           type: string
           format: date-time
+          description: The completion or termination time of the process instance.
         state:
           $ref: '#/components/schemas/ProcessInstanceStateEnum'
         hasIncident:
@@ -1289,6 +1297,8 @@ components:
     ProcessInstanceSequenceFlowResult:
       description: Process instance sequence flow result.
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         sequenceFlowId:
           type: string

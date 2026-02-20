@@ -461,6 +461,7 @@ components:
       type: object
       properties:
         page:
+          description: Search cursor pagination.
           allOf:
             - $ref: "search-models.yaml#/components/schemas/CursorForwardPagination"
         filter:
@@ -507,6 +508,7 @@ components:
       type: object
       properties:
         page:
+          description: Search cursor pagination.
           allOf:
             - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:

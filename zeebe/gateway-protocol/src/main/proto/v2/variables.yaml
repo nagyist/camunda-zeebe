@@ -203,6 +203,8 @@ components:
     VariableResultBase:
       description: Variable response item.
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         name:
           description: Name of this variable.

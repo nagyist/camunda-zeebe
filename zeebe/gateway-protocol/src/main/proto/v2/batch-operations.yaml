@@ -305,6 +305,8 @@ components:
             $ref: '#/components/schemas/BatchOperationResponse'
 
     BatchOperationResponse:
+      required:
+        - errors
       type: object
       properties:
         batchOperationKey:
@@ -436,6 +438,8 @@ components:
 
     BatchOperationItemResponse:
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         operationType:
           $ref: '#/components/schemas/BatchOperationTypeEnum'
