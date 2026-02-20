@@ -1314,7 +1314,7 @@ jobs:
         shell: bash
       - name: Run OpenAPI Linter (File-level pass)
         # - Custom business rules (flow node terminology, key properties, descriptions)
-        # This requires a different invocation to the structural pass: glob, to run per-file. 
+        # This requires a different invocation to the structural pass: glob, to run per-file.
         # See: https://github.com/camunda/camunda/issues/46274
         run: >
           spectral lint "zeebe/gateway-protocol/src/main/proto/v2/*.yaml"
