@@ -503,6 +503,12 @@ components:
         - candidateUsers
         - customHeaders 
         - tags
+        - assignee
+        - completionDate
+        - dueDate
+        - externalFormReference
+        - followUpDate
+        - formKey
       properties:
         name:
           type: string
@@ -510,6 +516,7 @@ components:
         state:
           $ref: '#/components/schemas/UserTaskStateEnum'
         assignee:
+          nullable: true
           description: The assignee of the user task.
           type: string
         elementId:
@@ -535,20 +542,24 @@ components:
           description: The creation date of a user task.
           format: date-time
         completionDate:
+          nullable: true
           type: string
           description: The completion date of a user task.
           format: date-time
         followUpDate:
+          nullable: true
           type: string
           description: The follow date of a user task.
           format: date-time
         dueDate:
+          nullable: true
           type: string
           description: The due date of a user task.
           format: date-time
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         externalFormReference:
+          nullable: true
           type: string
           description: The external form reference.
         processDefinitionVersion:
@@ -594,6 +605,7 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         formKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
           description: The key of the form.

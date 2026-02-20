@@ -303,6 +303,7 @@ components:
     AuthorizationResult:
       required:
         - permissionTypes
+        - resourcePropertyName
       type: object
       properties:
         ownerId:
@@ -320,6 +321,7 @@ components:
           type: string
         resourcePropertyName:
           description: The name of the resource property the permission relates to (mutually exclusive with `resourceId`).
+          nullable: true
           type: string
         permissionTypes:
           description: Specifies the types of the permissions.

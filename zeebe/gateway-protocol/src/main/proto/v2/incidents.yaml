@@ -398,6 +398,8 @@ components:
       type: object
       required:
         - rootProcessInstanceKey
+        - jobKey
+        - tenantId
       properties:
         processDefinitionId:
           allOf:
@@ -451,6 +453,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The element instance key associated to this incident.
         jobKey:
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
           description: The job key, if exists, associated with this incident.

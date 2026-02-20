@@ -285,6 +285,8 @@ components:
       type: object
       required:
         - rootProcessInstanceKey
+        - evaluationFailure
+        - tenantId
       properties:
         decisionEvaluationInstanceKey:
           $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
@@ -296,6 +298,7 @@ components:
           description: The evaluation date of the decision instance.
         evaluationFailure:
           type: string
+          nullable: true
           description: The evaluation failure of the decision instance.
         decisionDefinitionId:
           allOf:
@@ -383,6 +386,9 @@ components:
           type: string
 
     EvaluatedDecisionOutputItem:
+      required:
+        - ruleId
+        - ruleIndex
       type: object
       description: The evaluated decision outputs.
       properties:
@@ -396,9 +402,11 @@ components:
           description: The value of the evaluated decison output item.
           type: string
         ruleId:
+          nullable: true
           description: The ID of the matched rule.
           type: string
         ruleIndex:
+          nullable: true
           description: The index of the matched rule.
           type: integer
           format: int32
