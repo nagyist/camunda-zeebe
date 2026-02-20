@@ -406,8 +406,8 @@ components:
           description: The ID of the matched rule.
           type: string
         ruleIndex:
-          nullable: true
           description: The index of the matched rule.
+          nullable: true
           type: integer
           format: int32
 
