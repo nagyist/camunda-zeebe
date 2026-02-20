@@ -65,7 +65,11 @@ public class AuditLogArchiverJob extends ArchiverJob<AuditLogCleanupBatch> {
   @Override
   protected Map<String, List<String>> createIdsByFieldMap(
       final IndexTemplateDescriptor templateDescriptor, final AuditLogCleanupBatch batch) {
-    return Map.of(AuditLogTemplate.ID, batch.auditLogIds());
+    final List<String> auditLogIds = batch.auditLogIds();
+    if (auditLogIds.isEmpty()) {
+      return Map.of();
+    }
+    return Map.of(AuditLogTemplate.ID, auditLogIds);
   }
 
   private CompletableFuture<Integer> deleteAuditLogCleanupMetadata(

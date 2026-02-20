@@ -204,7 +204,7 @@ public class ElasticsearchAuditLogArchiverRepository extends ElasticsearchReposi
                                           m.term(
                                               t ->
                                                   t.field(AuditLogTemplate.ENTITY_TYPE)
-                                                      .value(FieldValue.of(entityType))));
+                                                      .value(FieldValue.of(entityType.name()))));
                                   return sb;
                                 }))));
   }
