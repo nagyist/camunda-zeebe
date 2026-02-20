@@ -7,7 +7,6 @@
  */
 package io.camunda.identity;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
