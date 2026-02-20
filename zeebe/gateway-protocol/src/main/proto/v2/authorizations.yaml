@@ -318,6 +318,7 @@ components:
             - $ref: '#/components/schemas/ResourceTypeEnum'
         resourceId:
           description: ID of the resource the permission relates to (mutually exclusive with `resourcePropertyName`).
+          nullable: true
           type: string
         resourcePropertyName:
           description: The name of the resource property the permission relates to (mutually exclusive with `resourceId`).
