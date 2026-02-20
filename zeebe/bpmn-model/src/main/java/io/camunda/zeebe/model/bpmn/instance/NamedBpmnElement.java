@@ -16,18 +16,24 @@
 
 package io.camunda.zeebe.model.bpmn.instance;
 
-import java.util.Collection;
-
 /**
- * The BPMN linkEventDefinition element
+ * Represents a BPMN model element that has a name.
  *
- * @author Sebastian Menski
+ * @author Christian Thiel
  */
-public interface LinkEventDefinition extends EventDefinition, NamedBpmnElement {
+public interface NamedBpmnElement extends BpmnModelElementInstance {
 
-  Collection<LinkEventDefinition> getSources();
+  /**
+   * Gets the name of this BPMN element.
+   *
+   * @return the element's name
+   */
+  String getName();
 
-  LinkEventDefinition getTarget();
-
-  void setTarget(LinkEventDefinition target);
+  /**
+   * Sets the name for this BPMN element.
+   *
+   * @param name the name to set
+   */
+  void setName(String name);
 }
