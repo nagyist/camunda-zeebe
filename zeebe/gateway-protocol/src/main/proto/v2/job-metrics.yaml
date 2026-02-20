@@ -133,6 +133,7 @@ components:
         filter:
           $ref: '#/components/schemas/JobTypeStatisticsFilter'
         page:
+          description: Search cursor pagination.
           allOf:
             - $ref: 'search-models.yaml#/components/schemas/CursorForwardPagination'
 

@@ -407,6 +407,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The key of the job's process definition.
         elementInstanceKey:
+          description: The element instance key of the task.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         kind:

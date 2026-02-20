@@ -456,10 +456,12 @@ components:
           description: The user task due date.
         processInstanceVariables:
           type: array
+          description: The variables of the process instance.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
         localVariables:
           type: array
+          description: The local variables of the user task.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
         userTaskKey:

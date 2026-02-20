@@ -374,9 +374,12 @@ components:
       properties:
         inputId:
           type: string
+          description: The identifier of the decision input.
         inputName:
           type: string
+          description: The name of the decision input.
         inputValue:
+          description: The description of the decision input.
           type: string
 
     EvaluatedDecisionOutputItem:
@@ -384,14 +387,19 @@ components:
       description: The evaluated decision outputs.
       properties:
         outputId:
+          description: The ID of the evaluated decison output item.
           type: string
         outputName:
+          description: The name of the of the evaluated decison output item.
           type: string
         outputValue:
+          description: The value of the evaluated decison output item.
           type: string
         ruleId:
+          description: The ID of the matched rule.
           type: string
         ruleIndex:
+          description: The index of the matched rule.
           type: integer
           format: int32
 
